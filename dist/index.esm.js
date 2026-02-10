@@ -4678,6 +4678,1011 @@ var simpleTag = {
     }
 };
 
+function rotatePoint$1(point, center, angle) {
+    var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
+    var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
+    return { x: x, y: y };
+}
+var arrow = {
+    name: 'arrow',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            var slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            var angle = void 0;
+            if (slopeIntercept) {
+                angle = Math.atan(slopeIntercept[0]) + Math.PI * direction;
+            }
+            else {
+                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
+            }
+            var arrowLeft = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
+            var arrowRight = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
+            return [
+                {
+                    type: 'line',
+                    attrs: { coordinates: coordinates }
+                },
+                {
+                    type: 'line',
+                    ignoreEvent: true,
+                    attrs: {
+                        coordinates: [arrowLeft, coordinates[1], arrowRight]
+                    }
+                }
+            ];
+        }
+        return [];
+    }
+};
+
+function distance$2(p1, p2) {
+    var dx = Math.abs(p1.x - p2.x);
+    var dy = Math.abs(p1.y - p2.y);
+    return Math.sqrt(dx * dx + dy * dy);
+}
+var circle$1 = {
+    name: 'circle',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        circle: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var r = distance$2(coordinates[0], coordinates[1]);
+            return {
+                type: 'circle',
+                attrs: __assign(__assign({}, coordinates[0]), { r: r }),
+                styles: { style: 'stroke_fill' }
+            };
+        }
+        return [];
+    }
+};
+
+var rect$1 = {
+    name: 'rect',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        return coordinates.length > 1
+            ? [{
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0],
+                            { x: coordinates[1].x, y: coordinates[0].y },
+                            coordinates[1],
+                            { x: coordinates[0].x, y: coordinates[1].y }
+                        ]
+                    },
+                    styles: { style: 'stroke_fill' }
+                }]
+            : [];
+    }
+};
+
+var triangle = {
+    name: 'triangle',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        return [{
+                type: 'polygon',
+                attrs: { coordinates: coordinates },
+                styles: { style: 'stroke_fill' }
+            }];
+    }
+};
+
+var parallelogram = {
+    name: 'parallelogram',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length === 2) {
+            return [{
+                    type: 'line',
+                    ignoreEvent: true,
+                    attrs: { coordinates: coordinates }
+                }];
+        }
+        if (coordinates.length === 3) {
+            var fourth = {
+                x: coordinates[0].x + coordinates[2].x - coordinates[1].x,
+                y: coordinates[0].y + coordinates[2].y - coordinates[1].y
+            };
+            return [{
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [coordinates[0], coordinates[1], coordinates[2], fourth]
+                    },
+                    styles: { style: 'stroke_fill' }
+                }];
+        }
+        return [];
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        if (performPointIndex < 2) {
+            points[0].price = performPoint.price;
+            points[1].price = performPoint.price;
+        }
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        if (currentStep === 2) {
+            points[0].price = performPoint.price;
+        }
+    }
+};
+
+function distance$1(p1, p2) {
+    var dx = Math.abs(p1.x - p2.x);
+    var dy = Math.abs(p1.y - p2.y);
+    return Math.sqrt(dx * dx + dy * dy);
+}
+var fibonacciCircle = {
+    name: 'fibonacciCircle',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var radius_1 = distance$1(coordinates[0], coordinates[1]);
+            var percents = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            var circles_1 = [];
+            var texts_1 = [];
+            percents.forEach(function (p) {
+                var r = radius_1 * p;
+                circles_1.push(__assign(__assign({}, coordinates[0]), { r: r }));
+                texts_1.push({
+                    x: coordinates[0].x,
+                    y: coordinates[0].y + r + 6,
+                    text: "".concat((p * 100).toFixed(1), "%")
+                });
+            });
+            return [
+                { type: 'circle', attrs: circles_1, styles: { style: 'stroke' } },
+                { type: 'text', ignoreEvent: true, attrs: texts_1 }
+            ];
+        }
+        return [];
+    }
+};
+
+var fibonacciSegment = {
+    name: 'fibonacciSegment',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var _b, _c;
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var lines = [];
+        var texts = [];
+        if (coordinates.length > 1) {
+            var leftX_1 = coordinates[1].x > coordinates[0].x ? coordinates[0].x : coordinates[1].x;
+            var percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+            var yDif_1 = coordinates[0].y - coordinates[1].y;
+            var points_1 = overlay.points;
+            var valueDif_1 = ((_b = points_1[0].value) !== null && _b !== void 0 ? _b : 0) - ((_c = points_1[1].value) !== null && _c !== void 0 ? _c : 0);
+            percents.forEach(function (p) {
+                var _a;
+                var y = coordinates[1].y + yDif_1 * p;
+                var value = (((_a = points_1[1].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
+                lines.push({
+                    coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }]
+                });
+                texts.push({
+                    x: leftX_1,
+                    y: y,
+                    text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                    baseline: 'bottom'
+                });
+            });
+        }
+        return [
+            { type: 'line', attrs: lines },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var fibonacciExtension = {
+    name: 'fibonacciExtension',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var _b, _c;
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var lines = [];
+        var texts = [];
+        if (coordinates.length > 2) {
+            var points_1 = overlay.points;
+            var valueDif_1 = ((_b = points_1[1].value) !== null && _b !== void 0 ? _b : 0) - ((_c = points_1[0].value) !== null && _c !== void 0 ? _c : 0);
+            var yDif_1 = coordinates[1].y - coordinates[0].y;
+            var percents = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            var leftX_1 = coordinates[2].x > coordinates[1].x ? coordinates[1].x : coordinates[2].x;
+            percents.forEach(function (p) {
+                var _a;
+                var y = coordinates[2].y + yDif_1 * p;
+                var value = (((_a = points_1[2].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
+                lines.push({
+                    coordinates: [{ x: coordinates[1].x, y: y }, { x: coordinates[2].x, y: y }]
+                });
+                texts.push({
+                    x: leftX_1,
+                    y: y,
+                    text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                    baseline: 'bottom'
+                });
+            });
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates }, styles: { style: 'dashed' } },
+            { type: 'line', attrs: lines },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+function distance(p1, p2) {
+    var dx = Math.abs(p1.x - p2.x);
+    var dy = Math.abs(p1.y - p2.y);
+    return Math.sqrt(dx * dx + dy * dy);
+}
+function rotatePoint(point, center, angle) {
+    var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
+    var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
+    return { x: x, y: y };
+}
+function extendLine$1(coords, bounding) {
+    if (coords.length > 1) {
+        var end = void 0;
+        if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
+            end = coords[0].y < coords[1].y
+                ? { x: coords[0].x, y: bounding.height }
+                : { x: coords[0].x, y: 0 };
+        }
+        else if (coords[0].x > coords[1].x) {
+            end = { x: 0, y: getLinearYFromCoordinates(coords[0], coords[1], { x: 0, y: coords[0].y }) };
+        }
+        else {
+            end = { x: bounding.width, y: getLinearYFromCoordinates(coords[0], coords[1], { x: bounding.width, y: coords[0].y }) };
+        }
+        return { coordinates: [coords[0], end] };
+    }
+    return [];
+}
+var fibonacciSpiral = {
+    name: 'fibonacciSpiral',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        if (coordinates.length > 1) {
+            var baseRadius = distance(coordinates[0], coordinates[1]) / Math.sqrt(24);
+            var direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            var slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            var angle = void 0;
+            if (slopeIntercept) {
+                angle = Math.atan(slopeIntercept[0]) + Math.PI * direction;
+            }
+            else {
+                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
+            }
+            var p1 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y }, coordinates[0], angle);
+            var p2 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y - baseRadius }, coordinates[0], angle);
+            var arcs = [
+                __assign(__assign({}, p1), { r: baseRadius, startAngle: angle, endAngle: angle + Math.PI / 2 }),
+                __assign(__assign({}, p2), { r: baseRadius * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI })
+            ];
+            var cx = coordinates[0].x - baseRadius;
+            var cy = coordinates[0].y - baseRadius;
+            for (var i = 2; i < 9; i++) {
+                var r = arcs[i - 2].r + arcs[i - 1].r;
+                var startAngle = 0;
+                switch (i % 4) {
+                    case 0:
+                        startAngle = angle;
+                        cx -= arcs[i - 2].r;
+                        break;
+                    case 1:
+                        startAngle = angle + Math.PI / 2;
+                        cy -= arcs[i - 2].r;
+                        break;
+                    case 2:
+                        startAngle = angle + Math.PI;
+                        cx += arcs[i - 2].r;
+                        break;
+                    case 3:
+                        startAngle = angle + Math.PI / 2 * 3;
+                        cy += arcs[i - 2].r;
+                        break;
+                }
+                var center = rotatePoint({ x: cx, y: cy }, coordinates[0], angle);
+                arcs.push(__assign(__assign({}, center), { r: r, startAngle: startAngle, endAngle: startAngle + Math.PI / 2 }));
+            }
+            return [
+                { type: 'arc', attrs: arcs },
+                { type: 'line', attrs: extendLine$1(coordinates, bounding) }
+            ];
+        }
+        return [];
+    }
+};
+
+function extendLine(coords, bounding) {
+    if (coords.length > 1) {
+        var end = void 0;
+        if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
+            end = coords[0].y < coords[1].y
+                ? { x: coords[0].x, y: bounding.height }
+                : { x: coords[0].x, y: 0 };
+        }
+        else if (coords[0].x > coords[1].x) {
+            end = { x: 0, y: getLinearYFromCoordinates(coords[0], coords[1], { x: 0, y: coords[0].y }) };
+        }
+        else {
+            end = { x: bounding.width, y: getLinearYFromCoordinates(coords[0], coords[1], { x: bounding.width, y: coords[0].y }) };
+        }
+        return { coordinates: [coords[0], end] };
+    }
+    return [];
+}
+var fibonacciSpeedResistanceFan = {
+    name: 'fibonacciSpeedResistanceFan',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        var gridLines = [];
+        var fanLines = [];
+        var texts = [];
+        if (coordinates.length > 1) {
+            var _b = __read(coordinates, 2), p0_1 = _b[0], p1_1 = _b[1];
+            var textOffsetX_1 = p1_1.x > p0_1.x ? -38 : 4;
+            var textOffsetY_1 = p1_1.y > p0_1.y ? -2 : 20;
+            var dx_1 = p1_1.x - p0_1.x;
+            var dy_1 = p1_1.y - p0_1.y;
+            var percents = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
+            percents.forEach(function (p) {
+                var x = p1_1.x - dx_1 * p;
+                var y = p1_1.y - dy_1 * p;
+                gridLines.push({ coordinates: [{ x: x, y: p0_1.y }, { x: x, y: p1_1.y }] });
+                gridLines.push({ coordinates: [{ x: p0_1.x, y: y }, { x: p1_1.x, y: y }] });
+                fanLines = fanLines.concat(extendLine([p0_1, { x: x, y: p1_1.y }], bounding));
+                fanLines = fanLines.concat(extendLine([p0_1, { x: p1_1.x, y: y }], bounding));
+                texts.unshift({ x: p0_1.x + textOffsetX_1, y: y + 10, text: "".concat(p.toFixed(3)) });
+                texts.unshift({ x: x - 18, y: p0_1.y + textOffsetY_1, text: "".concat(p.toFixed(3)) });
+            });
+        }
+        return [
+            { type: 'line', attrs: gridLines },
+            { type: 'line', attrs: fanLines },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var fibonacciDiagonal = {
+    name: 'fibonacciDiagonal',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var points = overlay.points;
+        if (coordinates.length > 0) {
+            var lines_1 = [];
+            var texts_1 = [];
+            var startX_1 = coordinates[0].x;
+            var endX_1 = coordinates[coordinates.length - 1].x;
+            if (coordinates.length > 1 && points[0].value !== undefined && points[1].value !== undefined) {
+                var percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+                var yDif_1 = coordinates[0].y - coordinates[1].y;
+                var valueDif_1 = points[0].value - points[1].value;
+                percents.forEach(function (p) {
+                    var _a;
+                    var y = coordinates[1].y + yDif_1 * p;
+                    var value = (((_a = points[1].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
+                    lines_1.push({ coordinates: [{ x: startX_1, y: y }, { x: endX_1, y: y }] });
+                    texts_1.push({
+                        x: startX_1,
+                        y: y,
+                        text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                        baseline: 'bottom'
+                    });
+                });
+                // Diagonal line connecting first to last level
+                lines_1.push({
+                    coordinates: [
+                        { x: lines_1[0].coordinates[0].x, y: lines_1[0].coordinates[0].y },
+                        { x: lines_1[percents.length - 1].coordinates[1].x, y: lines_1[percents.length - 1].coordinates[1].y }
+                    ]
+                });
+            }
+            return [
+                { type: 'line', attrs: lines_1 },
+                { type: 'text', isCheckEvent: false, attrs: texts_1 }
+            ];
+        }
+        return [];
+    }
+};
+
+var gannBox = {
+    name: 'gannBox',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var _b = __read(coordinates, 2), p0 = _b[0], p1 = _b[1];
+            var yQuarter = (p1.y - p0.y) / 4;
+            var xDif = p1.x - p0.x;
+            // Dashed internal lines
+            var dashed = [
+                { coordinates: [p0, { x: p1.x, y: p1.y - yQuarter }] },
+                { coordinates: [p0, { x: p1.x, y: p1.y - yQuarter * 2 }] },
+                { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y + yQuarter }] },
+                { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y + yQuarter * 2 }] },
+                { coordinates: [__assign({}, p0), { x: p0.x + xDif * 0.236, y: p1.y }] },
+                { coordinates: [__assign({}, p0), { x: p0.x + xDif * 0.5, y: p1.y }] },
+                { coordinates: [{ x: p0.x, y: p1.y }, { x: p0.x + xDif * 0.236, y: p0.y }] },
+                { coordinates: [{ x: p0.x, y: p1.y }, { x: p0.x + xDif * 0.5, y: p0.y }] }
+            ];
+            // Diagonals
+            var diagonals = [
+                { coordinates: [p0, p1] },
+                { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y }] }
+            ];
+            return [
+                {
+                    type: 'line',
+                    attrs: [
+                        { coordinates: [p0, { x: p1.x, y: p0.y }] },
+                        { coordinates: [{ x: p1.x, y: p0.y }, p1] },
+                        { coordinates: [p1, { x: p0.x, y: p1.y }] },
+                        { coordinates: [{ x: p0.x, y: p1.y }, p0] }
+                    ]
+                },
+                {
+                    type: 'polygon',
+                    ignoreEvent: true,
+                    attrs: {
+                        coordinates: [p0, { x: p1.x, y: p0.y }, p1, { x: p0.x, y: p1.y }]
+                    },
+                    styles: { style: 'fill' }
+                },
+                { type: 'line', attrs: dashed, styles: { style: 'dashed' } },
+                { type: 'line', attrs: diagonals }
+            ];
+        }
+        return [];
+    }
+};
+
+function createWaveOverlay(name, totalStep) {
+    return {
+        name: name,
+        totalStep: totalStep,
+        needDefaultPointFigure: true,
+        needDefaultXAxisFigure: true,
+        needDefaultYAxisFigure: true,
+        createPointFigures: function (_a) {
+            var coordinates = _a.coordinates;
+            var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { text: "(".concat(i, ")"), baseline: 'bottom' })); });
+            return [
+                { type: 'line', attrs: { coordinates: coordinates } },
+                { type: 'text', ignoreEvent: true, attrs: texts }
+            ];
+        }
+    };
+}
+var threeWaves = createWaveOverlay('threeWaves', 5);
+var fiveWaves = createWaveOverlay('fiveWaves', 7);
+var eightWaves = createWaveOverlay('eightWaves', 10);
+var anyWaves = createWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
+
+var abcd = {
+    name: 'abcd',
+    totalStep: 5,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var labels = ['A', 'B', 'C', 'D'];
+        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+        var acLine = [];
+        var bdLine = [];
+        if (coordinates.length > 2) {
+            acLine = [coordinates[0], coordinates[2]];
+            if (coordinates.length > 3) {
+                bdLine = [coordinates[1], coordinates[3]];
+            }
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            {
+                type: 'line',
+                attrs: [{ coordinates: acLine }, { coordinates: bdLine }],
+                styles: { style: 'dashed' }
+            },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var xabcd = {
+    name: 'xabcd',
+    totalStep: 6,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var dashed = [];
+        var polygons = [];
+        var labels = ['X', 'A', 'B', 'C', 'D'];
+        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+        if (coordinates.length > 2) {
+            dashed.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polygons.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            if (coordinates.length > 3) {
+                dashed.push({ coordinates: [coordinates[1], coordinates[3]] });
+                if (coordinates.length > 4) {
+                    dashed.push({ coordinates: [coordinates[2], coordinates[4]] });
+                    polygons.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                }
+            }
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: dashed, styles: { style: 'dashed' } },
+            { type: 'polygon', ignoreEvent: true, attrs: polygons },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var elliotTripleComboWaves = {
+    name: 'elliotTripleComboWaves',
+    totalStep: 6,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var labels = ['(0)', '(W)', '(X)', '(Y)', '(Z)'];
+        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: [{ coordinates: [] }, { coordinates: [] }], styles: { style: 'dashed' } },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var headAndShoulders = {
+    name: 'headAndShoulders',
+    totalStep: 8,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: 'rgba(22, 119, 255, 0.15)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var dashed = [];
+        var polygons = [];
+        var labels = ['1', 'Left Shoulder', '2', 'Head', '3', 'Right Shoulder', '4'];
+        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "".concat(labels[i]) })); });
+        if (coordinates.length > 2) {
+            dashed.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polygons.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            if (coordinates.length > 4) {
+                dashed.push({ coordinates: [coordinates[2], coordinates[4]] });
+                polygons.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                if (coordinates.length > 6) {
+                    dashed.push({ coordinates: [coordinates[4], coordinates[6]] });
+                    polygons.push({ coordinates: [coordinates[4], coordinates[5], coordinates[6]] });
+                }
+            }
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: dashed, styles: { style: 'dashed' } },
+            { type: 'polygon', ignoreEvent: true, attrs: polygons },
+            { type: 'text', ignoreEvent: true, attrs: texts }
+        ];
+    }
+};
+
+var measure = {
+    name: 'measure',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        backgroundColor: 'rgba(22, 119, 255, 0.25)',
+        tipBackgroundColor: '#1677FF',
+        lineColor: '#1677FF'
+    },
+    createPointFigures: function (_a) {
+        var _b, _c, _d, _e, _f, _g, _h, _j;
+        var coordinates = _a.coordinates, overlay = _a.overlay, bounding = _a.bounding;
+        if (coordinates.length > 1) {
+            var _k = __read(coordinates, 2), p0 = _k[0], p1 = _k[1];
+            var val1 = (_b = overlay.points[1]) === null || _b === void 0 ? void 0 : _b.value;
+            var val0 = (_c = overlay.points[0]) === null || _c === void 0 ? void 0 : _c.value;
+            var pctChange = 0;
+            var priceDiff = 0;
+            if (val0 !== undefined && val1 !== undefined) {
+                pctChange = (val1 - val0) / val0 * 100;
+                priceDiff = val1 - val0;
+            }
+            var isRight = p0.x < p1.x;
+            var isDown = p0.y < p1.y;
+            var center = { x: Math.round((p0.x + p1.x) / 2), y: Math.round((p0.y + p1.y) / 2) };
+            var bgColor = (_e = (_d = overlay.styles) === null || _d === void 0 ? void 0 : _d.backgroundColor) !== null && _e !== void 0 ? _e : 'rgba(22, 119, 255, 0.25)';
+            var tipColor = (_g = (_f = overlay.styles) === null || _f === void 0 ? void 0 : _f.tipBackgroundColor) !== null && _g !== void 0 ? _g : '#1677FF';
+            var lineColor = (_j = (_h = overlay.styles) === null || _h === void 0 ? void 0 : _h.lineColor) !== null && _j !== void 0 ? _j : '#1677FF';
+            var label = "".concat(priceDiff.toFixed(2), " (").concat(pctChange.toFixed(2), "%)");
+            var figures = [
+                // Background rect
+                {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [p0, { x: p1.x, y: p0.y }, p1, { x: p0.x, y: p1.y }]
+                    },
+                    styles: { color: bgColor }
+                },
+                // Horizontal midline
+                { type: 'line', attrs: { coordinates: [{ x: p0.x, y: center.y }, { x: p1.x, y: center.y }] }, styles: { color: lineColor } },
+                // Vertical midline
+                { type: 'line', attrs: { coordinates: [{ x: center.x, y: p0.y }, { x: center.x, y: p1.y }] }, styles: { color: lineColor } }
+            ];
+            // Horizontal arrow
+            if (isRight) {
+                figures.push({ type: 'line', attrs: { coordinates: [{ x: p1.x - 6, y: center.y - 4 }, { x: p1.x, y: center.y }, { x: p1.x - 6, y: center.y + 4 }] } });
+            }
+            else {
+                figures.push({ type: 'line', attrs: { coordinates: [{ x: p1.x + 6, y: center.y - 4 }, { x: p1.x, y: center.y }, { x: p1.x + 6, y: center.y + 4 }] } });
+            }
+            // Vertical arrow
+            if (isDown) {
+                figures.push({ type: 'line', attrs: { coordinates: [{ x: center.x - 4, y: p1.y - 6 }, { x: center.x, y: p1.y }, { x: center.x + 4, y: p1.y - 6 }] }, styles: { color: lineColor } });
+            }
+            else {
+                figures.push({ type: 'line', attrs: { coordinates: [{ x: center.x - 4, y: p1.y + 6 }, { x: center.x, y: p1.y }, { x: center.x + 4, y: p1.y + 6 }] }, styles: { color: lineColor } });
+            }
+            // Tooltip
+            var tipHeight = 1 * 12 + 8 * 2;
+            var tipWidth = calcTextWidth(label) + 12 * 2;
+            var tipY = void 0;
+            if (isDown) {
+                tipY = p1.y + 8 + tipHeight > bounding.height ? bounding.height - tipHeight : p1.y + 8;
+            }
+            else {
+                tipY = p1.y - 8 - tipHeight < 0 ? 0 : p1.y - 8 - tipHeight;
+            }
+            figures.push({
+                type: 'rect',
+                attrs: { x: center.x - tipWidth / 2, y: tipY, width: tipWidth, height: tipHeight },
+                styles: { borderRadius: 4, color: tipColor }
+            });
+            figures.push({
+                type: 'text',
+                attrs: { x: center.x, y: tipY + 8, text: label, align: 'center' },
+                styles: { paddingLeft: 0, paddingTop: 0, paddingRight: 0, paddingBottom: 0, backgroundColor: 'none', family: 'Space Grotesk, sans-serif' }
+            });
+            return figures;
+        }
+        return [];
+    }
+};
+
+var crossLine = {
+    name: 'crossLine',
+    totalStep: 2,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates: [{ x: 0, y: coordinates[0].y }, { x: bounding.width, y: coordinates[0].y }] }
+            },
+            {
+                type: 'line',
+                attrs: { coordinates: [{ x: coordinates[0].x, y: 0 }, { x: coordinates[0].x, y: bounding.height }] }
+            }
+        ];
+    }
+};
+
+var flatTopBottom = {
+    name: 'faltTopBottom',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: false,
+    styles: {
+        polygon: { color: '#FCB9002b' },
+        line: { size: 2, color: '#FCB900' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var lines = [];
+        var polygons = [];
+        var topLines = [];
+        if (coordinates.length > 2) {
+            lines = [{ coordinates: [{ x: coordinates[0].x, y: coordinates[2].y }, { x: coordinates[1].x, y: coordinates[2].y }] }];
+            polygons.push({
+                coordinates: [
+                    coordinates[0], coordinates[1],
+                    { x: coordinates[1].x, y: coordinates[2].y },
+                    { x: coordinates[0].x, y: coordinates[2].y }
+                ]
+            });
+            topLines.push({ coordinates: [coordinates[0], coordinates[1]] });
+        }
+        else {
+            lines = [{ coordinates: coordinates }];
+        }
+        return [
+            { type: 'line', attrs: lines, size: 2 },
+            { type: 'polygon', ignoreEvent: true, attrs: polygons },
+            { type: 'line', attrs: topLines, size: 2 }
+        ];
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        if (currentStep === 3) {
+            points[1].timestamp = performPoint.timestamp;
+            points[1].dataIndex = performPoint.dataIndex;
+        }
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        switch (performPointIndex) {
+            case 1:
+                points[2].timestamp = performPoint.timestamp;
+                points[2].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                break;
+        }
+    }
+};
+
+var disJointChannel = {
+    name: 'disJointChannel',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: { color: '#FCB9002b' },
+        line: { size: 2, color: '#FCB900' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var mainLines = [];
+        var secondLines = [];
+        var height = 0;
+        if (coordinates.length >= 2) {
+            height = Math.abs(coordinates[1].y - coordinates[0].y);
+        }
+        if (coordinates.length > 2) {
+            mainLines = [{
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[0].y },
+                        { x: coordinates[1].x, y: coordinates[1].y }
+                    ]
+                }];
+            secondLines.push({
+                coordinates: [
+                    { x: coordinates[1].x, y: coordinates[2].y },
+                    { x: coordinates[0].x, y: coordinates[2].y + height }
+                ]
+            });
+        }
+        else {
+            mainLines = [{ coordinates: coordinates }];
+        }
+        return [
+            { type: 'line', ignoreEvent: false, attrs: mainLines },
+            { type: 'line', ignoreEvent: false, attrs: secondLines }
+        ];
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        if (currentStep === 3) {
+            points[1].timestamp = performPoint.timestamp;
+            points[1].dataIndex = performPoint.dataIndex;
+        }
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        switch (performPointIndex) {
+            case 1:
+                points[2].timestamp = performPoint.timestamp;
+                points[2].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    }
+};
+
+var arcOverlay = {
+    name: 'arc',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        arc: { color: 'rgba(22, 119, 255)' }
+    },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var cx = (coordinates[0].x + coordinates[1].x) / 2;
+            var cy = (coordinates[0].y + coordinates[1].y) / 2;
+            var r = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
+                Math.pow(coordinates[1].y - coordinates[0].y, 2)) / 2;
+            return [{
+                    type: 'arc',
+                    attrs: { x: cx, y: cy, r: r, startAngle: 0, endAngle: Math.PI },
+                    styles: { style: 'solid' }
+                }];
+        }
+        return [];
+    }
+};
+
+var tradingPlan = {
+    name: 'tradingPlan',
+    totalStep: 5,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: false,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var len = coordinates.length;
+        if (len >= 2) {
+            if (len === 2) {
+                return [{ type: 'line', attrs: { coordinates: coordinates } }];
+            }
+            if (len >= 3) {
+                var stopLoss = {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0], coordinates[1],
+                            { x: coordinates[1].x, y: coordinates[2].y },
+                            { x: coordinates[0].x, y: coordinates[2].y }
+                        ]
+                    },
+                    styles: { style: 'fill', color: '#DE46464f' }
+                };
+                if (len === 3)
+                    return [stopLoss];
+                var takeProfit = {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0], coordinates[1],
+                            { x: coordinates[1].x, y: coordinates[3].y },
+                            { x: coordinates[0].x, y: coordinates[3].y }
+                        ]
+                    },
+                    styles: { style: 'fill', color: '#03ca9b2f' }
+                };
+                return [stopLoss, takeProfit];
+            }
+        }
+        return [];
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        switch (currentStep) {
+            case 2:
+                points[0].value = performPoint.value;
+                break;
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+            case 4:
+                points[1].timestamp = points[2].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[2].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        switch (performPointIndex) {
+            case 0:
+                points[1].value = performPoint.value;
+                break;
+            case 1:
+                points[0].value = performPoint.value;
+                points[2].timestamp = points[3].timestamp = performPoint.timestamp;
+                points[2].dataIndex = points[3].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = points[3].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[3].dataIndex = performPoint.dataIndex;
+                break;
+            case 3:
+                points[1].timestamp = points[2].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[2].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    }
+};
+
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4693,10 +5698,19 @@ var simpleTag = {
  */
 var overlays = {};
 var extensions$1 = [
+    // Base overlays
     fibonacciLine, horizontalRayLine, horizontalSegment, horizontalStraightLine,
     parallelStraightLine, priceChannelLine, priceLine, rayLine, segment,
     straightLine, verticalRayLine, verticalSegment, verticalStraightLine,
-    simpleAnnotation, simpleTag
+    simpleAnnotation, simpleTag,
+    // Pro overlays
+    arrow, circle$1, rect$1, triangle, parallelogram,
+    fibonacciCircle, fibonacciSegment, fibonacciExtension,
+    fibonacciSpiral, fibonacciSpeedResistanceFan, fibonacciDiagonal,
+    gannBox, threeWaves, fiveWaves, eightWaves, anyWaves,
+    abcd, xabcd, elliotTripleComboWaves, headAndShoulders,
+    measure, crossLine, flatTopBottom, disJointChannel,
+    arcOverlay, tradingPlan
 ];
 extensions$1.forEach(function (template) {
     overlays[template.name] = OverlayImp.extend(template);
