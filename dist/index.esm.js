@@ -4832,14 +4832,14 @@ var parallelogram = {
     performEventPressedMove: function (_a) {
         var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
         if (performPointIndex < 2) {
-            points[0].price = performPoint.price;
-            points[1].price = performPoint.price;
+            points[0].value = performPoint.value;
+            points[1].value = performPoint.value;
         }
     },
     performEventMoveForDrawing: function (_a) {
         var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
         if (currentStep === 2) {
-            points[0].price = performPoint.price;
+            points[0].value = performPoint.value;
         }
     }
 };

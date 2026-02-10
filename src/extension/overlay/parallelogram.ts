@@ -34,13 +34,13 @@ const parallelogram: OverlayTemplate = {
     },
     performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         if (performPointIndex < 2) {
-            points[0].price = performPoint.price
-            points[1].price = performPoint.price
+            points[0].value = performPoint.value
+            points[1].value = performPoint.value
         }
     },
     performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
-            points[0].price = performPoint.price
+            points[0].value = performPoint.value
         }
     }
 }
