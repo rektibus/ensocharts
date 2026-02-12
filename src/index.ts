@@ -78,7 +78,7 @@ let chartBaseId = 1
  * Chart version
  * @return {string}
  */
-function version (): string {
+function version(): string {
   return '__VERSION__'
 }
 
@@ -88,7 +88,7 @@ function version (): string {
  * @param options
  * @returns {Chart}
  */
-function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
+function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
   logTag()
   let dom: Nullable<HTMLElement> = null
   if (isString(ds)) {
@@ -117,7 +117,7 @@ function init (ds: HTMLElement | string, options?: Options): Nullable<Chart> {
  * Destroy chart instance
  * @param dcs
  */
-function dispose (dcs: HTMLElement | Chart | string): void {
+function dispose(dcs: HTMLElement | Chart | string): void {
   let id: Nullable<string> = null
   if (dcs instanceof ChartImp) {
     id = dcs.id
@@ -163,6 +163,11 @@ const utils = {
   checkCoordinateOnRect,
   checkCoordinateOnText
 }
+
+// Pro module re-exports
+export { ChartMain, DrawingBar } from './pro/ChartMain'
+export type { ChartMainOptions, ChartMainPeriod, ChartMainSymbol, Datafeed } from './pro/ChartMain'
+export { proOverlays, overlayGroups } from './pro/overlays'
 
 export {
   version, init, dispose,

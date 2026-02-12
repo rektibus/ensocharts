@@ -487,7 +487,7 @@ function createDefaultBounding(bounding) {
  * limitations under the License.
  */
 var DEFAULT_REQUEST_ID = -1;
-function requestAnimationFrame(fn) {
+function requestAnimationFrame$1(fn) {
     if (isFunction(window.requestAnimationFrame)) {
         return window.requestAnimationFrame(fn);
     }
@@ -532,7 +532,7 @@ var Animation = /** @class */ (function () {
                 var diffTime = new Date().getTime() - _this._time;
                 if (diffTime < _this._options.duration) {
                     (_a = _this._doFrameCallback) === null || _a === void 0 ? void 0 : _a.call(_this, diffTime);
-                    requestAnimationFrame(step);
+                    requestAnimationFrame$1(step);
                 }
                 else {
                     _this.stop();
@@ -543,7 +543,7 @@ var Animation = /** @class */ (function () {
                 }
             }
         };
-        requestAnimationFrame(step);
+        requestAnimationFrame$1(step);
     };
     Animation.prototype.doFrame = function (callback) {
         this._doFrameCallback = callback;
@@ -4678,12 +4678,12 @@ var simpleTag = {
     }
 };
 
-function rotatePoint$1(point, center, angle) {
+function rotatePoint$2(point, center, angle) {
     var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
     var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
     return { x: x, y: y };
 }
-var arrow = {
+var arrow$1 = {
     name: 'arrow',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4701,8 +4701,8 @@ var arrow = {
             else {
                 angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
             }
-            var arrowLeft = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
-            var arrowRight = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
+            var arrowLeft = rotatePoint$2({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
+            var arrowRight = rotatePoint$2({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
             return [
                 {
                     type: 'line',
@@ -4726,7 +4726,7 @@ function distance$2(p1, p2) {
     var dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-var circle$1 = {
+var circle$2 = {
     name: 'circle',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4749,7 +4749,7 @@ var circle$1 = {
     }
 };
 
-var rect$1 = {
+var rect$2 = {
     name: 'rect',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4777,7 +4777,7 @@ var rect$1 = {
     }
 };
 
-var triangle = {
+var triangle$1 = {
     name: 'triangle',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -4796,7 +4796,7 @@ var triangle = {
     }
 };
 
-var parallelogram = {
+var parallelogram$1 = {
     name: 'parallelogram',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -4849,7 +4849,7 @@ function distance$1(p1, p2) {
     var dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-var fibonacciCircle = {
+var fibonacciCircle$1 = {
     name: 'fibonacciCircle',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4880,7 +4880,7 @@ var fibonacciCircle = {
     }
 };
 
-var fibonacciSegment = {
+var fibonacciSegment$1 = {
     name: 'fibonacciSegment',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4919,7 +4919,7 @@ var fibonacciSegment = {
     }
 };
 
-var fibonacciExtension = {
+var fibonacciExtension$1 = {
     name: 'fibonacciExtension',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -4964,12 +4964,12 @@ function distance(p1, p2) {
     var dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-function rotatePoint(point, center, angle) {
+function rotatePoint$1(point, center, angle) {
     var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
     var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
     return { x: x, y: y };
 }
-function extendLine$1(coords, bounding) {
+function extendLine$2(coords, bounding) {
     if (coords.length > 1) {
         var end = void 0;
         if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
@@ -4987,7 +4987,7 @@ function extendLine$1(coords, bounding) {
     }
     return [];
 }
-var fibonacciSpiral = {
+var fibonacciSpiral$1 = {
     name: 'fibonacciSpiral',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5006,8 +5006,8 @@ var fibonacciSpiral = {
             else {
                 angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
             }
-            var p1 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y }, coordinates[0], angle);
-            var p2 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y - baseRadius }, coordinates[0], angle);
+            var p1 = rotatePoint$1({ x: coordinates[0].x - baseRadius, y: coordinates[0].y }, coordinates[0], angle);
+            var p2 = rotatePoint$1({ x: coordinates[0].x - baseRadius, y: coordinates[0].y - baseRadius }, coordinates[0], angle);
             var arcs = [
                 __assign(__assign({}, p1), { r: baseRadius, startAngle: angle, endAngle: angle + Math.PI / 2 }),
                 __assign(__assign({}, p2), { r: baseRadius * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI })
@@ -5035,19 +5035,19 @@ var fibonacciSpiral = {
                         cy += arcs[i - 2].r;
                         break;
                 }
-                var center = rotatePoint({ x: cx, y: cy }, coordinates[0], angle);
+                var center = rotatePoint$1({ x: cx, y: cy }, coordinates[0], angle);
                 arcs.push(__assign(__assign({}, center), { r: r, startAngle: startAngle, endAngle: startAngle + Math.PI / 2 }));
             }
             return [
                 { type: 'arc', attrs: arcs },
-                { type: 'line', attrs: extendLine$1(coordinates, bounding) }
+                { type: 'line', attrs: extendLine$2(coordinates, bounding) }
             ];
         }
         return [];
     }
 };
 
-function extendLine(coords, bounding) {
+function extendLine$1(coords, bounding) {
     if (coords.length > 1) {
         var end = void 0;
         if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
@@ -5065,7 +5065,7 @@ function extendLine(coords, bounding) {
     }
     return [];
 }
-var fibonacciSpeedResistanceFan = {
+var fibonacciSpeedResistanceFan$1 = {
     name: 'fibonacciSpeedResistanceFan',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5088,8 +5088,8 @@ var fibonacciSpeedResistanceFan = {
                 var y = p1_1.y - dy_1 * p;
                 gridLines.push({ coordinates: [{ x: x, y: p0_1.y }, { x: x, y: p1_1.y }] });
                 gridLines.push({ coordinates: [{ x: p0_1.x, y: y }, { x: p1_1.x, y: y }] });
-                fanLines = fanLines.concat(extendLine([p0_1, { x: x, y: p1_1.y }], bounding));
-                fanLines = fanLines.concat(extendLine([p0_1, { x: p1_1.x, y: y }], bounding));
+                fanLines = fanLines.concat(extendLine$1([p0_1, { x: x, y: p1_1.y }], bounding));
+                fanLines = fanLines.concat(extendLine$1([p0_1, { x: p1_1.x, y: y }], bounding));
                 texts.unshift({ x: p0_1.x + textOffsetX_1, y: y + 10, text: "".concat(p.toFixed(3)) });
                 texts.unshift({ x: x - 18, y: p0_1.y + textOffsetY_1, text: "".concat(p.toFixed(3)) });
             });
@@ -5102,7 +5102,7 @@ var fibonacciSpeedResistanceFan = {
     }
 };
 
-var fibonacciDiagonal = {
+var fibonacciDiagonal$1 = {
     name: 'fibonacciDiagonal',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5149,7 +5149,7 @@ var fibonacciDiagonal = {
     }
 };
 
-var gannBox = {
+var gannBox$1 = {
     name: 'gannBox',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5223,12 +5223,12 @@ function createWaveOverlay(name, totalStep) {
         }
     };
 }
-var threeWaves = createWaveOverlay('threeWaves', 5);
-var fiveWaves = createWaveOverlay('fiveWaves', 7);
-var eightWaves = createWaveOverlay('eightWaves', 10);
-var anyWaves = createWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
+var threeWaves$1 = createWaveOverlay('threeWaves', 5);
+var fiveWaves$1 = createWaveOverlay('fiveWaves', 7);
+var eightWaves$1 = createWaveOverlay('eightWaves', 10);
+var anyWaves$1 = createWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
 
-var abcd = {
+var abcd$1 = {
     name: 'abcd',
     totalStep: 5,
     needDefaultPointFigure: true,
@@ -5258,7 +5258,7 @@ var abcd = {
     }
 };
 
-var xabcd = {
+var xabcd$1 = {
     name: 'xabcd',
     totalStep: 6,
     needDefaultPointFigure: true,
@@ -5311,7 +5311,7 @@ var elliotTripleComboWaves = {
     }
 };
 
-var headAndShoulders = {
+var headAndShoulders$1 = {
     name: 'headAndShoulders',
     totalStep: 8,
     needDefaultPointFigure: true,
@@ -5347,7 +5347,7 @@ var headAndShoulders = {
     }
 };
 
-var measure = {
+var measure$1 = {
     name: 'measure',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5432,7 +5432,7 @@ var measure = {
     }
 };
 
-var crossLine = {
+var crossLine$1 = {
     name: 'crossLine',
     totalStep: 2,
     needDefaultPointFigure: true,
@@ -5575,7 +5575,7 @@ var disJointChannel = {
     }
 };
 
-var arcOverlay = {
+var arcOverlay$1 = {
     name: 'arc',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5601,7 +5601,7 @@ var arcOverlay = {
     }
 };
 
-var tradingPlan = {
+var tradingPlan$1 = {
     name: 'tradingPlan',
     totalStep: 5,
     needDefaultPointFigure: true,
@@ -5704,13 +5704,13 @@ var extensions$1 = [
     straightLine, verticalRayLine, verticalSegment, verticalStraightLine,
     simpleAnnotation, simpleTag,
     // Pro overlays
-    arrow, circle$1, rect$1, triangle, parallelogram,
-    fibonacciCircle, fibonacciSegment, fibonacciExtension,
-    fibonacciSpiral, fibonacciSpeedResistanceFan, fibonacciDiagonal,
-    gannBox, threeWaves, fiveWaves, eightWaves, anyWaves,
-    abcd, xabcd, elliotTripleComboWaves, headAndShoulders,
-    measure, crossLine, flatTopBottom, disJointChannel,
-    arcOverlay, tradingPlan
+    arrow$1, circle$2, rect$2, triangle$1, parallelogram$1,
+    fibonacciCircle$1, fibonacciSegment$1, fibonacciExtension$1,
+    fibonacciSpiral$1, fibonacciSpeedResistanceFan$1, fibonacciDiagonal$1,
+    gannBox$1, threeWaves$1, fiveWaves$1, eightWaves$1, anyWaves$1,
+    abcd$1, xabcd$1, elliotTripleComboWaves, headAndShoulders$1,
+    measure$1, crossLine$1, flatTopBottom, disJointChannel,
+    arcOverlay$1, tradingPlan$1
 ];
 extensions$1.forEach(function (template) {
     overlays[template.name] = OverlayImp.extend(template);
@@ -7467,7 +7467,7 @@ var Canvas = /** @class */ (function () {
     Canvas.prototype._executeListener = function (fn) {
         var _this = this;
         if (this._requestAnimationId === DEFAULT_REQUEST_ID) {
-            this._requestAnimationId = requestAnimationFrame(function () {
+            this._requestAnimationId = requestAnimationFrame$1(function () {
                 _this._ctx.clearRect(0, 0, _this._width, _this._height);
                 fn === null || fn === void 0 ? void 0 : fn();
                 _this._listener();
@@ -7751,7 +7751,7 @@ function drawCircle(ctx, attrs, styles) {
         });
     }
 }
-var circle = {
+var circle$1 = {
     name: 'circle',
     checkEventOn: checkCoordinateOnCircle,
     draw: function (ctx, attrs, styles) {
@@ -7943,7 +7943,7 @@ function drawRect(ctx, attrs, styles) {
         });
     }
 }
-var rect = {
+var rect$1 = {
     name: 'rect',
     checkEventOn: checkCoordinateOnRect,
     draw: function (ctx, attrs, styles) {
@@ -8067,7 +8067,7 @@ var text = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function getDistance(coordinate1, coordinate2) {
+function getDistance$1(coordinate1, coordinate2) {
     var xDif = coordinate1.x - coordinate2.x;
     var yDif = coordinate1.y - coordinate2.y;
     return Math.sqrt(xDif * xDif + yDif * yDif);
@@ -8093,7 +8093,7 @@ function checkCoordinateOnArc(coordinate, attrs) {
     try {
         for (var arcs_1 = __values(arcs), arcs_1_1 = arcs_1.next(); !arcs_1_1.done; arcs_1_1 = arcs_1.next()) {
             var arc_1 = arcs_1_1.value;
-            if (Math.abs(getDistance(coordinate, arc_1) - arc_1.r) < DEVIATION) {
+            if (Math.abs(getDistance$1(coordinate, arc_1) - arc_1.r) < DEVIATION) {
                 var r = arc_1.r, startAngle = arc_1.startAngle, endAngle = arc_1.endAngle;
                 var startCoordinateX = r * Math.cos(startAngle) + arc_1.x;
                 var startCoordinateY = r * Math.sin(startAngle) + arc_1.y;
@@ -8388,7 +8388,7 @@ var path = {
  * limitations under the License.
  */
 var figures = {};
-var extensions = [circle, line, polygon, rect, text, arc, path];
+var extensions = [circle$1, line, polygon, rect$1, text, arc, path];
 extensions.forEach(function (figure) {
     figures[figure.name] = FigureImp.extend(figure);
 });
@@ -14250,7 +14250,7 @@ var Event = /** @class */ (function () {
                         if (time < 200 && Math.abs(v_1) > 0) {
                             var store_1 = this._chart.getChartStore();
                             var flingScroll_1 = function () {
-                                _this._flingScrollRequestId = requestAnimationFrame(function () {
+                                _this._flingScrollRequestId = requestAnimationFrame$1(function () {
                                     store_1.startScroll();
                                     store_1.scroll(v_1);
                                     v_1 = v_1 * (1 - 0.025);
@@ -15553,6 +15553,1232 @@ var ChartImp = /** @class */ (function () {
 }());
 
 /**
+ * EnsoCharts Pro — Custom overlay definitions (drawing tools)
+ * Ported from the old equicharts-pro bundle to TypeScript.
+ */
+// ── Helpers ──
+/** Rotate point `p` around `center` by `angle` radians */
+function rotatePoint(p, center, angle) {
+    var cos = Math.cos(angle);
+    var sin = Math.sin(angle);
+    return {
+        x: (p.x - center.x) * cos - (p.y - center.y) * sin + center.x,
+        y: (p.x - center.x) * sin + (p.y - center.y) * cos + center.y
+    };
+}
+/** Euclidean distance between two coordinates */
+function getDistance(a, b) {
+    var dx = Math.abs(a.x - b.x);
+    var dy = Math.abs(a.y - b.y);
+    return Math.sqrt(dx * dx + dy * dy);
+}
+/** Extend a line from coordinates[0] through coordinates[1] to the bounding edge */
+function extendLine(coords, bounding) {
+    if (coords.length > 1) {
+        var end = void 0;
+        if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
+            end = coords[0].y < coords[1].y
+                ? { x: coords[0].x, y: bounding.height }
+                : { x: coords[0].x, y: 0 };
+        }
+        else if (coords[0].x > coords[1].x) {
+            end = {
+                x: 0,
+                y: utils.getLinearYFromCoordinates(coords[0], coords[1], { x: 0, y: coords[0].y })
+            };
+        }
+        else {
+            end = {
+                x: bounding.width,
+                y: utils.getLinearYFromCoordinates(coords[0], coords[1], { x: bounding.width, y: coords[0].y })
+            };
+        }
+        return { coordinates: [coords[0], end] };
+    }
+    return [];
+}
+// ── Overlay Definitions ──
+var arrow = {
+    name: 'arrow',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var dir = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            var si = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            var angle = void 0;
+            if (si) {
+                angle = Math.atan(si[0]) + Math.PI * dir;
+            }
+            else {
+                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
+            }
+            var a1 = rotatePoint({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
+            var a2 = rotatePoint({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
+            return [
+                { type: 'line', attrs: { coordinates: coordinates } },
+                { type: 'line', ignoreEvent: true, attrs: { coordinates: [a1, coordinates[1], a2] } }
+            ];
+        }
+        return [];
+    }
+};
+var circle = {
+    name: 'circle',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { circle: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var r = getDistance(coordinates[0], coordinates[1]);
+            return { type: 'circle', attrs: __assign(__assign({}, coordinates[0]), { r: r }), styles: { style: 'stroke_fill' } };
+        }
+        return [];
+    }
+};
+var rect = {
+    name: 'rect',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            return [{
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0],
+                            { x: coordinates[1].x, y: coordinates[0].y },
+                            coordinates[1],
+                            { x: coordinates[0].x, y: coordinates[1].y }
+                        ]
+                    },
+                    styles: { style: 'stroke_fill' }
+                }];
+        }
+        return [];
+    }
+};
+var parallelogram = {
+    name: 'parallelogram',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length === 2) {
+            return [{ type: 'line', ignoreEvent: true, attrs: { coordinates: coordinates } }];
+        }
+        if (coordinates.length === 3) {
+            var d = {
+                x: coordinates[0].x + coordinates[2].x - coordinates[1].x,
+                y: coordinates[0].y + coordinates[2].y - coordinates[1].y
+            };
+            return [{
+                    type: 'polygon',
+                    attrs: { coordinates: [coordinates[0], coordinates[1], coordinates[2], d] },
+                    styles: { style: 'stroke_fill' }
+                }];
+        }
+        return [];
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        if (performPointIndex < 2) {
+            points[0].price = performPoint.price;
+            points[1].price = performPoint.price;
+        }
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        if (currentStep === 2) {
+            points[0].price = performPoint.price;
+        }
+    }
+};
+var triangle = {
+    name: 'triangle',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        return [{ type: 'polygon', attrs: { coordinates: coordinates }, styles: { style: 'stroke_fill' } }];
+    }
+};
+var fibonacciCircle = {
+    name: 'fibonacciCircle',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var dx = Math.abs(coordinates[0].x - coordinates[1].x);
+            var dy = Math.abs(coordinates[0].y - coordinates[1].y);
+            var radius_1 = Math.sqrt(dx * dx + dy * dy);
+            var levels = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            var circles_1 = [];
+            var labels_1 = [];
+            levels.forEach(function (l) {
+                var r = radius_1 * l;
+                circles_1.push(__assign(__assign({}, coordinates[0]), { r: r }));
+                labels_1.push({ x: coordinates[0].x, y: coordinates[0].y + r + 6, text: "".concat((l * 100).toFixed(1), "%") });
+            });
+            return [
+                { type: 'circle', attrs: circles_1, styles: { style: 'stroke' } },
+                { type: 'text', ignoreEvent: true, attrs: labels_1 }
+            ];
+        }
+        return [];
+    }
+};
+var fibonacciSegment = {
+    name: 'fibonacciSegment',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var lines = [];
+        var labels = [];
+        if (coordinates.length > 1) {
+            var leftX_1 = coordinates[1].x > coordinates[0].x ? coordinates[0].x : coordinates[1].x;
+            var levels = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+            var coordDiff_1 = coordinates[0].y - coordinates[1].y;
+            var points_1 = overlay.points;
+            var valueDiff_1 = points_1[0].value - points_1[1].value;
+            levels.forEach(function (l) {
+                var y = coordinates[1].y + coordDiff_1 * l;
+                var price = (points_1[1].value + valueDiff_1 * l).toFixed(2);
+                lines.push({ coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }] });
+                labels.push({ x: leftX_1, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
+            });
+        }
+        return [
+            { type: 'line', attrs: lines },
+            { type: 'text', ignoreEvent: true, attrs: labels }
+        ];
+    }
+};
+var fibonacciSpiral = {
+    name: 'fibonacciSpiral',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        if (coordinates.length > 1) {
+            var baseR = getDistance(coordinates[0], coordinates[1]) / Math.sqrt(24);
+            var dir = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            var si = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            var angle = void 0;
+            if (si) {
+                angle = Math.atan(si[0]) + Math.PI * dir;
+            }
+            else {
+                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
+            }
+            var c1 = rotatePoint({ x: coordinates[0].x - baseR, y: coordinates[0].y }, coordinates[0], angle);
+            var c2 = rotatePoint({ x: coordinates[0].x - baseR, y: coordinates[0].y - baseR }, coordinates[0], angle);
+            var arcs = [
+                __assign(__assign({}, c1), { r: baseR, startAngle: angle, endAngle: angle + Math.PI / 2 }),
+                __assign(__assign({}, c2), { r: baseR * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI })
+            ];
+            var cx = coordinates[0].x - baseR;
+            var cy = coordinates[0].y - baseR;
+            for (var i = 2; i < 9; i++) {
+                var r = arcs[i - 2].r + arcs[i - 1].r;
+                var sa = 0;
+                switch (i % 4) {
+                    case 0:
+                        sa = angle;
+                        cx -= arcs[i - 2].r;
+                        break;
+                    case 1:
+                        sa = angle + Math.PI / 2;
+                        cy -= arcs[i - 2].r;
+                        break;
+                    case 2:
+                        sa = angle + Math.PI;
+                        cx += arcs[i - 2].r;
+                        break;
+                    case 3:
+                        sa = angle + Math.PI / 2 * 3;
+                        cy += arcs[i - 2].r;
+                        break;
+                }
+                var center = rotatePoint({ x: cx, y: cy }, coordinates[0], angle);
+                arcs.push(__assign(__assign({}, center), { r: r, startAngle: sa, endAngle: sa + Math.PI / 2 }));
+            }
+            return [
+                { type: 'arc', attrs: arcs },
+                { type: 'line', attrs: extendLine(coordinates, bounding) }
+            ];
+        }
+        return [];
+    }
+};
+var fibonacciSpeedResistanceFan = {
+    name: 'fibonacciSpeedResistanceFan',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        var gridLines = [];
+        var fanLines = [];
+        var labels = [];
+        if (coordinates.length > 1) {
+            var labelOffset_1 = coordinates[1].x > coordinates[0].x ? -38 : 4;
+            var labelOffsetY_1 = coordinates[1].y > coordinates[0].y ? -2 : 20;
+            var dx_1 = coordinates[1].x - coordinates[0].x;
+            var dy_1 = coordinates[1].y - coordinates[0].y;
+            var levels = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
+            levels.forEach(function (l) {
+                var x = coordinates[1].x - dx_1 * l;
+                var y = coordinates[1].y - dy_1 * l;
+                gridLines.push({ coordinates: [{ x: x, y: coordinates[0].y }, { x: x, y: coordinates[1].y }] });
+                gridLines.push({ coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }] });
+                fanLines = fanLines.concat(extendLine([coordinates[0], { x: x, y: coordinates[1].y }], bounding));
+                fanLines = fanLines.concat(extendLine([coordinates[0], { x: coordinates[1].x, y: y }], bounding));
+                labels.unshift({ x: coordinates[0].x + labelOffset_1, y: y + 10, text: "".concat(l.toFixed(3)) });
+                labels.unshift({ x: x - 18, y: coordinates[0].y + labelOffsetY_1, text: "".concat(l.toFixed(3)) });
+            });
+        }
+        return [
+            { type: 'line', attrs: gridLines },
+            { type: 'line', attrs: fanLines },
+            { type: 'text', ignoreEvent: true, attrs: labels }
+        ];
+    }
+};
+var fibonacciExtension = {
+    name: 'fibonacciExtension',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var lines = [];
+        var labels = [];
+        if (coordinates.length > 2) {
+            var points_2 = overlay.points;
+            var valueDiff_2 = points_2[1].value - points_2[0].value;
+            var coordDiff_2 = coordinates[1].y - coordinates[0].y;
+            var levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            var leftX_2 = coordinates[2].x > coordinates[1].x ? coordinates[1].x : coordinates[2].x;
+            levels.forEach(function (l) {
+                var y = coordinates[2].y + coordDiff_2 * l;
+                var price = (points_2[2].value + valueDiff_2 * l).toFixed(2);
+                lines.push({ coordinates: [{ x: coordinates[1].x, y: y }, { x: coordinates[2].x, y: y }] });
+                labels.push({ x: leftX_2, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
+            });
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates }, styles: { style: 'dashed' } },
+            { type: 'line', attrs: lines },
+            { type: 'text', ignoreEvent: true, attrs: labels }
+        ];
+    }
+};
+var gannBox = {
+    name: 'gannBox',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var e = coordinates;
+            var qy = (e[1].y - e[0].y) / 4;
+            var dx = e[1].x - e[0].x;
+            var dashes = [
+                { coordinates: [e[0], { x: e[1].x, y: e[1].y - qy }] },
+                { coordinates: [e[0], { x: e[1].x, y: e[1].y - qy * 2 }] },
+                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y + qy }] },
+                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y + qy * 2 }] },
+                { coordinates: [__assign({}, e[0]), { x: e[0].x + dx * 0.236, y: e[1].y }] },
+                { coordinates: [__assign({}, e[0]), { x: e[0].x + dx * 0.5, y: e[1].y }] },
+                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[0].x + dx * 0.236, y: e[0].y }] },
+                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[0].x + dx * 0.5, y: e[0].y }] }
+            ];
+            var cross = [
+                { coordinates: [e[0], e[1]] },
+                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y }] }
+            ];
+            return [
+                {
+                    type: 'line',
+                    attrs: [
+                        { coordinates: [e[0], { x: e[1].x, y: e[0].y }] },
+                        { coordinates: [{ x: e[1].x, y: e[0].y }, e[1]] },
+                        { coordinates: [e[1], { x: e[0].x, y: e[1].y }] },
+                        { coordinates: [{ x: e[0].x, y: e[1].y }, e[0]] }
+                    ]
+                },
+                {
+                    type: 'polygon', ignoreEvent: true,
+                    attrs: { coordinates: [e[0], { x: e[1].x, y: e[0].y }, e[1], { x: e[0].x, y: e[1].y }] },
+                    styles: { style: 'fill' }
+                },
+                { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
+                { type: 'line', attrs: cross }
+            ];
+        }
+        return [];
+    }
+};
+function makeWaveOverlay(name, totalStep) {
+    return {
+        name: name,
+        totalStep: totalStep,
+        needDefaultPointFigure: true,
+        needDefaultXAxisFigure: true,
+        needDefaultYAxisFigure: true,
+        createPointFigures: function (_a) {
+            var coordinates = _a.coordinates;
+            var labels = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { text: "(".concat(i, ")"), baseline: 'bottom' })); });
+            return [
+                { type: 'line', attrs: { coordinates: coordinates } },
+                { type: 'text', ignoreEvent: true, attrs: labels }
+            ];
+        }
+    };
+}
+var threeWaves = makeWaveOverlay('threeWaves', 5);
+var fiveWaves = makeWaveOverlay('fiveWaves', 7);
+var eightWaves = makeWaveOverlay('eightWaves', 10);
+var anyWaves = makeWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
+var abcd = {
+    name: 'abcd',
+    totalStep: 5,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var labels = ['A', 'B', 'C', 'D'];
+        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+        var diag1 = [];
+        var diag2 = [];
+        if (coordinates.length > 2) {
+            diag1 = [coordinates[0], coordinates[2]];
+            if (coordinates.length > 3)
+                diag2 = [coordinates[1], coordinates[3]];
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: [{ coordinates: diag1 }, { coordinates: diag2 }], styles: { style: 'dashed' } },
+            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+        ];
+    }
+};
+var xabcd = {
+    name: 'xabcd',
+    totalStep: 6,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var labels = ['X', 'A', 'B', 'C', 'D'];
+        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+        var dashes = [];
+        var polys = [];
+        if (coordinates.length > 2) {
+            dashes.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polys.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            if (coordinates.length > 3) {
+                dashes.push({ coordinates: [coordinates[1], coordinates[3]] });
+                if (coordinates.length > 4) {
+                    dashes.push({ coordinates: [coordinates[2], coordinates[4]] });
+                    polys.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                }
+            }
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
+            { type: 'polygon', ignoreEvent: true, attrs: polys },
+            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+        ];
+    }
+};
+var headAndShoulders = {
+    name: 'headAndShoulders',
+    totalStep: 8,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var labels = ['1', 'Left Shoulder', '2', 'Head', '3', 'Right Shoulder', '4'];
+        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: labels[i] })); });
+        var dashes = [];
+        var polys = [];
+        if (coordinates.length > 2) {
+            dashes.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polys.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            if (coordinates.length > 4) {
+                dashes.push({ coordinates: [coordinates[2], coordinates[4]] });
+                polys.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                if (coordinates.length > 6) {
+                    dashes.push({ coordinates: [coordinates[4], coordinates[6]] });
+                    polys.push({ coordinates: [coordinates[4], coordinates[5], coordinates[6]] });
+                }
+            }
+        }
+        return [
+            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
+            { type: 'polygon', ignoreEvent: true, attrs: polys },
+            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+        ];
+    }
+};
+var crossLine = {
+    name: 'crossLine',
+    totalStep: 2,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, bounding = _a.bounding;
+        return [
+            { type: 'line', attrs: { coordinates: [{ x: 0, y: coordinates[0].y }, { x: bounding.width, y: coordinates[0].y }] } },
+            { type: 'line', attrs: { coordinates: [{ x: coordinates[0].x, y: 0 }, { x: coordinates[0].x, y: bounding.height }] } }
+        ];
+    }
+};
+var measure = {
+    name: 'measure',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        backgroundColor: 'rgba(22, 119, 255, 0.25)',
+        tipBackgroundColor: '#1677FF',
+        lineColor: '#1677FF'
+    },
+    createPointFigures: function (_a) {
+        var _b, _c, _d, _e, _f;
+        var coordinates = _a.coordinates, overlay = _a.overlay, bounding = _a.bounding;
+        if (coordinates.length > 1) {
+            var v1 = (_b = overlay.points[1]) === null || _b === void 0 ? void 0 : _b.value;
+            var v0 = (_c = overlay.points[0]) === null || _c === void 0 ? void 0 : _c.value;
+            var pct = 0;
+            var diff = 0;
+            if (v0 !== undefined && v1 !== undefined) {
+                pct = (v1 - v0) / v0 * 100;
+                diff = v1 - v0;
+            }
+            var isRight = coordinates[0].x < coordinates[1].x;
+            var isDown = coordinates[0].y < coordinates[1].y;
+            var mid = { x: Math.round((coordinates[0].x + coordinates[1].x) / 2), y: Math.round((coordinates[0].y + coordinates[1].y) / 2) };
+            var bgColor = (_d = overlay.styles) === null || _d === void 0 ? void 0 : _d.backgroundColor;
+            var tipColor = (_e = overlay.styles) === null || _e === void 0 ? void 0 : _e.tipBackgroundColor;
+            var lineColor = (_f = overlay.styles) === null || _f === void 0 ? void 0 : _f.lineColor;
+            var text = "".concat(diff.toFixed(2), " (").concat(pct.toFixed(2), "%)");
+            var figs = [
+                {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0],
+                            { x: coordinates[1].x, y: coordinates[0].y },
+                            coordinates[1],
+                            { x: coordinates[0].x, y: coordinates[1].y }
+                        ]
+                    },
+                    styles: { color: bgColor }
+                },
+                { type: 'line', attrs: { coordinates: [{ x: coordinates[0].x, y: mid.y }, { x: coordinates[1].x, y: mid.y }] }, styles: { color: lineColor } },
+                { type: 'line', attrs: { coordinates: [{ x: mid.x, y: coordinates[0].y }, { x: mid.x, y: coordinates[1].y }] }, styles: { color: lineColor } }
+            ];
+            // Arrow heads
+            if (isRight) {
+                figs.push({ type: 'line', attrs: { coordinates: [{ x: coordinates[1].x - 6, y: mid.y - 4 }, { x: coordinates[1].x, y: mid.y }, { x: coordinates[1].x - 6, y: mid.y + 4 }] } });
+            }
+            else {
+                figs.push({ type: 'line', attrs: { coordinates: [{ x: coordinates[1].x + 6, y: mid.y - 4 }, { x: coordinates[1].x, y: mid.y }, { x: coordinates[1].x + 6, y: mid.y + 4 }] } });
+            }
+            if (isDown) {
+                figs.push({ type: 'line', attrs: { coordinates: [{ x: mid.x - 4, y: coordinates[1].y - 6 }, { x: mid.x, y: coordinates[1].y }, { x: mid.x + 4, y: coordinates[1].y - 6 }] }, styles: { color: lineColor } });
+            }
+            else {
+                figs.push({ type: 'line', attrs: { coordinates: [{ x: mid.x - 4, y: coordinates[1].y + 6 }, { x: mid.x, y: coordinates[1].y }, { x: mid.x + 4, y: coordinates[1].y + 6 }] }, styles: { color: lineColor } });
+            }
+            // Label
+            var textWidth = Math.max(utils.calcTextWidth(text), 80) + 24;
+            var textHeight = 28;
+            var textY = void 0;
+            if (isDown) {
+                textY = coordinates[1].y + 8 + textHeight > bounding.height ? bounding.height - textHeight : coordinates[1].y + 8;
+            }
+            else {
+                textY = coordinates[1].y - 8 - textHeight < 0 ? 0 : coordinates[1].y - 8 - textHeight;
+            }
+            figs.push({
+                type: 'rect',
+                attrs: { x: mid.x - textWidth / 2, y: textY, width: textWidth, height: textHeight },
+                styles: { borderRadius: 4, color: tipColor }
+            });
+            figs.push({
+                type: 'text',
+                attrs: { x: mid.x, y: textY + 8, text: text, align: 'center' },
+                styles: { paddingLeft: 0, paddingTop: 0, paddingRight: 0, paddingBottom: 0, backgroundColor: 'none', family: 'Space Grotesk, sans-serif' }
+            });
+            return figs;
+        }
+        return [];
+    }
+};
+var fibonacciDiagonal = {
+    name: 'fibonacciDiagonal',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates, overlay = _a.overlay;
+        var points = overlay.points;
+        if (coordinates.length > 0) {
+            var lines_1 = [];
+            var labels_2 = [];
+            var leftX_3 = coordinates[0].x;
+            var rightX_1 = coordinates[coordinates.length - 1].x;
+            if (coordinates.length > 1 && points[0].value !== undefined && points[1].value !== undefined) {
+                var levels = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+                var coordDiff_3 = coordinates[0].y - coordinates[1].y;
+                var valueDiff_3 = points[0].value - points[1].value;
+                levels.forEach(function (l) {
+                    var y = coordinates[1].y + coordDiff_3 * l;
+                    var price = (points[1].value + valueDiff_3 * l).toFixed(2);
+                    lines_1.push({ coordinates: [{ x: leftX_3, y: y }, { x: rightX_1, y: y }] });
+                    labels_2.push({ x: leftX_3, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
+                });
+                // Diagonal line
+                lines_1.push({
+                    coordinates: [
+                        { x: lines_1[0].coordinates[0].x, y: lines_1[0].coordinates[0].y },
+                        { x: lines_1[levels.length - 1].coordinates[1].x, y: lines_1[levels.length - 1].coordinates[1].y }
+                    ]
+                });
+            }
+            return [
+                { type: 'line', attrs: lines_1 },
+                { type: 'text', ignoreEvent: true, attrs: labels_2 }
+            ];
+        }
+        return [];
+    }
+};
+var tradingPlan = {
+    name: 'tradingPlan',
+    totalStep: 5,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: false,
+    needDefaultYAxisFigure: true,
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        var len = coordinates.length;
+        if (len >= 2) {
+            if (len === 2)
+                return [{ type: 'line', attrs: { coordinates: coordinates } }];
+            if (len >= 3) {
+                var risk = {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0], coordinates[1],
+                            { x: coordinates[1].x, y: coordinates[2].y },
+                            { x: coordinates[0].x, y: coordinates[2].y }
+                        ]
+                    },
+                    styles: { style: 'fill', color: '#DE46464f' }
+                };
+                if (len === 3)
+                    return [risk];
+                var reward = {
+                    type: 'polygon',
+                    attrs: {
+                        coordinates: [
+                            coordinates[0], coordinates[1],
+                            { x: coordinates[1].x, y: coordinates[3].y },
+                            { x: coordinates[0].x, y: coordinates[3].y }
+                        ]
+                    },
+                    styles: { style: 'fill', color: '#03ca9b2f' }
+                };
+                return [risk, reward];
+            }
+        }
+        return [];
+    },
+    performEventMoveForDrawing: function (_a) {
+        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+        switch (currentStep) {
+            case 2:
+                points[0].value = performPoint.value;
+                break;
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+            case 4:
+                points[1].timestamp = points[2].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[2].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    },
+    performEventPressedMove: function (_a) {
+        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+        switch (performPointIndex) {
+            case 0:
+                points[1].value = performPoint.value;
+                break;
+            case 1:
+                points[0].value = performPoint.value;
+                points[2].timestamp = points[3].timestamp = performPoint.timestamp;
+                points[2].dataIndex = points[3].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = points[3].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[3].dataIndex = performPoint.dataIndex;
+                break;
+            case 3:
+                points[1].timestamp = points[2].timestamp = performPoint.timestamp;
+                points[1].dataIndex = points[2].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    }
+};
+var arcOverlay = {
+    name: 'arc',
+    totalStep: 3,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: { arc: { color: 'rgba(22, 119, 255)' } },
+    createPointFigures: function (_a) {
+        var coordinates = _a.coordinates;
+        if (coordinates.length > 1) {
+            var cx = (coordinates[0].x + coordinates[1].x) / 2;
+            var cy = (coordinates[0].y + coordinates[1].y) / 2;
+            var r = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
+                Math.pow(coordinates[1].y - coordinates[0].y, 2)) / 2;
+            return [{ type: 'arc', attrs: { x: cx, y: cy, r: r, startAngle: 0, endAngle: Math.PI }, styles: { style: 'solid' } }];
+        }
+        return [];
+    }
+};
+/** All custom overlay definitions to register */
+var proOverlays = [
+    arrow,
+    circle,
+    rect,
+    triangle,
+    parallelogram,
+    fibonacciCircle,
+    fibonacciSegment,
+    fibonacciSpiral,
+    fibonacciSpeedResistanceFan,
+    fibonacciExtension,
+    gannBox,
+    threeWaves,
+    fiveWaves,
+    eightWaves,
+    anyWaves,
+    abcd,
+    xabcd,
+    headAndShoulders,
+    measure,
+    crossLine,
+    fibonacciDiagonal,
+    tradingPlan,
+    arcOverlay
+];
+/** Overlay names grouped by drawing bar category */
+var overlayGroups = {
+    lines: ['arrow'],
+    shapes: ['circle', 'rect', 'triangle', 'parallelogram', 'arc'],
+    fibonacci: ['fibonacciSegment', 'fibonacciCircle', 'fibonacciSpiral', 'fibonacciSpeedResistanceFan', 'fibonacciExtension', 'fibonacciDiagonal'],
+    gann: ['gannBox'],
+    waves: ['threeWaves', 'fiveWaves', 'eightWaves', 'anyWaves'],
+    patterns: ['abcd', 'xabcd', 'headAndShoulders'],
+    measure: ['measure', 'crossLine', 'tradingPlan']
+};
+
+/**
+ * EnsoCharts Pro — DrawingBar component (vanilla TS/DOM, no framework dependency)
+ *
+ * A vertical toolbar for selecting drawing overlay tools.
+ * Renders tool groups with expandable sub-menus.
+ */
+/** SVG icon paths for drawing tool categories */
+var icons = {
+    lines: '<path d="M3 17l6-6 4 4L21 7"/>',
+    shapes: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
+    fibonacci: '<path d="M3 21V9a9 9 0 0 1 9-9h9"/>',
+    gann: '<path d="M3 3v18h18"/><path d="M3 21L21 3"/>',
+    waves: '<path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>',
+    patterns: '<path d="M3 21l5-5m0 0l4 4m-4-4l4-4m4 4l5-5"/>',
+    measure: '<path d="M3 3v18h18"/><path d="M7 17V7h10"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+    visible: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    remove: '<path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>'
+};
+function svgIcon(pathContent, size) {
+    if (size === void 0) { size = 18; }
+    return "<svg width=\"".concat(size, "\" height=\"").concat(size, "\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">").concat(pathContent, "</svg>");
+}
+var DrawingBar = /** @class */ (function () {
+    function DrawingBar(options) {
+        var _this = this;
+        this._activeGroup = null;
+        this._submenu = null;
+        this._container = document.createElement('div');
+        this._container.className = 'equicharts-drawing-bar';
+        var groups = Object.entries(overlayGroups);
+        groups.forEach(function (_a) {
+            var _b;
+            var _c = __read(_a, 2), groupName = _c[0], tools = _c[1];
+            var item = document.createElement('div');
+            item.className = 'equicharts-drawing-bar__item';
+            item.title = groupName;
+            item.innerHTML = svgIcon((_b = icons[groupName]) !== null && _b !== void 0 ? _b : icons.lines);
+            if (tools.length === 1) {
+                item.addEventListener('click', function () {
+                    var _a;
+                    _this._setActiveTool(tools[0], item);
+                    (_a = options.onDrawingItemClick) === null || _a === void 0 ? void 0 : _a.call(options, tools[0]);
+                });
+            }
+            else {
+                // Has submenu
+                var arrow = document.createElement('span');
+                arrow.className = 'equicharts-drawing-bar__arrow';
+                arrow.innerHTML = '<svg width="6" height="6" viewBox="0 0 4 6"><path d="M1 0.16C0.83-0.05 0.43-0.05 0.18 0.16C-0.06 0.37-0.06 0.72 0.18 0.93L2.61 3.03L0.26 5.07C0.01 5.28 0.01 5.63 0.26 5.84C0.51 6.05 0.9 6.05 1.15 5.84L3.82 3.53C4.02 3.36 4.05 3.09 3.92 2.88C3.93 2.73 3.87 2.58 3.74 2.47L1 0.16Z" fill="currentColor"/></svg>';
+                item.appendChild(arrow);
+                item.addEventListener('click', function (ev) {
+                    ev.stopPropagation();
+                    _this._toggleSubmenu(groupName, tools, item, options);
+                });
+            }
+            _this._container.appendChild(item);
+        });
+        // Separator
+        var sep = document.createElement('span');
+        sep.className = 'equicharts-drawing-bar__sep';
+        this._container.appendChild(sep);
+        // Mode toggle (weak/strong magnet)
+        var modeBtn = document.createElement('div');
+        modeBtn.className = 'equicharts-drawing-bar__item';
+        modeBtn.title = 'Magnet Mode';
+        modeBtn.innerHTML = svgIcon('<path d="M12 2a4 4 0 014 4v6a4 4 0 01-8 0V6a4 4 0 014-4z"/>', 16);
+        var currentMode = 'normal';
+        modeBtn.addEventListener('click', function () {
+            var _a;
+            currentMode = currentMode === 'normal' ? 'weak_magnet' : currentMode === 'weak_magnet' ? 'strong_magnet' : 'normal';
+            modeBtn.classList.toggle('active', currentMode !== 'normal');
+            (_a = options.onModeChange) === null || _a === void 0 ? void 0 : _a.call(options, currentMode);
+        });
+        this._container.appendChild(modeBtn);
+        // Lock toggle
+        var lockBtn = document.createElement('div');
+        lockBtn.className = 'equicharts-drawing-bar__item';
+        lockBtn.title = 'Lock Drawings';
+        lockBtn.innerHTML = svgIcon(icons.lock, 16);
+        var locked = false;
+        lockBtn.addEventListener('click', function () {
+            var _a;
+            locked = !locked;
+            lockBtn.classList.toggle('active', locked);
+            (_a = options.onLockChange) === null || _a === void 0 ? void 0 : _a.call(options, locked);
+        });
+        this._container.appendChild(lockBtn);
+        // Visibility toggle
+        var visBtn = document.createElement('div');
+        visBtn.className = 'equicharts-drawing-bar__item';
+        visBtn.title = 'Show/Hide Drawings';
+        visBtn.innerHTML = svgIcon(icons.visible, 16);
+        var visible = true;
+        visBtn.addEventListener('click', function () {
+            var _a;
+            visible = !visible;
+            visBtn.classList.toggle('active', !visible);
+            (_a = options.onVisibleChange) === null || _a === void 0 ? void 0 : _a.call(options, visible);
+        });
+        this._container.appendChild(visBtn);
+        // Remove all
+        var removeBtn = document.createElement('div');
+        removeBtn.className = 'equicharts-drawing-bar__item';
+        removeBtn.title = 'Remove All Drawings';
+        removeBtn.innerHTML = svgIcon(icons.remove, 16);
+        removeBtn.addEventListener('click', function () {
+            var _a;
+            (_a = options.onRemoveClick) === null || _a === void 0 ? void 0 : _a.call(options);
+        });
+        this._container.appendChild(removeBtn);
+        // Click outside closes submenu
+        document.addEventListener('click', function () { return _this._closeSubmenu(); });
+    }
+    Object.defineProperty(DrawingBar.prototype, "element", {
+        get: function () {
+            return this._container;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    DrawingBar.prototype.destroy = function () {
+        this._closeSubmenu();
+        this._container.remove();
+    };
+    DrawingBar.prototype._setActiveTool = function (_name, btn) {
+        this._container.querySelectorAll('.equicharts-drawing-bar__item').forEach(function (el) { return el.classList.remove('selected'); });
+        btn.classList.add('selected');
+    };
+    DrawingBar.prototype._toggleSubmenu = function (groupName, tools, anchor, options) {
+        var _this = this;
+        if (this._activeGroup === groupName && this._submenu) {
+            this._closeSubmenu();
+            return;
+        }
+        this._closeSubmenu();
+        this._activeGroup = groupName;
+        var menu = document.createElement('div');
+        menu.className = 'equicharts-drawing-bar__submenu';
+        tools.forEach(function (tool) {
+            var li = document.createElement('div');
+            li.className = 'equicharts-drawing-bar__submenu-item';
+            li.textContent = tool;
+            li.addEventListener('click', function (ev) {
+                var _a;
+                ev.stopPropagation();
+                _this._setActiveTool(tool, anchor);
+                (_a = options.onDrawingItemClick) === null || _a === void 0 ? void 0 : _a.call(options, tool);
+                _this._closeSubmenu();
+            });
+            menu.appendChild(li);
+        });
+        // Position next to anchor
+        var rect = anchor.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.left = "".concat(rect.right + 4, "px");
+        menu.style.top = "".concat(rect.top, "px");
+        document.body.appendChild(menu);
+        this._submenu = menu;
+    };
+    DrawingBar.prototype._closeSubmenu = function () {
+        if (this._submenu) {
+            this._submenu.remove();
+            this._submenu = null;
+            this._activeGroup = null;
+        }
+    };
+    return DrawingBar;
+}());
+
+/**
+ * EnsoCharts Pro — ChartMain wrapper
+ *
+ * Wraps the core equicharts `init()` with:
+ * - Drawing bar (with all tool groups)
+ * - Corner toggle button (chevron to show/hide drawing bar)
+ * - Canvas auto-resize when drawing bar shows/hides
+ * - Floating-headers hover integration
+ * - Overlay tool registration
+ * - Dark theme defaults
+ */
+// Register all pro overlays once
+var _overlaysRegistered = false;
+function ensureOverlaysRegistered() {
+    if (_overlaysRegistered)
+        return;
+    proOverlays.forEach(function (o) { registerOverlay(o); });
+    _overlaysRegistered = true;
+}
+var ChartMain = /** @class */ (function () {
+    function ChartMain(options) {
+        var _this = this;
+        var _a, _b, _c, _d;
+        this._chart = null;
+        this._drawingBar = null;
+        this._cornerBtn = null;
+        this._drawingBarEl = null;
+        ensureOverlaysRegistered();
+        // Resolve container
+        if (typeof options.container === 'string') {
+            var el = document.getElementById(options.container);
+            if (!el)
+                throw new Error('BUG: ChartMain container not found');
+            this._container = el;
+        }
+        else {
+            this._container = options.container;
+        }
+        this._container.classList.add('equicharts');
+        this._container.setAttribute('data-theme', (_a = options.theme) !== null && _a !== void 0 ? _a : 'dark');
+        this._drawingBarVisible = (_b = options.drawingBarVisible) !== null && _b !== void 0 ? _b : false;
+        // Layout: [drawing-bar] [chart-canvas]
+        // Use flex row — drawing bar on left, chart fills remaining space
+        this._container.style.display = 'flex';
+        this._container.style.flexDirection = 'row';
+        this._container.style.width = '100%';
+        this._container.style.height = '100%';
+        this._container.style.position = 'relative';
+        // Chart wrapper (takes remaining space)
+        this._chartWrapper = document.createElement('div');
+        this._chartWrapper.className = 'equicharts-chart-wrapper';
+        this._chartWrapper.style.flex = '1';
+        this._chartWrapper.style.minWidth = '0';
+        this._chartWrapper.style.height = '100%';
+        // Init core chart
+        var chart = init(this._chartWrapper);
+        if (!chart)
+            throw new Error('BUG: equicharts init() returned null');
+        this._chart = chart;
+        // Drawing bar
+        this._drawingBar = new DrawingBar({
+            chart: chart,
+            onDrawingItemClick: function (name) { chart.createOverlay(name); },
+            onModeChange: function (mode) { chart.overrideOverlay({ mode: mode }); },
+            onLockChange: function (locked) { chart.overrideOverlay({ lock: locked }); },
+            onVisibleChange: function (visible) { chart.overrideOverlay({ visible: visible }); },
+            onRemoveClick: function () { chart.removeOverlay(); }
+        });
+        this._drawingBarEl = this._drawingBar.element;
+        // Insert drawing bar before chart
+        if (this._drawingBarVisible) {
+            this._container.appendChild(this._drawingBarEl);
+        }
+        this._container.appendChild(this._chartWrapper);
+        // Corner toggle button
+        this._cornerBtn = document.createElement('div');
+        this._cornerBtn.className = 'equicharts-corner-btn';
+        this._cornerBtn.title = 'Toggle Drawing Tools';
+        this._cornerBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:rotate(-90deg)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>';
+        this._cornerBtn.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            _this.toggleDrawingBar();
+        });
+        this._container.appendChild(this._cornerBtn);
+        // Update corner button rotation based on visibility
+        this._updateCornerBtn();
+        // Floating-headers hover integration
+        var hideTimer = null;
+        var userDismissed = false;
+        this._cornerBtn.addEventListener('click', function () {
+            if (_this._drawingBarVisible) {
+                userDismissed = true;
+            }
+            else {
+                userDismissed = false;
+            }
+        });
+        this._container.addEventListener('mouseenter', function () {
+            if (!document.body.hasAttribute('data-floating-headers'))
+                return;
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+            if (userDismissed)
+                return;
+            if (!_this._drawingBarVisible) {
+                _this._showDrawingBar();
+            }
+        });
+        this._container.addEventListener('mouseleave', function () {
+            if (!document.body.hasAttribute('data-floating-headers'))
+                return;
+            if (userDismissed)
+                return;
+            hideTimer = setTimeout(function () {
+                if (_this._drawingBarVisible) {
+                    _this._hideDrawingBar();
+                }
+            }, 200);
+        });
+        // Apply default dark theme styles
+        if (options.theme !== 'light') {
+            chart.setStyles({
+                grid: {
+                    show: true,
+                    horizontal: { color: 'rgba(255, 255, 255, 0.04)' },
+                    vertical: { color: 'rgba(255, 255, 255, 0.04)' }
+                },
+                candle: {
+                    type: 'candle_solid',
+                    bar: { upColor: '#03ca9b', downColor: '#DE4645' },
+                    priceMark: {
+                        high: { show: true },
+                        low: { show: true },
+                        last: { show: true, line: { show: true } }
+                    },
+                    tooltip: { showRule: 'follow_cross', showType: 'rect' }
+                },
+                indicator: { tooltip: { showRule: 'follow_cross' } },
+                xAxis: { tickText: { color: 'rgba(255, 255, 255, 0.5)' } },
+                yAxis: { tickText: { color: 'rgba(255, 255, 255, 0.5)' } },
+                crosshair: {
+                    horizontal: {
+                        line: { color: 'rgba(255, 255, 255, 0.3)' },
+                        text: { backgroundColor: '#333' }
+                    },
+                    vertical: {
+                        line: { color: 'rgba(255, 255, 255, 0.3)' },
+                        text: { backgroundColor: '#333' }
+                    }
+                },
+                separator: { color: 'rgba(255, 255, 255, 0.08)' }
+            });
+        }
+        // Apply custom styles
+        if (options.styles) {
+            chart.setStyles(options.styles);
+        }
+        // Default indicators
+        var mainInds = (_c = options.mainIndicators) !== null && _c !== void 0 ? _c : ['MA'];
+        mainInds.forEach(function (name) { chart.createIndicator(name, false, { id: 'candle_pane' }); });
+        var subInds = (_d = options.subIndicators) !== null && _d !== void 0 ? _d : ['VOL'];
+        subInds.forEach(function (name) { chart.createIndicator(name); });
+        // Set symbol
+        if (options.symbol) {
+            chart.setSymbol(options.symbol);
+        }
+        // Set period
+        if (options.period) {
+            chart.setPeriod({ type: options.period.timespan, span: options.period.multiplier });
+        }
+        // Update --drawing-bar-w CSS variable
+        this._updateDrawingBarWidth();
+    }
+    // ── Public API ──
+    ChartMain.prototype.getChart = function () { return this._chart; };
+    ChartMain.prototype.setTheme = function (theme) {
+        var _a;
+        this._container.setAttribute('data-theme', theme);
+        (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setStyles(theme);
+    };
+    ChartMain.prototype.getTheme = function () { var _a; return (_a = this._container.getAttribute('data-theme')) !== null && _a !== void 0 ? _a : 'dark'; };
+    ChartMain.prototype.setStyles = function (styles) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setStyles(styles); };
+    ChartMain.prototype.getStyles = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getStyles(); };
+    ChartMain.prototype.setLocale = function (locale) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setLocale(locale); };
+    ChartMain.prototype.getLocale = function () { var _a, _b; return (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getLocale()) !== null && _b !== void 0 ? _b : 'en-US'; };
+    ChartMain.prototype.setSymbol = function (symbol) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setSymbol(symbol); };
+    ChartMain.prototype.getSymbol = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getSymbol(); };
+    ChartMain.prototype.setPeriod = function (period) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setPeriod({ type: period.timespan, span: period.multiplier }); };
+    ChartMain.prototype.getPeriod = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getPeriod(); };
+    ChartMain.prototype.setYScrolling = function (enabled) { var _a, _b; (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setYScrolling) === null || _b === void 0 ? void 0 : _b.call(_a, enabled); };
+    ChartMain.prototype.getYScrolling = function () { var _a, _b, _c; return (_c = (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getYScrolling) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : true; };
+    ChartMain.prototype.resize = function () { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.resize(); };
+    ChartMain.prototype.setDataLoader = function (loader) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setDataLoader(loader); };
+    ChartMain.prototype.createOverlay = function (name, paneId) {
+        var _a;
+        return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.createOverlay(paneId ? { name: name, paneId: paneId } : name);
+    };
+    ChartMain.prototype.overrideOverlay = function (opts) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.overrideOverlay(opts); };
+    ChartMain.prototype.removeOverlay = function (opts) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.removeOverlay(opts); };
+    ChartMain.prototype.createIndicator = function (name, isStack, paneOptions) {
+        var _a;
+        return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.createIndicator(name, isStack !== null && isStack !== void 0 ? isStack : false, paneOptions);
+    };
+    ChartMain.prototype.removeIndicator = function (paneId, name) {
+        var _a;
+        (_a = this._chart) === null || _a === void 0 ? void 0 : _a.removeIndicator(name ? { paneId: paneId, name: name } : { paneId: paneId });
+    };
+    ChartMain.prototype.getConvertPictureUrl = function (withWatermark, type, bgColor) {
+        var _a, _b;
+        return (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getConvertPictureUrl(withWatermark, type, bgColor)) !== null && _b !== void 0 ? _b : '';
+    };
+    ChartMain.prototype.toggleDrawingBar = function () {
+        if (this._drawingBarVisible) {
+            this._hideDrawingBar();
+        }
+        else {
+            this._showDrawingBar();
+        }
+    };
+    ChartMain.prototype.getDrawingBarVisible = function () { return this._drawingBarVisible; };
+    ChartMain.prototype.toggleIndicators = function () {
+        // Future: toggle sub-indicator panes
+    };
+    ChartMain.prototype.destroy = function () {
+        var _a, _b;
+        (_a = this._drawingBar) === null || _a === void 0 ? void 0 : _a.destroy();
+        if (this._chartWrapper) {
+            dispose(this._chartWrapper);
+        }
+        (_b = this._cornerBtn) === null || _b === void 0 ? void 0 : _b.remove();
+        this._chart = null;
+    };
+    // ── Private ──
+    ChartMain.prototype._showDrawingBar = function () {
+        var _this = this;
+        if (this._drawingBarVisible || !this._drawingBarEl)
+            return;
+        this._drawingBarVisible = true;
+        this._container.insertBefore(this._drawingBarEl, this._chartWrapper);
+        this._updateCornerBtn();
+        this._updateDrawingBarWidth();
+        requestAnimationFrame(function () { var _a; (_a = _this._chart) === null || _a === void 0 ? void 0 : _a.resize(); });
+    };
+    ChartMain.prototype._hideDrawingBar = function () {
+        var _this = this;
+        if (!this._drawingBarVisible || !this._drawingBarEl)
+            return;
+        this._drawingBarVisible = false;
+        this._drawingBarEl.remove();
+        this._updateCornerBtn();
+        this._updateDrawingBarWidth();
+        requestAnimationFrame(function () { var _a; (_a = _this._chart) === null || _a === void 0 ? void 0 : _a.resize(); });
+    };
+    ChartMain.prototype._updateCornerBtn = function () {
+        if (!this._cornerBtn)
+            return;
+        var svg = this._cornerBtn.querySelector('svg');
+        if (svg) {
+            svg.style.transform = this._drawingBarVisible ? 'rotate(-90deg)' : 'rotate(90deg)';
+        }
+    };
+    ChartMain.prototype._updateDrawingBarWidth = function () {
+        if (this._drawingBarVisible && this._drawingBarEl) {
+            var w = this._drawingBarEl.offsetWidth;
+            this._container.style.setProperty('--drawing-bar-w', "".concat(w, "px"));
+        }
+        else {
+            this._container.style.setProperty('--drawing-bar-w', '0px');
+        }
+    };
+    return ChartMain;
+}());
+
+/**
  *       ___           ___                   ___           ___           ___           ___           ___           ___           ___
  *      /\__\         /\__\      ___        /\__\         /\  \         /\  \         /\__\         /\  \         /\  \         /\  \
  *     /:/  /        /:/  /     /\  \      /::|  |       /::\  \       /::\  \       /:/  /        /::\  \       /::\  \        \:\  \
@@ -15670,4 +16896,4 @@ var utils = {
     checkCoordinateOnText: checkCoordinateOnText
 };
 
-export { dispose, getFigureClass, getOverlayClass, getSupportedFigures, getSupportedIndicators, getSupportedLocales, getSupportedOverlays, init, registerFigure, registerIndicator, registerLocale, registerOverlay, registerStyles, registerXAxis, registerYAxis, utils, version };
+export { ChartMain, DrawingBar, dispose, getFigureClass, getOverlayClass, getSupportedFigures, getSupportedIndicators, getSupportedLocales, getSupportedOverlays, init, overlayGroups, proOverlays, registerFigure, registerIndicator, registerLocale, registerOverlay, registerStyles, registerXAxis, registerYAxis, utils, version };
