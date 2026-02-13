@@ -17,6 +17,9 @@ export type PeriodType = 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month'
 export interface Period {
   type: PeriodType
   span: number
+  text: string
+  timespan: PeriodType
+  multiplier: number
 }
 
 export const PeriodTypeXAxisFormat: Record<PeriodType, string> = {

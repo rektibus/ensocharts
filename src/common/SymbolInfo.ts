@@ -14,6 +14,13 @@
 
 export interface SymbolInfo {
   ticker: string
+  name?: string
+  shortName?: string
+  exchange?: string
+  market?: string
+  logo?: string
+  priceCurrency?: string
+  type?: string
   pricePrecision: number
   volumePrecision: number
   [key: string]: unknown

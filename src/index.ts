@@ -1,16 +1,4 @@
 /**
- *       ___           ___                   ___           ___           ___           ___           ___           ___           ___
- *      /\__\         /\__\      ___        /\__\         /\  \         /\  \         /\__\         /\  \         /\  \         /\  \
- *     /:/  /        /:/  /     /\  \      /::|  |       /::\  \       /::\  \       /:/  /        /::\  \       /::\  \        \:\  \
- *    /:/__/        /:/  /      \:\  \    /:|:|  |      /:/\:\  \     /:/\:\  \     /:/__/        /:/\:\  \     /:/\:\  \        \:\  \
- *   /::\__\____   /:/  /       /::\__\  /:/|:|  |__   /::\~\:\  \   /:/  \:\  \   /::\  \ ___   /::\~\:\  \   /::\~\:\  \       /::\  \
- *  /:/\:::::\__\ /:/__/     __/:/\/__/ /:/ |:| /\__\ /:/\:\ \:\__\ /:/__/ \:\__\ /:/\:\  /\__\ /:/\:\ \:\__\ /:/\:\ \:\__\     /:/\:\__\
- *  \/_|:|~~|~    \:\  \    /\/:/  /    \/__|:|/:/  / \:\~\:\ \/__/ \:\  \  \/__/ \/__\:\/:/  / \/__\:\/:/  / \/_|::\/:/  /    /:/  \/__/
- *     |:|  |      \:\  \   \::/__/         |:/:/  /   \:\ \:\__\    \:\  \            \::/  /       \::/  /     |:|::/  /    /:/  /
- *     |:|  |       \:\  \   \:\__\         |::/  /     \:\ \/__/     \:\  \           /:/  /        /:/  /      |:|\/__/     \/__/
- *     |:|  |        \:\__\   \/__/         /:/  /       \:\__\        \:\__\         /:/  /        /:/  /       |:|  |
- *      \|__|         \/__/                 \/__/         \/__/         \/__/         \/__/         \/__/         \|__|
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,13 +12,17 @@
  * limitations under the License.
  */
 
+import { CandleType, YAxisType } from './common/Styles'
 import type {
   LineType, PolygonType, TooltipShowRule, TooltipShowType, FeatureType, TooltipFeaturePosition,
-  CandleType, CandleTooltipRectPosition
+  CandleTooltipRectPosition, Styles
 } from './common/Styles'
-import type Nullable from './common/Nullable'
+import type { KLineData } from './common/Data'
+import type { SymbolInfo } from './common/SymbolInfo'
+import type { Period } from './common/Period'
 
-import { logError, logTag, logWarn } from './common/utils/logger'
+type TViewData = KLineData
+export { type TViewData }
 
 import {
   clone, merge, isString, isNumber, isValid, isObject, isArray, isFunction, isBoolean
@@ -45,11 +37,21 @@ import {
 } from './common/utils/format'
 import { calcTextWidth } from './common/utils/canvas'
 import type { ActionType } from './common/Action'
-import type { IndicatorSeries } from './component/Indicator'
+import type { IndicatorSeries, Indicator } from './component/Indicator'
 import type { OverlayMode } from './component/Overlay'
 
 import type { FormatDateType, Options, ZoomAnchor } from './Options'
-import ChartImp, { type Chart, type DomPosition } from './Chart'
+import type { PaneOptions } from './pane/types'
+import type { Chart, DomPosition } from './Chart'
+import type DeepPartial from './common/DeepPartial'
+import type { OverlayTemplate, OverlayCreateFiguresCallbackParams, OverlayFigure, OverlayCreate } from './component/Overlay'
+import type { LineAttrs } from './extension/figure/line'
+import type { PolygonAttrs } from './extension/figure/polygon'
+import type { CircleAttrs } from './extension/figure/circle'
+import type { TextAttrs } from './extension/figure/text'
+import type Coordinate from './common/Coordinate'
+import type Bounding from './common/Bounding'
+import type Nullable from './common/Nullable'
 
 import { checkCoordinateOnArc } from './extension/figure/arc'
 import { checkCoordinateOnCircle } from './extension/figure/circle'
@@ -71,70 +73,14 @@ import { registerStyles } from './extension/styles/index'
 import { registerXAxis } from './extension/x-axis'
 import { registerYAxis } from './extension/y-axis'
 
-const charts = new Map<string, ChartImp>()
-let chartBaseId = 1
+import { version, init, dispose } from './core'
 
-/**
- * Chart version
- * @return {string}
- */
-function version(): string {
-  return '__VERSION__'
-}
+import proOverlays from './pro/extension/index'
 
-/**
- * Init chart instance
- * @param ds
- * @param options
- * @returns {Chart}
- */
-function init(ds: HTMLElement | string, options?: Options): Nullable<Chart> {
-  logTag()
-  let dom: Nullable<HTMLElement> = null
-  if (isString(ds)) {
-    dom = document.getElementById(ds)
-  } else {
-    dom = ds
-  }
-  if (dom === null) {
-    logError('', '', 'The chart cannot be initialized correctly. Please check the parameters. The chart container cannot be null and child elements need to be added!!!')
-    return null
-  }
-  let chart = charts.get(dom.id)
-  if (isValid(chart)) {
-    logWarn('', '', 'The chart has been initialized on the dom！！！')
-    return chart
-  }
-  const id = `k_line_chart_${chartBaseId++}`
-  chart = new ChartImp(dom, options)
-  chart.id = id
-  dom.setAttribute('k-line-chart-id', id)
-  charts.set(id, chart)
-  return chart
-}
-
-/**
- * Destroy chart instance
- * @param dcs
- */
-function dispose(dcs: HTMLElement | Chart | string): void {
-  let id: Nullable<string> = null
-  if (dcs instanceof ChartImp) {
-    id = dcs.id
-  } else {
-    let dom: Nullable<HTMLElement> = null
-    if (isString(dcs)) {
-      dom = document.getElementById(dcs)
-    } else {
-      dom = dcs as HTMLElement
-    }
-    id = dom?.getAttribute('k-line-chart-id') ?? null
-  }
-  if (id !== null) {
-    charts.get(id)?.destroy()
-    charts.delete(id)
-  }
-}
+// Register Pro overlays automatically
+proOverlays.forEach((o: any) => {
+  registerOverlay(o)
+})
 
 const utils = {
   clone,
@@ -165,9 +111,9 @@ const utils = {
 }
 
 // Pro module re-exports
-export { ChartMain, DrawingBar } from './pro/ChartMain'
-export type { ChartMainOptions, ChartMainPeriod, ChartMainSymbol, Datafeed } from './pro/ChartMain'
-export { proOverlays, overlayGroups } from './pro/overlays'
+export { default as ChartMain } from './pro/ChartMain'
+export type { ChartMainOptions, ChartMainPeriod, ChartMainSymbol, Datafeed } from './pro/types'
+export { proOverlays }
 
 export {
   version, init, dispose,
@@ -179,6 +125,13 @@ export {
   registerXAxis, registerYAxis,
   utils,
   type LineType, type PolygonType, type TooltipShowRule, type TooltipShowType, type FeatureType, type TooltipFeaturePosition, type CandleTooltipRectPosition,
-  type CandleType, type FormatDateType, type ZoomAnchor,
-  type DomPosition, type ActionType, type IndicatorSeries, type OverlayMode
+  type CandleType as CandleTypeType,
+  type FormatDateType, type ZoomAnchor,
+  type DomPosition, type ActionType, type IndicatorSeries, type OverlayMode,
+  type Chart, type Options, type DeepPartial, type PaneOptions, type Indicator,
+  type Styles, type SymbolInfo, type Period, type KLineData,
+  type OverlayTemplate, type LineAttrs, type PolygonAttrs, type Coordinate, type Bounding,
+  type OverlayCreateFiguresCallbackParams, type OverlayFigure, type OverlayCreate,
+  type CircleAttrs, type TextAttrs, type Nullable,
+  CandleType, YAxisType
 }

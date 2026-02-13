@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "strictNullChecks": true,
-    "target": "ES5",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "downlevelIteration": true,
     "noFallthroughCasesInSwitch": true,
@@ -9,12 +11,20 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "resolveJsonModule": true,
+    "types": [
+      "vite/client"
+    ],
     "lib": [
       "dom",
-      "es2018"
+      "esnext"
     ]
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

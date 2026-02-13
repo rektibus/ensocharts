@@ -17,49 +17,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var DEV = process.env.NODE_ENV === 'development';
-function log(templateText, tagStyle, messageStyle, api, invalidParam, append) {
-    if (DEV) {
-        var apiStr = api !== '' ? "Call api `".concat(api, "`").concat(invalidParam !== '' || append !== '' ? ', ' : '.') : '';
-        var invalidParamStr = invalidParam !== '' ? "invalid parameter `".concat(invalidParam, "`").concat(append !== '' ? ', ' : '.') : '';
-        var appendStr = append !== '' ? append : '';
-        console.log(templateText, tagStyle, messageStyle, apiStr, invalidParamStr, appendStr);
-    }
-}
-function logWarn(api, invalidParam, append) {
-    log('%c😑 klinecharts warning%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#FF9600', 'color:#FF9600', api, invalidParam, append !== null && append !== void 0 ? append : '');
-}
-function logError(api, invalidParam, append) {
-    log('%c😟 klinecharts error%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#F92855;', 'color:#F92855;', api, invalidParam, append );
-}
-function logTag() {
-    log('%c❤️ Welcome to klinecharts. Version is 10.0.0-beta1', 'border-radius:4px;border:dashed 1px #1677FF;line-height:70px;padding:0 20px;margin:16px 0;font-size:14px;color:#1677FF;', '', '', '', '');
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ignore
 function merge(target, source) {
     if ((!isObject(target) && !isObject(source))) {
         return;
     }
-    for (var key in source) {
+    for (const key in source) {
         if (Object.prototype.hasOwnProperty.call(source, key)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- ignore
-            var targetProp = target[key];
+            const targetProp = target[key];
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- ignore
-            var sourceProp = source[key];
+            const sourceProp = source[key];
             if (isObject(sourceProp) &&
                 isObject(targetProp)) {
                 merge(targetProp, sourceProp);
@@ -76,16 +44,16 @@ function clone(target) {
         return target;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ignore
-    var copy = null;
+    let copy = null;
     if (isArray(target)) {
         copy = [];
     }
     else {
         copy = {};
     }
-    for (var key in target) {
+    for (const key in target) {
         if (Object.prototype.hasOwnProperty.call(target, key)) {
-            var v = target[key];
+            const v = target[key];
             if (isObject(v)) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- ignore
                 copy[key] = clone(v);
@@ -135,802 +103,6 @@ function isString(value) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var reEscapeChar = /\\(\\)?/g;
-var rePropName = RegExp('[^.[\\]]+' + '|' +
-    '\\[(?:' +
-    '([^"\'][^[]*)' + '|' +
-    '(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2' +
-    ')\\]' + '|' +
-    '(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))', 'g');
-function formatValue(data, key, defaultValue) {
-    if (isValid(data)) {
-        var path_1 = [];
-        key.replace(rePropName, function (subString) {
-            var args = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                args[_i - 1] = arguments[_i];
-            }
-            var k = subString;
-            if (isValid(args[1])) {
-                k = args[2].replace(reEscapeChar, '$1');
-            }
-            else if (isValid(args[0])) {
-                k = args[0].trim();
-            }
-            path_1.push(k);
-            return '';
-        });
-        var value = data;
-        var index = 0;
-        var length_1 = path_1.length;
-        while (isValid(value) && index < length_1) {
-            value = value === null || value === void 0 ? void 0 : value[path_1[index++]];
-        }
-        return isValid(value) ? value : (defaultValue !== null && defaultValue !== void 0 ? defaultValue : '--');
-    }
-    return defaultValue !== null && defaultValue !== void 0 ? defaultValue : '--';
-}
-function formatTimestampToDateTime(dateTimeFormat, timestamp) {
-    var date = {};
-    dateTimeFormat.formatToParts(new Date(timestamp)).forEach(function (_a) {
-        var type = _a.type, value = _a.value;
-        switch (type) {
-            case 'year': {
-                date.YYYY = value;
-                break;
-            }
-            case 'month': {
-                date.MM = value;
-                break;
-            }
-            case 'day': {
-                date.DD = value;
-                break;
-            }
-            case 'hour': {
-                date.HH = value === '24' ? '00' : value;
-                break;
-            }
-            case 'minute': {
-                date.mm = value;
-                break;
-            }
-            case 'second': {
-                date.ss = value;
-                break;
-            }
-        }
-    });
-    return date;
-}
-function formatTimestampByTemplate(dateTimeFormat, timestamp, template) {
-    var date = formatTimestampToDateTime(dateTimeFormat, timestamp);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ignore
-    return template.replace(/YYYY|MM|DD|HH|mm|ss/g, function (key) { return date[key]; });
-}
-function formatPrecision(value, precision) {
-    var v = +value;
-    if (isNumber(v)) {
-        return v.toFixed(precision !== null && precision !== void 0 ? precision : 2);
-    }
-    return "".concat(value);
-}
-function formatBigNumber(value) {
-    var v = +value;
-    if (isNumber(v)) {
-        if (v > 1000000000) {
-            return "".concat(+((v / 1000000000).toFixed(3)), "B");
-        }
-        if (v > 1000000) {
-            return "".concat(+((v / 1000000).toFixed(3)), "M");
-        }
-        if (v > 1000) {
-            return "".concat(+((v / 1000).toFixed(3)), "K");
-        }
-    }
-    return "".concat(value);
-}
-function formatThousands(value, sign) {
-    var vl = "".concat(value);
-    if (sign.length === 0) {
-        return vl;
-    }
-    if (vl.includes('.')) {
-        var arr = vl.split('.');
-        return "".concat(arr[0].replace(/(\d)(?=(\d{3})+$)/g, function ($1) { return "".concat($1).concat(sign); }), ".").concat(arr[1]);
-    }
-    return vl.replace(/(\d)(?=(\d{3})+$)/g, function ($1) { return "".concat($1).concat(sign); });
-}
-function formatFoldDecimal(value, threshold) {
-    var vl = "".concat(value);
-    var reg = new RegExp('\\.0{' + threshold + ',}[1-9][0-9]*$');
-    if (reg.test(vl)) {
-        var result = vl.split('.');
-        var lastIndex = result.length - 1;
-        var v = result[lastIndex];
-        var match = /0*/.exec(v);
-        if (isValid(match)) {
-            var count = match[0].length;
-            result[lastIndex] = v.replace(/0*/, "0{".concat(count, "}"));
-            return result.join('.');
-        }
-    }
-    return vl;
-}
-function formatTemplateString(template, params) {
-    return template.replace(/\{(\w+)\}/g, function (_, key) {
-        var value = params[key];
-        if (isValid(value)) {
-            return value;
-        }
-        return "{".concat(key, "}");
-    });
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var measureCtx = null;
-/**
- * Get pixel ratio
- * @param canvas
- * @returns {number}
- */
-function getPixelRatio(canvas) {
-    var _a, _b;
-    return (_b = (_a = canvas.ownerDocument.defaultView) === null || _a === void 0 ? void 0 : _a.devicePixelRatio) !== null && _b !== void 0 ? _b : 1;
-}
-function createFont(size, weight, family) {
-    return "".concat(weight !== null && weight !== void 0 ? weight : 'normal', " ").concat(size !== null && size !== void 0 ? size : 12, "px ").concat(family !== null && family !== void 0 ? family : 'Helvetica Neue');
-}
-/**
- * Measure the width of text
- * @param text
- * @returns {number}
- */
-function calcTextWidth(text, size, weight, family) {
-    if (!isValid(measureCtx)) {
-        var canvas = document.createElement('canvas');
-        var pixelRatio = getPixelRatio(canvas);
-        measureCtx = canvas.getContext('2d');
-        measureCtx.scale(pixelRatio, pixelRatio);
-    }
-    measureCtx.font = createFont(size, weight, family);
-    return Math.round(measureCtx.measureText(text).width);
-}
-
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
-
-var extendStatics = function(d, b) {
-    extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-    return extendStatics(d, b);
-};
-
-function __extends(d, b) {
-    if (typeof b !== "function" && b !== null)
-        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-    extendStatics(d, b);
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-}
-
-var __assign = function() {
-    __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-
-function __rest(s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-}
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
-
-function __generator(thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-}
-
-function __values(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-}
-
-function __read(o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-}
-
-function __spreadArray(to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function createDefaultBounding(bounding) {
-    var defaultBounding = {
-        width: 0,
-        height: 0,
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0
-    };
-    if (isValid(bounding)) {
-        merge(defaultBounding, bounding);
-    }
-    return defaultBounding;
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var DEFAULT_REQUEST_ID = -1;
-function requestAnimationFrame$1(fn) {
-    if (isFunction(window.requestAnimationFrame)) {
-        return window.requestAnimationFrame(fn);
-    }
-    return window.setTimeout(fn, 20);
-}
-function cancelAnimationFrame(id) {
-    if (isFunction(window.cancelAnimationFrame)) {
-        window.cancelAnimationFrame(id);
-    }
-    else {
-        window.clearTimeout(id);
-    }
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var Animation = /** @class */ (function () {
-    function Animation(options) {
-        this._options = { duration: 500, iterationCount: 1 };
-        this._currentIterationCount = 0;
-        this._running = false;
-        this._time = 0;
-        merge(this._options, options);
-    }
-    Animation.prototype._loop = function () {
-        var _this = this;
-        this._running = true;
-        var step = function () {
-            var _a;
-            if (_this._running) {
-                var diffTime = new Date().getTime() - _this._time;
-                if (diffTime < _this._options.duration) {
-                    (_a = _this._doFrameCallback) === null || _a === void 0 ? void 0 : _a.call(_this, diffTime);
-                    requestAnimationFrame$1(step);
-                }
-                else {
-                    _this.stop();
-                    _this._currentIterationCount++;
-                    if (_this._currentIterationCount < _this._options.iterationCount) {
-                        _this.start();
-                    }
-                }
-            }
-        };
-        requestAnimationFrame$1(step);
-    };
-    Animation.prototype.doFrame = function (callback) {
-        this._doFrameCallback = callback;
-        return this;
-    };
-    Animation.prototype.setDuration = function (duration) {
-        this._options.duration = duration;
-        return this;
-    };
-    Animation.prototype.setIterationCount = function (iterationCount) {
-        this._options.iterationCount = iterationCount;
-        return this;
-    };
-    Animation.prototype.start = function () {
-        if (!this._running) {
-            this._time = new Date().getTime();
-            this._loop();
-        }
-    };
-    Animation.prototype.stop = function () {
-        var _a;
-        if (this._running) {
-            (_a = this._doFrameCallback) === null || _a === void 0 ? void 0 : _a.call(this, this._options.duration);
-        }
-        this._running = false;
-    };
-    return Animation;
-}());
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var baseId = 1;
-var prevIdTimestamp = new Date().getTime();
-function createId(prefix) {
-    var timestamp = new Date().getTime();
-    if (timestamp === prevIdTimestamp) {
-        ++baseId;
-    }
-    else {
-        baseId = 1;
-    }
-    prevIdTimestamp = timestamp;
-    return "".concat(prefix !== null && prefix !== void 0 ? prefix : '').concat(timestamp, "_").concat(baseId);
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * Create dom
- * @param tagName
- * @param styles
- * @return {*}
- */
-function createDom(tagName, styles) {
-    var _a;
-    var dom = document.createElement(tagName);
-    var s = styles !== null && styles !== void 0 ? styles : {};
-    // eslint-disable-next-line guard-for-in -- ignore
-    for (var key in s) {
-        (dom.style)[key] = (_a = s[key]) !== null && _a !== void 0 ? _a : '';
-    }
-    return dom;
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * Binary search for the nearest result
- * @param dataList
- * @param valueKey
- * @param targetValue
- * @return {number}
- */
-function binarySearchNearest(dataList, valueKey, targetValue) {
-    var left = 0;
-    var right = 0;
-    for (right = dataList.length - 1; left !== right;) {
-        var midIndex = Math.floor((right + left) / 2);
-        var mid = right - left;
-        var midValue = dataList[midIndex][valueKey];
-        if (targetValue === dataList[left][valueKey]) {
-            return left;
-        }
-        if (targetValue === dataList[right][valueKey]) {
-            return right;
-        }
-        if (targetValue === midValue) {
-            return midIndex;
-        }
-        if (targetValue > midValue) {
-            left = midIndex;
-        }
-        else {
-            right = midIndex;
-        }
-        if (mid <= 2) {
-            break;
-        }
-    }
-    return left;
-}
-/**
- * 优化数字
- * @param value
- * @return {number|number}
- */
-function nice(value) {
-    var exponent = Math.floor(log10(value));
-    var exp10 = index10(exponent);
-    var f = value / exp10; // 1 <= f < 10
-    var nf = 0;
-    if (f < 1.5) {
-        nf = 1;
-    }
-    else if (f < 2.5) {
-        nf = 2;
-    }
-    else if (f < 3.5) {
-        nf = 3;
-    }
-    else if (f < 4.5) {
-        nf = 4;
-    }
-    else if (f < 5.5) {
-        nf = 5;
-    }
-    else if (f < 6.5) {
-        nf = 6;
-    }
-    else {
-        nf = 8;
-    }
-    value = nf * exp10;
-    return +value.toFixed(Math.abs(exponent));
-}
-/**
- * Round
- * @param value
- * @param precision
- * @return {number}
- */
-function round(value, precision) {
-    precision = Math.max(0, precision !== null && precision !== void 0 ? precision : 0);
-    var pow = Math.pow(10, precision);
-    return Math.round(value * pow) / pow;
-}
-/**
- * Get precision
- * @param value
- * @return {number|number}
- */
-function getPrecision(value) {
-    var str = value.toString();
-    var eIndex = str.indexOf('e');
-    if (eIndex > 0) {
-        var precision = +str.slice(eIndex + 1);
-        return precision < 0 ? -precision : 0;
-    }
-    var dotIndex = str.indexOf('.');
-    return dotIndex < 0 ? 0 : str.length - 1 - dotIndex;
-}
-function getMaxMin(dataList, maxKey, minKey) {
-    var _a, _b;
-    var maxMin = [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
-    var dataLength = dataList.length;
-    var index = 0;
-    while (index < dataLength) {
-        var data = dataList[index];
-        maxMin[0] = Math.max(((_a = data[maxKey]) !== null && _a !== void 0 ? _a : Number.MIN_SAFE_INTEGER), maxMin[0]);
-        maxMin[1] = Math.min(((_b = data[minKey]) !== null && _b !== void 0 ? _b : Number.MAX_SAFE_INTEGER), maxMin[1]);
-        ++index;
-    }
-    return maxMin;
-}
-/**
- * log10
- * @param value
- * @return {number}
- */
-function log10(value) {
-    if (value === 0) {
-        return 0;
-    }
-    return Math.log10(value);
-}
-/**
- * index 10
- * @param value
- * @return {number}
- */
-function index10(value) {
-    return Math.pow(10, value);
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function getDefaultVisibleRange() {
-    return { from: 0, to: 0, realFrom: 0, realTo: 0 };
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var TaskScheduler = /** @class */ (function () {
-    function TaskScheduler(callback) {
-        this._holdingTasks = null;
-        this._running = false;
-        this._callback = callback;
-    }
-    TaskScheduler.prototype.add = function (tasks) {
-        if (!this._running) {
-            void this._runTask(tasks);
-        }
-        else {
-            if (isValid(this._holdingTasks)) {
-                this._holdingTasks = __assign(__assign({}, this._holdingTasks), tasks);
-            }
-            else {
-                this._holdingTasks = tasks;
-            }
-        }
-    };
-    TaskScheduler.prototype._runTask = function (tasks) {
-        return __awaiter(this, void 0, void 0, function () {
-            var next;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        this._running = true;
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, , 3, 4]);
-                        return [4 /*yield*/, Promise.all(Object.values(tasks))];
-                    case 2:
-                        _b.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        this._running = false;
-                        (_a = this._callback) === null || _a === void 0 ? void 0 : _a.call(this);
-                        if (isValid(this._holdingTasks)) {
-                            next = this._holdingTasks;
-                            void this._runTask(next);
-                            this._holdingTasks = null;
-                        }
-                        return [7 /*endfinally*/];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    TaskScheduler.prototype.clear = function () {
-        this._holdingTasks = null;
-    };
-    return TaskScheduler;
-}());
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var SymbolDefaultPrecisionConstants = {
-    PRICE: 2,
-    VOLUME: 0
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var Action = /** @class */ (function () {
-    function Action() {
-        this._callbacks = [];
-    }
-    Action.prototype.subscribe = function (callback) {
-        var index = this._callbacks.indexOf(callback);
-        if (index < 0) {
-            this._callbacks.push(callback);
-        }
-    };
-    Action.prototype.unsubscribe = function (callback) {
-        if (isFunction(callback)) {
-            var index = this._callbacks.indexOf(callback);
-            if (index > -1) {
-                this._callbacks.splice(index, 1);
-            }
-        }
-        else {
-            this._callbacks = [];
-        }
-    };
-    Action.prototype.execute = function (data) {
-        this._callbacks.forEach(function (callback) {
-            callback(data);
-        });
-    };
-    Action.prototype.isEmpty = function () {
-        return this._callbacks.length === 0;
-    };
-    return Action;
-}());
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 function isTransparent(color) {
     return color === 'transparent' ||
         color === 'none' ||
@@ -938,12 +110,12 @@ function isTransparent(color) {
         /^[hH][Ss][Ll][Aa]\(([\s]*(360｜3[0-5][0-9]|[012]?[0-9][0-9]?)[\s]*,)([\s]*((100|[0-9][0-9]?)%|0)[\s]*,){2}([\s]*0[\s]*)\)$/.test(color);
 }
 function hexToRgb(hex, alpha) {
-    var h = hex.replace(/^#/, '');
-    var i = parseInt(h, 16);
-    var r = (i >> 16) & 255;
-    var g = (i >> 8) & 255;
-    var b = i & 255;
-    return "rgba(".concat(r, ", ").concat(g, ", ").concat(b, ", ").concat(alpha !== null && alpha !== void 0 ? alpha : 1, ")");
+    const h = hex.replace(/^#/, '');
+    const i = parseInt(h, 16);
+    const r = (i >> 16) & 255;
+    const g = (i >> 8) & 255;
+    const b = i & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha ?? 1})`;
 }
 
 /**
@@ -959,7 +131,26 @@ function hexToRgb(hex, alpha) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Color = {
+const CandleType = {
+    CandleSolid: 'candle_solid',
+    CandleStroke: 'candle_stroke',
+    CandleUpStroke: 'candle_up_stroke',
+    CandleDownStroke: 'candle_down_stroke',
+    Ohlc: 'ohlc',
+    Area: 'area',
+    Line: 'line',
+    LineMark: 'line_mark',
+    StepLine: 'step_line',
+    HeikinAshi: 'heikin_ashi',
+    CandleHighLow: 'candle_high_low',
+    CandleHighLowArea: 'candle_high_low_area'
+};
+const YAxisType = {
+    Normal: 'normal',
+    Log: 'log',
+    Percentage: 'percentage'
+};
+const Color = {
     RED: '#F92855',
     GREEN: '#2DC08E',
     WHITE: '#FFFFFF',
@@ -990,7 +181,7 @@ function getDefaultGridStyle() {
  * @type {{area: {backgroundColor: [{offset: number, color: string}, {offset: number, color: string}], lineColor: string, lineSize: number, value: string}, bar: {noChangeColor: string, upColor: string, downColor: string}, tooltip: {rect: {offsetTop: number, fillColor: string, borderColor: string, paddingBottom: number, borderRadius: number, paddingRight: number, borderSize: number, offsetLeft: number, paddingTop: number, paddingLeft: number, offsetRight: number}, showRule: string, values: null, showType: string, text: {marginRight: number, size: number, color: string, weight: string, marginBottom: number, family: string, marginTop: number, marginLeft: number}, labels: string[]}, type: string, priceMark: {high: {textMargin: number, textSize: number, color: string, textFamily: string, show: boolean, textWeight: string}, last: {noChangeColor: string, upColor: string, line: {dashValue: number[], size: number, show: boolean, style: string}, show: boolean, text: {paddingBottom: number, size: number, color: string, paddingRight: number, show: boolean, weight: string, paddingTop: number, family: string, paddingLeft: number}, downColor: string}, low: {textMargin: number, textSize: number, color: string, textFamily: string, show: boolean, textWeight: string}, show: boolean}}}
  */
 function getDefaultCandleStyle() {
-    var highLow = {
+    const highLow = {
         show: true,
         color: Color.GREY,
         textOffset: 5,
@@ -1036,8 +227,8 @@ function getDefaultCandleStyle() {
         },
         priceMark: {
             show: true,
-            high: __assign({}, highLow),
-            low: __assign({}, highLow),
+            high: { ...highLow },
+            low: { ...highLow },
             last: {
                 show: true,
                 compareRule: 'current_open',
@@ -1131,8 +322,8 @@ function getDefaultCandleStyle() {
  * Get default indicator style
  */
 function getDefaultIndicatorStyle() {
-    var alphaGreen = hexToRgb(Color.GREEN, 0.7);
-    var alphaRed = hexToRgb(Color.RED, 0.7);
+    const alphaGreen = hexToRgb(Color.GREEN, 0.7);
+    const alphaRed = hexToRgb(Color.RED, 0.7);
     return {
         ohlc: {
             compareRule: 'current_open',
@@ -1149,13 +340,13 @@ function getDefaultIndicatorStyle() {
                 downColor: alphaRed,
                 noChangeColor: Color.GREY
             }],
-        lines: ['#FF9600', '#935EBD', Color.BLUE, '#E11D74', '#01C5C4'].map(function (color) { return ({
+        lines: ['#FF9600', '#935EBD', Color.BLUE, '#E11D74', '#01C5C4'].map(color => ({
             style: 'solid',
             smooth: false,
             size: 1,
             dashedValue: [2, 2],
-            color: color
-        }); }),
+            color
+        })),
         circles: [{
                 style: 'fill',
                 borderStyle: 'solid',
@@ -1309,8 +500,8 @@ function getDefaultCrosshairStyle() {
     };
 }
 function getDefaultOverlayStyle() {
-    var pointBorderColor = hexToRgb(Color.BLUE, 0.35);
-    var alphaBg = hexToRgb(Color.BLUE, 0.25);
+    const pointBorderColor = hexToRgb(Color.BLUE, 0.35);
+    const alphaBg = hexToRgb(Color.BLUE, 0.25);
     function text() {
         return {
             style: 'fill',
@@ -1416,36 +607,1150 @@ function getDefaultStyles() {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const reEscapeChar = /\\(\\)?/g;
+const rePropName = RegExp('[^.[\\]]+' + '|' +
+    '\\[(?:' +
+    '([^"\'][^[]*)' + '|' +
+    '(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2' +
+    ')\\]' + '|' +
+    '(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))', 'g');
+function formatValue(data, key, defaultValue) {
+    if (isValid(data)) {
+        const path = [];
+        key.replace(rePropName, (subString, ...args) => {
+            let k = subString;
+            if (isValid(args[1])) {
+                k = args[2].replace(reEscapeChar, '$1');
+            }
+            else if (isValid(args[0])) {
+                k = args[0].trim();
+            }
+            path.push(k);
+            return '';
+        });
+        let value = data;
+        let index = 0;
+        const length = path.length;
+        while (isValid(value) && index < length) {
+            value = value?.[path[index++]];
+        }
+        return isValid(value) ? value : (defaultValue ?? '--');
+    }
+    return defaultValue ?? '--';
+}
+function formatTimestampToDateTime(dateTimeFormat, timestamp) {
+    const date = {};
+    dateTimeFormat.formatToParts(new Date(timestamp)).forEach(({ type, value }) => {
+        switch (type) {
+            case 'year': {
+                date.YYYY = value;
+                break;
+            }
+            case 'month': {
+                date.MM = value;
+                break;
+            }
+            case 'day': {
+                date.DD = value;
+                break;
+            }
+            case 'hour': {
+                date.HH = value === '24' ? '00' : value;
+                break;
+            }
+            case 'minute': {
+                date.mm = value;
+                break;
+            }
+            case 'second': {
+                date.ss = value;
+                break;
+            }
+        }
+    });
+    return date;
+}
+function formatTimestampByTemplate(dateTimeFormat, timestamp, template) {
+    const date = formatTimestampToDateTime(dateTimeFormat, timestamp);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- ignore
+    return template.replace(/YYYY|MM|DD|HH|mm|ss/g, key => date[key]);
+}
+function formatPrecision(value, precision) {
+    const v = +value;
+    if (isNumber(v)) {
+        return v.toFixed(precision ?? 2);
+    }
+    return `${value}`;
+}
+function formatBigNumber(value) {
+    const v = +value;
+    if (isNumber(v)) {
+        if (v > 1000000000) {
+            return `${+((v / 1000000000).toFixed(3))}B`;
+        }
+        if (v > 1000000) {
+            return `${+((v / 1000000).toFixed(3))}M`;
+        }
+        if (v > 1000) {
+            return `${+((v / 1000).toFixed(3))}K`;
+        }
+    }
+    return `${value}`;
+}
+function formatThousands$1(value, sign) {
+    const vl = `${value}`;
+    if (sign.length === 0) {
+        return vl;
+    }
+    if (vl.includes('.')) {
+        const arr = vl.split('.');
+        return `${arr[0].replace(/(\d)(?=(\d{3})+$)/g, $1 => `${$1}${sign}`)}.${arr[1]}`;
+    }
+    return vl.replace(/(\d)(?=(\d{3})+$)/g, $1 => `${$1}${sign}`);
+}
+function formatFoldDecimal(value, threshold) {
+    const vl = `${value}`;
+    const reg = new RegExp('\\.0{' + threshold + ',}[1-9][0-9]*$');
+    if (reg.test(vl)) {
+        const result = vl.split('.');
+        const lastIndex = result.length - 1;
+        const v = result[lastIndex];
+        const match = /0*/.exec(v);
+        if (isValid(match)) {
+            const count = match[0].length;
+            result[lastIndex] = v.replace(/0*/, `0{${count}}`);
+            return result.join('.');
+        }
+    }
+    return vl;
+}
+function formatTemplateString(template, params) {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+        const value = params[key];
+        if (isValid(value)) {
+            return value;
+        }
+        return `{${key}}`;
+    });
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+let measureCtx = null;
+/**
+ * Get pixel ratio
+ * @param canvas
+ * @returns {number}
+ */
+function getPixelRatio(canvas) {
+    return canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1;
+}
+function createFont(size, weight, family) {
+    return `${weight ?? 'normal'} ${size ?? 12}px ${family ?? 'Helvetica Neue'}`;
+}
+/**
+ * Measure the width of text
+ * @param text
+ * @returns {number}
+ */
+function calcTextWidth(text, size, weight, family) {
+    if (!isValid(measureCtx)) {
+        const canvas = document.createElement('canvas');
+        const pixelRatio = getPixelRatio(canvas);
+        measureCtx = canvas.getContext('2d');
+        measureCtx.scale(pixelRatio, pixelRatio);
+    }
+    measureCtx.font = createFont(size, weight, family);
+    return Math.round(measureCtx.measureText(text).width);
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getDistance$1(coordinate1, coordinate2) {
+    const xDif = coordinate1.x - coordinate2.x;
+    const yDif = coordinate1.y - coordinate2.y;
+    return Math.sqrt(xDif * xDif + yDif * yDif);
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class Eventful {
+    _children = [];
+    _callbacks = new Map();
+    registerEvent(name, callback) {
+        this._callbacks.set(name, callback);
+        return this;
+    }
+    onEvent(name, event) {
+        const callback = this._callbacks.get(name);
+        if (isValid(callback) && this.checkEventOn(event)) {
+            return callback(event);
+        }
+        return false;
+    }
+    dispatchEventToChildren(name, event) {
+        const start = this._children.length - 1;
+        if (start > -1) {
+            for (let i = start; i > -1; i--) {
+                if (this._children[i].dispatchEvent(name, event)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    dispatchEvent(name, event) {
+        if (this.dispatchEventToChildren(name, event)) {
+            return true;
+        }
+        return this.onEvent(name, event);
+    }
+    addChild(eventful) {
+        this._children.push(eventful);
+        return this;
+    }
+    clear() {
+        this._children = [];
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const DEVIATION = 2;
+class FigureImp extends Eventful {
+    attrs;
+    styles;
+    constructor(figure) {
+        super();
+        this.attrs = figure.attrs;
+        this.styles = figure.styles;
+    }
+    checkEventOn(event) {
+        return this.checkEventOnImp(event, this.attrs, this.styles);
+    }
+    setAttrs(attrs) {
+        this.attrs = attrs;
+        return this;
+    }
+    setStyles(styles) {
+        this.styles = styles;
+        return this;
+    }
+    draw(ctx) {
+        this.drawImp(ctx, this.attrs, this.styles);
+    }
+    static extend(figure) {
+        class Custom extends FigureImp {
+            checkEventOnImp(coordinate, attrs, styles) {
+                return figure.checkEventOn(coordinate, attrs, styles);
+            }
+            drawImp(ctx, attrs, styles) {
+                figure.draw(ctx, attrs, styles);
+            }
+        }
+        return Custom;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkCoordinateOnArc(coordinate, attrs) {
+    let arcs = [];
+    arcs = arcs.concat(attrs);
+    for (const arc of arcs) {
+        if (Math.abs(getDistance$1(coordinate, arc) - arc.r) < DEVIATION) {
+            const { r, startAngle, endAngle } = arc;
+            const startCoordinateX = r * Math.cos(startAngle) + arc.x;
+            const startCoordinateY = r * Math.sin(startAngle) + arc.y;
+            const endCoordinateX = r * Math.cos(endAngle) + arc.x;
+            const endCoordinateY = r * Math.sin(endAngle) + arc.y;
+            if (coordinate.x <= Math.max(startCoordinateX, endCoordinateX) + DEVIATION &&
+                coordinate.x >= Math.min(startCoordinateX, endCoordinateX) - DEVIATION &&
+                coordinate.y <= Math.max(startCoordinateY, endCoordinateY) + DEVIATION &&
+                coordinate.y >= Math.min(startCoordinateY, endCoordinateY) - DEVIATION) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+function drawArc(ctx, attrs, styles) {
+    let arcs = [];
+    arcs = arcs.concat(attrs);
+    const { style = 'solid', size = 1, color = 'currentColor', dashedValue = [2, 2] } = styles;
+    ctx.lineWidth = size;
+    ctx.strokeStyle = color;
+    if (style === 'dashed') {
+        ctx.setLineDash(dashedValue);
+    }
+    else {
+        ctx.setLineDash([]);
+    }
+    arcs.forEach(({ x, y, r, startAngle, endAngle }) => {
+        ctx.beginPath();
+        ctx.arc(x, y, r, startAngle, endAngle);
+        ctx.stroke();
+        ctx.closePath();
+    });
+}
+const arc$1 = {
+    name: 'arc',
+    checkEventOn: checkCoordinateOnArc,
+    draw: (ctx, attrs, styles) => {
+        drawArc(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkCoordinateOnCircle(coordinate, attrs) {
+    let circles = [];
+    circles = circles.concat(attrs);
+    for (const circle of circles) {
+        const { x, y, r } = circle;
+        const difX = coordinate.x - x;
+        const difY = coordinate.y - y;
+        if (!(difX * difX + difY * difY > r * r)) {
+            return true;
+        }
+    }
+    return false;
+}
+function drawCircle(ctx, attrs, styles) {
+    let circles = [];
+    circles = circles.concat(attrs);
+    const { style = 'fill', color = 'currentColor', borderSize = 1, borderColor = 'currentColor', borderStyle = 'solid', borderDashedValue = [2, 2] } = styles;
+    const solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color));
+    if (solid) {
+        ctx.fillStyle = color;
+        circles.forEach(({ x, y, r }) => {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = borderSize;
+        if (borderStyle === 'dashed') {
+            ctx.setLineDash(borderDashedValue);
+        }
+        else {
+            ctx.setLineDash([]);
+        }
+        circles.forEach(({ x, y, r }) => {
+            if (!solid || r > borderSize) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.stroke();
+            }
+        });
+    }
+}
+const circle$2 = {
+    name: 'circle',
+    checkEventOn: checkCoordinateOnCircle,
+    draw: (ctx, attrs, styles) => {
+        drawCircle(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkCoordinateOnLine(coordinate, attrs) {
+    let lines = [];
+    lines = lines.concat(attrs);
+    for (const line of lines) {
+        const { coordinates } = line;
+        if (coordinates.length > 1) {
+            for (let i = 1; i < coordinates.length; i++) {
+                const prevCoordinate = coordinates[i - 1];
+                const currentCoordinate = coordinates[i];
+                if (prevCoordinate.x === currentCoordinate.x) {
+                    if (Math.abs(prevCoordinate.y - coordinate.y) + Math.abs(currentCoordinate.y - coordinate.y) - Math.abs(prevCoordinate.y - currentCoordinate.y) < DEVIATION + DEVIATION &&
+                        Math.abs(coordinate.x - prevCoordinate.x) < DEVIATION) {
+                        return true;
+                    }
+                }
+                else {
+                    const kb = getLinearSlopeIntercept(prevCoordinate, currentCoordinate);
+                    const y = getLinearYFromSlopeIntercept(kb, coordinate);
+                    const yDif = Math.abs(y - coordinate.y);
+                    if (Math.abs(prevCoordinate.x - coordinate.x) + Math.abs(currentCoordinate.x - coordinate.x) - Math.abs(prevCoordinate.x - currentCoordinate.x) < DEVIATION + DEVIATION &&
+                        yDif * yDif / (kb[0] * kb[0] + 1) < DEVIATION * DEVIATION) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+function getLinearYFromSlopeIntercept(kb, coordinate) {
+    if (kb !== null) {
+        return coordinate.x * kb[0] + kb[1];
+    }
+    return coordinate.y;
+}
+/**
+ * 获取点在两点决定的一次函数上的y值
+ * @param coordinate1
+ * @param coordinate2
+ * @param targetCoordinate
+ */
+function getLinearYFromCoordinates(coordinate1, coordinate2, targetCoordinate) {
+    const kb = getLinearSlopeIntercept(coordinate1, coordinate2);
+    return getLinearYFromSlopeIntercept(kb, targetCoordinate);
+}
+function getLinearSlopeIntercept(coordinate1, coordinate2) {
+    const difX = coordinate1.x - coordinate2.x;
+    if (difX !== 0) {
+        const k = (coordinate1.y - coordinate2.y) / difX;
+        const b = coordinate1.y - k * coordinate1.x;
+        return [k, b];
+    }
+    return null;
+}
+function lineTo(ctx, coordinates, smooth) {
+    const length = coordinates.length;
+    const smoothParam = isNumber(smooth) ? (smooth > 0 && smooth < 1 ? smooth : 0) : (smooth ? 0.5 : 0);
+    if ((smoothParam > 0) && length > 2) {
+        let cpx0 = coordinates[0].x;
+        let cpy0 = coordinates[0].y;
+        for (let i = 1; i < length - 1; i++) {
+            const prevCoordinate = coordinates[i - 1];
+            const coordinate = coordinates[i];
+            const nextCoordinate = coordinates[i + 1];
+            const dx01 = coordinate.x - prevCoordinate.x;
+            const dy01 = coordinate.y - prevCoordinate.y;
+            const dx12 = nextCoordinate.x - coordinate.x;
+            const dy12 = nextCoordinate.y - coordinate.y;
+            let dx02 = nextCoordinate.x - prevCoordinate.x;
+            let dy02 = nextCoordinate.y - prevCoordinate.y;
+            const prevSegmentLength = Math.sqrt(dx01 * dx01 + dy01 * dy01);
+            const nextSegmentLength = Math.sqrt(dx12 * dx12 + dy12 * dy12);
+            const segmentLengthRatio = nextSegmentLength / (nextSegmentLength + prevSegmentLength);
+            let nextCpx = coordinate.x + dx02 * smoothParam * segmentLengthRatio;
+            let nextCpy = coordinate.y + dy02 * smoothParam * segmentLengthRatio;
+            nextCpx = Math.min(nextCpx, Math.max(nextCoordinate.x, coordinate.x));
+            nextCpy = Math.min(nextCpy, Math.max(nextCoordinate.y, coordinate.y));
+            nextCpx = Math.max(nextCpx, Math.min(nextCoordinate.x, coordinate.x));
+            nextCpy = Math.max(nextCpy, Math.min(nextCoordinate.y, coordinate.y));
+            dx02 = nextCpx - coordinate.x;
+            dy02 = nextCpy - coordinate.y;
+            let cpx1 = coordinate.x - dx02 * prevSegmentLength / nextSegmentLength;
+            let cpy1 = coordinate.y - dy02 * prevSegmentLength / nextSegmentLength;
+            cpx1 = Math.min(cpx1, Math.max(prevCoordinate.x, coordinate.x));
+            cpy1 = Math.min(cpy1, Math.max(prevCoordinate.y, coordinate.y));
+            cpx1 = Math.max(cpx1, Math.min(prevCoordinate.x, coordinate.x));
+            cpy1 = Math.max(cpy1, Math.min(prevCoordinate.y, coordinate.y));
+            dx02 = coordinate.x - cpx1;
+            dy02 = coordinate.y - cpy1;
+            nextCpx = coordinate.x + dx02 * nextSegmentLength / prevSegmentLength;
+            nextCpy = coordinate.y + dy02 * nextSegmentLength / prevSegmentLength;
+            ctx.bezierCurveTo(cpx0, cpy0, cpx1, cpy1, coordinate.x, coordinate.y);
+            cpx0 = nextCpx;
+            cpy0 = nextCpy;
+        }
+        const lastCoordinate = coordinates[length - 1];
+        ctx.bezierCurveTo(cpx0, cpy0, lastCoordinate.x, lastCoordinate.y, lastCoordinate.x, lastCoordinate.y);
+    }
+    else {
+        for (let i = 1; i < length; i++) {
+            ctx.lineTo(coordinates[i].x, coordinates[i].y);
+        }
+    }
+}
+function drawLine(ctx, attrs, styles) {
+    let lines = [];
+    lines = lines.concat(attrs);
+    const { style = 'solid', smooth = false, size = 1, color = 'currentColor', dashedValue = [2, 2] } = styles;
+    ctx.lineWidth = size;
+    ctx.strokeStyle = color;
+    if (style === 'dashed') {
+        ctx.setLineDash(dashedValue);
+    }
+    else {
+        ctx.setLineDash([]);
+    }
+    const correction = size % 2 === 1 ? 0.5 : 0;
+    lines.forEach(({ coordinates }) => {
+        if (coordinates.length > 1) {
+            if (coordinates.length === 2 &&
+                (coordinates[0].x === coordinates[1].x ||
+                    coordinates[0].y === coordinates[1].y)) {
+                ctx.beginPath();
+                if (coordinates[0].x === coordinates[1].x) {
+                    ctx.moveTo(coordinates[0].x + correction, coordinates[0].y);
+                    ctx.lineTo(coordinates[1].x + correction, coordinates[1].y);
+                }
+                else {
+                    ctx.moveTo(coordinates[0].x, coordinates[0].y + correction);
+                    ctx.lineTo(coordinates[1].x, coordinates[1].y + correction);
+                }
+                ctx.stroke();
+                ctx.closePath();
+            }
+            else {
+                ctx.save();
+                if (size % 2 === 1) {
+                    ctx.translate(0.5, 0.5);
+                }
+                ctx.beginPath();
+                ctx.moveTo(coordinates[0].x, coordinates[0].y);
+                lineTo(ctx, coordinates, smooth);
+                ctx.stroke();
+                ctx.closePath();
+                ctx.restore();
+            }
+        }
+    });
+}
+const line = {
+    name: 'line',
+    checkEventOn: checkCoordinateOnLine,
+    draw: (ctx, attrs, styles) => {
+        drawLine(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkCoordinateOnPolygon(coordinate, attrs) {
+    let polygons = [];
+    polygons = polygons.concat(attrs);
+    for (const polygon of polygons) {
+        let on = false;
+        const { coordinates } = polygon;
+        for (let i = 0, j = coordinates.length - 1; i < coordinates.length; j = i++) {
+            if ((coordinates[i].y > coordinate.y) !== (coordinates[j].y > coordinate.y) &&
+                (coordinate.x < (coordinates[j].x - coordinates[i].x) * (coordinate.y - coordinates[i].y) / (coordinates[j].y - coordinates[i].y) + coordinates[i].x)) {
+                on = !on;
+            }
+        }
+        if (on) {
+            return true;
+        }
+    }
+    return false;
+}
+function drawPolygon(ctx, attrs, styles) {
+    let polygons = [];
+    polygons = polygons.concat(attrs);
+    const { style = 'fill', color = 'currentColor', borderSize = 1, borderColor = 'currentColor', borderStyle = 'solid', borderDashedValue = [2, 2] } = styles;
+    if ((style === 'fill' || styles.style === 'stroke_fill') &&
+        (!isString(color) || !isTransparent(color))) {
+        ctx.fillStyle = color;
+        polygons.forEach(({ coordinates }) => {
+            ctx.beginPath();
+            ctx.moveTo(coordinates[0].x, coordinates[0].y);
+            for (let i = 1; i < coordinates.length; i++) {
+                ctx.lineTo(coordinates[i].x, coordinates[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = borderSize;
+        if (borderStyle === 'dashed') {
+            ctx.setLineDash(borderDashedValue);
+        }
+        else {
+            ctx.setLineDash([]);
+        }
+        polygons.forEach(({ coordinates }) => {
+            ctx.beginPath();
+            ctx.moveTo(coordinates[0].x, coordinates[0].y);
+            for (let i = 1; i < coordinates.length; i++) {
+                ctx.lineTo(coordinates[i].x, coordinates[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        });
+    }
+}
+const polygon = {
+    name: 'polygon',
+    checkEventOn: checkCoordinateOnPolygon,
+    draw: (ctx, attrs, styles) => {
+        drawPolygon(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkCoordinateOnRect(coordinate, attrs) {
+    let rects = [];
+    rects = rects.concat(attrs);
+    for (const rect of rects) {
+        let x = rect.x;
+        let width = rect.width;
+        if (width < DEVIATION * 2) {
+            x -= DEVIATION;
+            width = DEVIATION * 2;
+        }
+        let y = rect.y;
+        let height = rect.height;
+        if (height < DEVIATION * 2) {
+            y -= DEVIATION;
+            height = DEVIATION * 2;
+        }
+        if (coordinate.x >= x &&
+            coordinate.x <= x + width &&
+            coordinate.y >= y &&
+            coordinate.y <= y + height) {
+            return true;
+        }
+    }
+    return false;
+}
+function drawRect(ctx, attrs, styles) {
+    let rects = [];
+    rects = rects.concat(attrs);
+    const { style = 'fill', color = 'transparent', borderSize = 1, borderColor = 'transparent', borderStyle = 'solid', borderRadius: r = 0, borderDashedValue = [2, 2] } = styles;
+    // eslint-disable-next-line @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-condition -- ignore
+    const draw = ctx.roundRect ?? ctx.rect;
+    const solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color));
+    if (solid) {
+        ctx.fillStyle = color;
+        rects.forEach(({ x, y, width: w, height: h }) => {
+            ctx.beginPath();
+            draw.call(ctx, x, y, w, h, r);
+            ctx.closePath();
+            ctx.fill();
+        });
+    }
+    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
+        ctx.strokeStyle = borderColor;
+        ctx.fillStyle = borderColor;
+        ctx.lineWidth = borderSize;
+        if (borderStyle === 'dashed') {
+            ctx.setLineDash(borderDashedValue);
+        }
+        else {
+            ctx.setLineDash([]);
+        }
+        const correction = borderSize % 2 === 1 ? 0.5 : 0;
+        const doubleCorrection = Math.round(correction * 2);
+        rects.forEach(({ x, y, width: w, height: h }) => {
+            if (w > borderSize * 2 && h > borderSize * 2) {
+                ctx.beginPath();
+                draw.call(ctx, x + correction, y + correction, w - doubleCorrection, h - doubleCorrection, r);
+                ctx.closePath();
+                ctx.stroke();
+            }
+            else {
+                if (!solid) {
+                    ctx.fillRect(x, y, w, h);
+                }
+            }
+        });
+    }
+}
+const rect$2 = {
+    name: 'rect',
+    checkEventOn: checkCoordinateOnRect,
+    draw: (ctx, attrs, styles) => {
+        drawRect(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getTextRect(attrs, styles) {
+    const { size = 12, paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0, weight = 'normal', family } = styles;
+    const { x, y, text, align = 'left', baseline = 'top', width: w, height: h } = attrs;
+    const width = w ?? (paddingLeft + calcTextWidth(text, size, weight, family) + paddingRight);
+    const height = h ?? (paddingTop + size + paddingBottom);
+    let startX = 0;
+    switch (align) {
+        case 'left':
+        case 'start': {
+            startX = x;
+            break;
+        }
+        case 'right':
+        case 'end': {
+            startX = x - width;
+            break;
+        }
+        default: {
+            startX = x - width / 2;
+            break;
+        }
+    }
+    let startY = 0;
+    switch (baseline) {
+        case 'top':
+        case 'hanging': {
+            startY = y;
+            break;
+        }
+        case 'bottom':
+        case 'ideographic':
+        case 'alphabetic': {
+            startY = y - height;
+            break;
+        }
+        default: {
+            startY = y - height / 2;
+            break;
+        }
+    }
+    return { x: startX, y: startY, width, height };
+}
+function checkCoordinateOnText(coordinate, attrs, styles) {
+    let texts = [];
+    texts = texts.concat(attrs);
+    for (const text of texts) {
+        const { x, y, width, height } = getTextRect(text, styles);
+        if (coordinate.x >= x &&
+            coordinate.x <= x + width &&
+            coordinate.y >= y &&
+            coordinate.y <= y + height) {
+            return true;
+        }
+    }
+    return false;
+}
+function drawText(ctx, attrs, styles) {
+    let texts = [];
+    texts = texts.concat(attrs);
+    const { color = 'currentColor', size = 12, family, weight, paddingLeft = 0, paddingTop = 0, paddingRight = 0 } = styles;
+    const rects = texts.map(text => getTextRect(text, styles));
+    drawRect(ctx, rects, { ...styles, color: styles.backgroundColor });
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = createFont(size, weight, family);
+    ctx.fillStyle = color;
+    texts.forEach((text, index) => {
+        const rect = rects[index];
+        ctx.fillText(text.text, rect.x + paddingLeft, rect.y + paddingTop, rect.width - paddingLeft - paddingRight);
+    });
+}
+const text = {
+    name: 'text',
+    checkEventOn: checkCoordinateOnText,
+    draw: (ctx, attrs, styles) => {
+        drawText(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function drawEllipticalArc(ctx, x1, y1, args, offsetX, offsetY, isRelative) {
+    const [rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2] = args;
+    const targetX = isRelative ? x1 + x2 : x2 + offsetX;
+    const targetY = isRelative ? y1 + y2 : y2 + offsetY;
+    const segments = ellipticalArcToBeziers(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, targetX, targetY);
+    segments.forEach(segment => {
+        ctx.bezierCurveTo(segment[0], segment[1], segment[2], segment[3], segment[4], segment[5]);
+    });
+}
+function ellipticalArcToBeziers(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2) {
+    const { cx, cy, startAngle, deltaAngle } = computeEllipticalArcParameters(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2);
+    const segments = [];
+    const numSegments = Math.ceil(Math.abs(deltaAngle) / (Math.PI / 2));
+    for (let i = 0; i < numSegments; i++) {
+        const start = startAngle + (i * deltaAngle) / numSegments;
+        const end = startAngle + ((i + 1) * deltaAngle) / numSegments;
+        const bezier = ellipticalArcToBezier(cx, cy, rx, ry, rotation, start, end);
+        segments.push(bezier);
+    }
+    return segments;
+}
+function computeEllipticalArcParameters(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2) {
+    const phi = (rotation * Math.PI) / 180;
+    const dx = (x1 - x2) / 2;
+    const dy = (y1 - y2) / 2;
+    const x1p = Math.cos(phi) * dx + Math.sin(phi) * dy;
+    const y1p = -Math.sin(phi) * dx + Math.cos(phi) * dy;
+    const lambda = (x1p ** 2) / (rx ** 2) + (y1p ** 2) / (ry ** 2);
+    if (lambda > 1) {
+        rx *= Math.sqrt(lambda);
+        ry *= Math.sqrt(lambda);
+    }
+    const sign = largeArcFlag === sweepFlag ? -1 : 1;
+    const numerator = (rx ** 2) * (ry ** 2) - (rx ** 2) * (y1p ** 2) - (ry ** 2) * (x1p ** 2);
+    const denominator = (rx ** 2) * (y1p ** 2) + (ry ** 2) * (x1p ** 2);
+    const cxp = sign * Math.sqrt(Math.abs(numerator / denominator)) * (rx * y1p / ry);
+    const cyp = sign * Math.sqrt(Math.abs(numerator / denominator)) * (-ry * x1p / rx);
+    const cx = Math.cos(phi) * cxp - Math.sin(phi) * cyp + (x1 + x2) / 2;
+    const cy = Math.sin(phi) * cxp + Math.cos(phi) * cyp + (y1 + y2) / 2;
+    const startAngle = Math.atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
+    let deltaAngle = Math.atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx) - startAngle;
+    if (deltaAngle < 0 && sweepFlag === 1) {
+        deltaAngle += 2 * Math.PI;
+    }
+    else if (deltaAngle > 0 && sweepFlag === 0) {
+        deltaAngle -= 2 * Math.PI;
+    }
+    return { cx, cy, startAngle, deltaAngle };
+}
+/**
+ * Ellipse arc segment to Bezier curve
+ * @param cx
+ * @param cy
+ * @param rx
+ * @param ry
+ * @param rotation
+ * @param startAngle
+ * @param endAngle
+ * @returns
+ */
+function ellipticalArcToBezier(cx, cy, rx, ry, rotation, startAngle, endAngle) {
+    // 计算控制点
+    const alpha = Math.sin(endAngle - startAngle) * (Math.sqrt(4 + 3 * Math.tan((endAngle - startAngle) / 2) ** 2) - 1) / 3;
+    const cosPhi = Math.cos(rotation);
+    const sinPhi = Math.sin(rotation);
+    const x1 = cx + rx * Math.cos(startAngle) * cosPhi - ry * Math.sin(startAngle) * sinPhi;
+    const y1 = cy + rx * Math.cos(startAngle) * sinPhi + ry * Math.sin(startAngle) * cosPhi;
+    const x2 = cx + rx * Math.cos(endAngle) * cosPhi - ry * Math.sin(endAngle) * sinPhi;
+    const y2 = cy + rx * Math.cos(endAngle) * sinPhi + ry * Math.sin(endAngle) * cosPhi;
+    const cp1x = x1 + alpha * (-rx * Math.sin(startAngle) * cosPhi - ry * Math.cos(startAngle) * sinPhi);
+    const cp1y = y1 + alpha * (-rx * Math.sin(startAngle) * sinPhi + ry * Math.cos(startAngle) * cosPhi);
+    const cp2x = x2 - alpha * (-rx * Math.sin(endAngle) * cosPhi - ry * Math.cos(endAngle) * sinPhi);
+    const cp2y = y2 - alpha * (-rx * Math.sin(endAngle) * sinPhi + ry * Math.cos(endAngle) * cosPhi);
+    return [cp1x, cp1y, cp2x, cp2y, x2, y2];
+}
+function drawPath(ctx, attrs, styles) {
+    let paths = [];
+    paths = paths.concat(attrs);
+    const { lineWidth = 1, color = 'currentColor' } = styles;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = color;
+    ctx.setLineDash([]);
+    paths.forEach(({ x, y, path }) => {
+        const commands = path.match(/[MLHVCSQTAZ][^MLHVCSQTAZ]*/gi);
+        if (isValid(commands)) {
+            const offsetX = x;
+            const offsetY = y;
+            ctx.beginPath();
+            commands.forEach(command => {
+                let currentX = 0;
+                let currentY = 0;
+                let startX = 0;
+                let startY = 0;
+                const type = command[0];
+                const args = command.slice(1).trim().split(/[\s,]+/).map(Number);
+                switch (type) {
+                    case 'M':
+                        currentX = args[0] + offsetX;
+                        currentY = args[1] + offsetY;
+                        ctx.moveTo(currentX, currentY);
+                        startX = currentX;
+                        startY = currentY;
+                        break;
+                    case 'm':
+                        currentX += args[0];
+                        currentY += args[1];
+                        ctx.moveTo(currentX, currentY);
+                        startX = currentX;
+                        startY = currentY;
+                        break;
+                    case 'L':
+                        currentX = args[0] + offsetX;
+                        currentY = args[1] + offsetY;
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'l':
+                        currentX += args[0];
+                        currentY += args[1];
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'H':
+                        currentX = args[0] + offsetX;
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'h':
+                        currentX += args[0];
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'V':
+                        currentY = args[0] + offsetY;
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'v':
+                        currentY += args[0];
+                        ctx.lineTo(currentX, currentY);
+                        break;
+                    case 'C':
+                        ctx.bezierCurveTo(args[0] + offsetX, args[1] + offsetY, args[2] + offsetX, args[3] + offsetY, args[4] + offsetX, args[5] + offsetY);
+                        currentX = args[4] + offsetX;
+                        currentY = args[5] + offsetY;
+                        break;
+                    case 'c':
+                        ctx.bezierCurveTo(currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3], currentX + args[4], currentY + args[5]);
+                        currentX += args[4];
+                        currentY += args[5];
+                        break;
+                    case 'S':
+                        ctx.bezierCurveTo(currentX, currentY, args[0] + offsetX, args[1] + offsetY, args[2] + offsetX, args[3] + offsetY);
+                        currentX = args[2] + offsetX;
+                        currentY = args[3] + offsetY;
+                        break;
+                    case 's':
+                        ctx.bezierCurveTo(currentX, currentY, currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3]);
+                        currentX += args[2];
+                        currentY += args[3];
+                        break;
+                    case 'Q':
+                        ctx.quadraticCurveTo(args[0] + offsetX, args[1] + offsetY, args[2] + offsetX, args[3] + offsetY);
+                        currentX = args[2] + offsetX;
+                        currentY = args[3] + offsetY;
+                        break;
+                    case 'q':
+                        ctx.quadraticCurveTo(currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3]);
+                        currentX += args[2];
+                        currentY += args[3];
+                        break;
+                    case 'T':
+                        ctx.quadraticCurveTo(currentX, currentY, args[0] + offsetX, args[1] + offsetY);
+                        currentX = args[0] + offsetX;
+                        currentY = args[1] + offsetY;
+                        break;
+                    case 't':
+                        ctx.quadraticCurveTo(currentX, currentY, currentX + args[0], currentY + args[1]);
+                        currentX += args[0];
+                        currentY += args[1];
+                        break;
+                    case 'A':
+                        // arc
+                        // reference https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+                        drawEllipticalArc(ctx, currentX, currentY, args, offsetX, offsetY, false);
+                        currentX = args[5] + offsetX;
+                        currentY = args[6] + offsetY;
+                        break;
+                    case 'a':
+                        // arc
+                        // reference https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+                        drawEllipticalArc(ctx, currentX, currentY, args, offsetX, offsetY, true);
+                        currentX += args[5];
+                        currentY += args[6];
+                        break;
+                    case 'Z':
+                    case 'z':
+                        ctx.closePath();
+                        currentX = startX;
+                        currentY = startY;
+                        break;
+                }
+            });
+            if (styles.style === 'fill') {
+                ctx.fill();
+            }
+            else {
+                ctx.stroke();
+            }
+        }
+    });
+}
+const path = {
+    name: 'path',
+    checkEventOn: checkCoordinateOnRect,
+    draw: (ctx, attrs, styles) => {
+        drawPath(ctx, attrs, styles);
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const figures = {};
+const extensions$2 = [circle$2, line, polygon, rect$2, text, arc$1, path];
+extensions$2.forEach((figure) => {
+    figures[figure.name] = FigureImp.extend(figure);
+});
+function getSupportedFigures() {
+    return Object.keys(figures);
+}
+function registerFigure(figure) {
+    figures[figure.name] = FigureImp.extend(figure);
+}
+function getInnerFigureClass(name) {
+    return figures[name] ?? null;
+}
+function getFigureClass(name) {
+    return figures[name] ?? null;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 function eachFigures(indicator, dataIndex, defaultStyles, eachFigureCallback) {
-    var result = indicator.result;
-    var figures = indicator.figures;
-    var styles = indicator.styles;
-    var circleStyles = formatValue(styles, 'circles', defaultStyles.circles);
-    var circleStyleCount = circleStyles.length;
-    var barStyles = formatValue(styles, 'bars', defaultStyles.bars);
-    var barStyleCount = barStyles.length;
-    var lineStyles = formatValue(styles, 'lines', defaultStyles.lines);
-    var lineStyleCount = lineStyles.length;
-    var circleCount = 0;
-    var barCount = 0;
-    var lineCount = 0;
+    const result = indicator.result;
+    const figures = indicator.figures;
+    const styles = indicator.styles;
+    const circleStyles = formatValue(styles, 'circles', defaultStyles.circles);
+    const circleStyleCount = circleStyles.length;
+    const barStyles = formatValue(styles, 'bars', defaultStyles.bars);
+    const barStyleCount = barStyles.length;
+    const lineStyles = formatValue(styles, 'lines', defaultStyles.lines);
+    const lineStyleCount = lineStyles.length;
+    let circleCount = 0;
+    let barCount = 0;
+    let lineCount = 0;
     // eslint-disable-next-line @typescript-eslint/init-declarations  -- ignore
-    var defaultFigureStyles;
-    var figureIndex = 0;
-    figures.forEach(function (figure) {
-        var _a;
+    let defaultFigureStyles;
+    let figureIndex = 0;
+    figures.forEach(figure => {
         switch (figure.type) {
             case 'circle': {
                 figureIndex = circleCount;
-                var styles_1 = circleStyles[circleCount % circleStyleCount];
-                defaultFigureStyles = __assign(__assign({}, styles_1), { color: styles_1.noChangeColor });
+                const styles = circleStyles[circleCount % circleStyleCount];
+                defaultFigureStyles = { ...styles, color: styles.noChangeColor };
                 circleCount++;
                 break;
             }
             case 'bar': {
                 figureIndex = barCount;
-                var styles_2 = barStyles[barCount % barStyleCount];
-                defaultFigureStyles = __assign(__assign({}, styles_2), { color: styles_2.noChangeColor });
+                const styles = barStyles[barCount % barStyleCount];
+                defaultFigureStyles = { ...styles, color: styles.noChangeColor };
                 barCount++;
                 break;
             }
@@ -1457,81 +1762,86 @@ function eachFigures(indicator, dataIndex, defaultStyles, eachFigureCallback) {
             }
         }
         if (isValid(figure.type)) {
-            var ss = (_a = figure.styles) === null || _a === void 0 ? void 0 : _a.call(figure, {
+            const ss = figure.styles?.({
                 data: {
                     prev: result[dataIndex - 1],
                     current: result[dataIndex],
                     next: result[dataIndex + 1]
                 },
-                indicator: indicator,
-                defaultStyles: defaultStyles
+                indicator,
+                defaultStyles
             });
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            eachFigureCallback(figure, __assign(__assign({}, defaultFigureStyles), ss), figureIndex);
+            eachFigureCallback(figure, { ...defaultFigureStyles, ...ss }, figureIndex);
         }
     });
 }
-var IndicatorImp = /** @class */ (function () {
-    function IndicatorImp(indicator) {
-        this.precision = 4;
-        this.calcParams = [];
-        this.shouldOhlc = false;
-        this.shouldFormatBigNumber = false;
-        this.visible = true;
-        this.zLevel = 0;
-        this.series = 'normal';
-        this.figures = [];
-        this.minValue = null;
-        this.maxValue = null;
-        this.styles = null;
-        this.shouldUpdate = function (prev, current) {
-            var calc = JSON.stringify(prev.calcParams) !== JSON.stringify(current.calcParams) ||
-                prev.figures !== current.figures ||
-                prev.calc !== current.calc;
-            var draw = calc ||
-                prev.shortName !== current.shortName ||
-                prev.series !== current.series ||
-                prev.minValue !== current.minValue ||
-                prev.maxValue !== current.maxValue ||
-                prev.precision !== current.precision ||
-                prev.shouldOhlc !== current.shouldOhlc ||
-                prev.shouldFormatBigNumber !== current.shouldFormatBigNumber ||
-                prev.visible !== current.visible ||
-                prev.zLevel !== current.zLevel ||
-                prev.extendData !== current.extendData ||
-                prev.regenerateFigures !== current.regenerateFigures ||
-                prev.createTooltipDataSource !== current.createTooltipDataSource ||
-                prev.draw !== current.draw;
-            return { calc: calc, draw: draw };
-        };
-        this.calc = function () { return []; };
-        this.regenerateFigures = null;
-        this.createTooltipDataSource = null;
-        this.draw = null;
-        this.result = [];
-        this._lockSeriesPrecision = false;
+class IndicatorImp {
+    id;
+    paneId;
+    name;
+    shortName;
+    precision = 4;
+    calcParams = [];
+    shouldOhlc = false;
+    shouldFormatBigNumber = false;
+    visible = true;
+    zLevel = 0;
+    extendData;
+    series = 'normal';
+    figures = [];
+    minValue = null;
+    maxValue = null;
+    styles = null;
+    shouldUpdate = (prev, current) => {
+        const calc = JSON.stringify(prev.calcParams) !== JSON.stringify(current.calcParams) ||
+            prev.figures !== current.figures ||
+            prev.calc !== current.calc;
+        const draw = calc ||
+            prev.shortName !== current.shortName ||
+            prev.series !== current.series ||
+            prev.minValue !== current.minValue ||
+            prev.maxValue !== current.maxValue ||
+            prev.precision !== current.precision ||
+            prev.shouldOhlc !== current.shouldOhlc ||
+            prev.shouldFormatBigNumber !== current.shouldFormatBigNumber ||
+            prev.visible !== current.visible ||
+            prev.zLevel !== current.zLevel ||
+            prev.extendData !== current.extendData ||
+            prev.regenerateFigures !== current.regenerateFigures ||
+            prev.createTooltipDataSource !== current.createTooltipDataSource ||
+            prev.draw !== current.draw;
+        return { calc, draw };
+    };
+    calc = () => [];
+    regenerateFigures = null;
+    createTooltipDataSource = null;
+    draw = null;
+    result = [];
+    _prevIndicator;
+    _lockSeriesPrecision = false;
+    constructor(indicator) {
         this.override(indicator);
         this._lockSeriesPrecision = false;
     }
-    IndicatorImp.prototype.override = function (indicator) {
-        var _a, _b;
-        var _c = this, result = _c.result, currentOthers = __rest(_c, ["result"]);
-        this._prevIndicator = __assign(__assign({}, clone(currentOthers)), { result: result });
-        var id = indicator.id, name = indicator.name, shortName = indicator.shortName, precision = indicator.precision, styles = indicator.styles, figures = indicator.figures, calcParams = indicator.calcParams, others = __rest(indicator, ["id", "name", "shortName", "precision", "styles", "figures", "calcParams"]);
+    override(indicator) {
+        const { result, ...currentOthers } = this;
+        this._prevIndicator = { ...clone(currentOthers), result };
+        const { id, name, shortName, precision, styles, figures, calcParams, ...others } = indicator;
         if (!isString(this.id) && isString(id)) {
             this.id = id;
         }
         if (!isString(this.name)) {
-            this.name = name !== null && name !== void 0 ? name : '';
+            this.name = name ?? '';
         }
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition  -- ignore
-        this.shortName = (_a = shortName !== null && shortName !== void 0 ? shortName : this.shortName) !== null && _a !== void 0 ? _a : this.name;
+        this.shortName = shortName ?? this.shortName ?? this.name;
         if (isNumber(precision)) {
             this.precision = precision;
             this._lockSeriesPrecision = true;
         }
         if (isValid(styles)) {
-            (_b = this.styles) !== null && _b !== void 0 ? _b : (this.styles = {});
+            this.styles ??= {};
             merge(this.styles, styles);
         }
         merge(this, others);
@@ -1541,53 +1851,40 @@ var IndicatorImp = /** @class */ (function () {
                 this.figures = this.regenerateFigures(this.calcParams);
             }
         }
-        this.figures = figures !== null && figures !== void 0 ? figures : this.figures;
-    };
-    IndicatorImp.prototype.setSeriesPrecision = function (precision) {
+        this.figures = figures ?? this.figures;
+    }
+    setSeriesPrecision(precision) {
         if (!this._lockSeriesPrecision) {
             this.precision = precision;
         }
-    };
-    IndicatorImp.prototype.shouldUpdateImp = function () {
-        var sort = this._prevIndicator.zLevel !== this.zLevel;
-        var result = this.shouldUpdate(this._prevIndicator, this);
+    }
+    shouldUpdateImp() {
+        const sort = this._prevIndicator.zLevel !== this.zLevel;
+        const result = this.shouldUpdate(this._prevIndicator, this);
         if (isBoolean(result)) {
-            return { calc: result, draw: result, sort: sort };
+            return { calc: result, draw: result, sort };
         }
-        return __assign(__assign({}, result), { sort: sort });
-    };
-    IndicatorImp.prototype.calcImp = function (dataList) {
-        return __awaiter(this, void 0, void 0, function () {
-            var result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.calc(dataList, this)];
-                    case 1:
-                        result = _a.sent();
-                        this.result = result;
-                        return [2 /*return*/, true];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/, false];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    IndicatorImp.extend = function (template) {
-        var Custom = /** @class */ (function (_super) {
-            __extends(Custom, _super);
-            function Custom() {
-                return _super.call(this, template) || this;
+        return { ...result, sort };
+    }
+    async calcImp(dataList) {
+        try {
+            const result = await this.calc(dataList, this);
+            this.result = result;
+            return true;
+        }
+        catch (e) {
+            return false;
+        }
+    }
+    static extend(template) {
+        class Custom extends IndicatorImp {
+            constructor() {
+                super(template);
             }
-            return Custom;
-        }(IndicatorImp));
+        }
         return Custom;
-    };
-    return IndicatorImp;
-}());
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1605,7 +1902,7 @@ var IndicatorImp = /** @class */ (function () {
 /**
  * average price
  */
-var averagePrice = {
+const averagePrice = {
     name: 'AVP',
     shortName: 'AVP',
     series: 'price',
@@ -1613,14 +1910,13 @@ var averagePrice = {
     figures: [
         { key: 'avp', title: 'AVP: ', type: 'line' }
     ],
-    calc: function (dataList) {
-        var totalTurnover = 0;
-        var totalVolume = 0;
-        return dataList.map(function (kLineData) {
-            var _a, _b;
-            var avp = {};
-            var turnover = (_a = kLineData.turnover) !== null && _a !== void 0 ? _a : 0;
-            var volume = (_b = kLineData.volume) !== null && _b !== void 0 ? _b : 0;
+    calc: (dataList) => {
+        let totalTurnover = 0;
+        let totalVolume = 0;
+        return dataList.map((kLineData) => {
+            const avp = {};
+            const turnover = kLineData.turnover ?? 0;
+            const volume = kLineData.volume ?? 0;
             totalTurnover += turnover;
             totalVolume += volume;
             if (totalVolume !== 0) {
@@ -1644,7 +1940,7 @@ var averagePrice = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var awesomeOscillator = {
+const awesomeOscillator = {
     name: 'AO',
     shortName: 'AO',
     calcParams: [5, 34],
@@ -1653,43 +1949,41 @@ var awesomeOscillator = {
             title: 'AO: ',
             type: 'bar',
             baseValue: 0,
-            styles: function (_a) {
-                var _b, _c;
-                var data = _a.data, indicator = _a.indicator, defaultStyles = _a.defaultStyles;
-                var prev = data.prev, current = data.current;
-                var prevAo = (_b = prev === null || prev === void 0 ? void 0 : prev.ao) !== null && _b !== void 0 ? _b : Number.MIN_SAFE_INTEGER;
-                var currentAo = (_c = current === null || current === void 0 ? void 0 : current.ao) !== null && _c !== void 0 ? _c : Number.MIN_SAFE_INTEGER;
-                var color = '';
+            styles: ({ data, indicator, defaultStyles }) => {
+                const { prev, current } = data;
+                const prevAo = prev?.ao ?? Number.MIN_SAFE_INTEGER;
+                const currentAo = current?.ao ?? Number.MIN_SAFE_INTEGER;
+                let color = '';
                 if (currentAo > prevAo) {
                     color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles.bars)[0].upColor);
                 }
                 else {
                     color = formatValue(indicator.styles, 'bars[0].downColor', (defaultStyles.bars)[0].downColor);
                 }
-                var style = currentAo > prevAo ? 'stroke' : 'fill';
-                return { color: color, style: style, borderColor: color };
+                const style = currentAo > prevAo ? 'stroke' : 'fill';
+                return { color, style, borderColor: color };
             }
         }],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var maxPeriod = Math.max(params[0], params[1]);
-        var shortSum = 0;
-        var longSum = 0;
-        var short = 0;
-        var long = 0;
-        return dataList.map(function (kLineData, i) {
-            var ao = {};
-            var middle = (kLineData.low + kLineData.high) / 2;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const maxPeriod = Math.max(params[0], params[1]);
+        let shortSum = 0;
+        let longSum = 0;
+        let short = 0;
+        let long = 0;
+        return dataList.map((kLineData, i) => {
+            const ao = {};
+            const middle = (kLineData.low + kLineData.high) / 2;
             shortSum += middle;
             longSum += middle;
             if (i >= params[0] - 1) {
                 short = shortSum / params[0];
-                var agoKLineData = dataList[i - (params[0] - 1)];
+                const agoKLineData = dataList[i - (params[0] - 1)];
                 shortSum -= ((agoKLineData.low + agoKLineData.high) / 2);
             }
             if (i >= params[1] - 1) {
                 long = longSum / params[1];
-                var agoKLineData = dataList[i - (params[1] - 1)];
+                const agoKLineData = dataList[i - (params[1] - 1)];
                 longSum -= ((agoKLineData.low + agoKLineData.high) / 2);
             }
             if (i >= maxPeriod - 1) {
@@ -1717,7 +2011,7 @@ var awesomeOscillator = {
  * BIAS
  * 乖离率=[(当日收盘价-N日平均价)/N日平均价]*100%
  */
-var bias = {
+const bias = {
     name: 'BIAS',
     shortName: 'BIAS',
     calcParams: [6, 12, 24],
@@ -1726,18 +2020,17 @@ var bias = {
         { key: 'bias2', title: 'BIAS12: ', type: 'line' },
         { key: 'bias3', title: 'BIAS24: ', type: 'line' }
     ],
-    regenerateFigures: function (params) { return params.map(function (p, i) { return ({ key: "bias".concat(i + 1), title: "BIAS".concat(p, ": "), type: 'line' }); }); },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        var closeSums = [];
-        return dataList.map(function (kLineData, i) {
-            var bias = {};
-            var close = kLineData.close;
-            params.forEach(function (p, index) {
-                var _a;
-                closeSums[index] = ((_a = closeSums[index]) !== null && _a !== void 0 ? _a : 0) + close;
+    regenerateFigures: (params) => params.map((p, i) => ({ key: `bias${i + 1}`, title: `BIAS${p}: `, type: 'line' })),
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        const closeSums = [];
+        return dataList.map((kLineData, i) => {
+            const bias = {};
+            const close = kLineData.close;
+            params.forEach((p, index) => {
+                closeSums[index] = (closeSums[index] ?? 0) + close;
                 if (i >= p - 1) {
-                    var mean = closeSums[index] / params[index];
+                    const mean = closeSums[index] / params[index];
                     bias[figures[index].key] = (close - mean) / mean * 100;
                     closeSums[index] -= dataList[i - (p - 1)].close;
                 }
@@ -1767,10 +2060,10 @@ var bias = {
  * @return {number}
  */
 function getBollMd(dataList, ma) {
-    var dataSize = dataList.length;
-    var sum = 0;
-    dataList.forEach(function (data) {
-        var closeMa = data.close - ma;
+    const dataSize = dataList.length;
+    let sum = 0;
+    dataList.forEach(data => {
+        const closeMa = data.close - ma;
         sum += closeMa * closeMa;
     });
     sum = Math.abs(sum);
@@ -1779,7 +2072,7 @@ function getBollMd(dataList, ma) {
 /**
  * BOLL
  */
-var bollingerBands = {
+const bollingerBands = {
     name: 'BOLL',
     shortName: 'BOLL',
     series: 'price',
@@ -1791,17 +2084,17 @@ var bollingerBands = {
         { key: 'mid', title: 'MID: ', type: 'line' },
         { key: 'dn', title: 'DN: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var p = params[0] - 1;
-        var closeSum = 0;
-        return dataList.map(function (kLineData, i) {
-            var close = kLineData.close;
-            var boll = {};
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const p = params[0] - 1;
+        let closeSum = 0;
+        return dataList.map((kLineData, i) => {
+            const close = kLineData.close;
+            const boll = {};
             closeSum += close;
             if (i >= p) {
                 boll.mid = closeSum / params[0];
-                var md = getBollMd(dataList.slice(i - p, i + 1), boll.mid);
+                const md = getBollMd(dataList.slice(i - p, i + 1), boll.mid);
                 boll.up = boll.mid + params[1] * md;
                 boll.dn = boll.mid - params[1] * md;
                 closeSum -= dataList[i - p].close;
@@ -1833,7 +2126,7 @@ var bollingerBands = {
  * 其中，H为当日最高价，L为当日最低价，O为当日开盘价，N为设定的时间参数
  *
  */
-var brar = {
+const brar = {
     name: 'BRAR',
     shortName: 'BRAR',
     calcParams: [26],
@@ -1841,19 +2134,18 @@ var brar = {
         { key: 'br', title: 'BR: ', type: 'line' },
         { key: 'ar', title: 'AR: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var hcy = 0;
-        var cyl = 0;
-        var ho = 0;
-        var ol = 0;
-        return dataList.map(function (kLineData, i) {
-            var _a, _b;
-            var brar = {};
-            var high = kLineData.high;
-            var low = kLineData.low;
-            var open = kLineData.open;
-            var prevClose = ((_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData).close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let hcy = 0;
+        let cyl = 0;
+        let ho = 0;
+        let ol = 0;
+        return dataList.map((kLineData, i) => {
+            const brar = {};
+            const high = kLineData.high;
+            const low = kLineData.low;
+            const open = kLineData.open;
+            const prevClose = (dataList[i - 1] ?? kLineData).close;
             ho += (high - open);
             ol += (open - low);
             hcy += (high - prevClose);
@@ -1871,11 +2163,11 @@ var brar = {
                 else {
                     brar.br = 0;
                 }
-                var agoKLineData = dataList[i - (params[0] - 1)];
-                var agoHigh = agoKLineData.high;
-                var agoLow = agoKLineData.low;
-                var agoOpen = agoKLineData.open;
-                var agoPreClose = ((_b = dataList[i - params[0]]) !== null && _b !== void 0 ? _b : dataList[i - (params[0] - 1)]).close;
+                const agoKLineData = dataList[i - (params[0] - 1)];
+                const agoHigh = agoKLineData.high;
+                const agoLow = agoKLineData.low;
+                const agoOpen = agoKLineData.open;
+                const agoPreClose = (dataList[i - params[0]] ?? dataList[i - (params[0] - 1)]).close;
                 hcy -= (agoHigh - agoPreClose);
                 cyl -= (agoPreClose - agoLow);
                 ho -= (agoHigh - agoOpen);
@@ -1891,7 +2183,7 @@ var brar = {
  * 公式: BBI = (MA(CLOSE, M) + MA(CLOSE, N) + MA(CLOSE, O) + MA(CLOSE, P)) / 4
  *
  */
-var bullAndBearIndex = {
+const bullAndBearIndex = {
     name: 'BBI',
     shortName: 'BBI',
     series: 'price',
@@ -1901,28 +2193,27 @@ var bullAndBearIndex = {
     figures: [
         { key: 'bbi', title: 'BBI: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var maxPeriod = Math.max.apply(Math, __spreadArray([], __read(params), false));
-        var closeSums = [];
-        var mas = [];
-        return dataList.map(function (kLineData, i) {
-            var bbi = {};
-            var close = kLineData.close;
-            params.forEach(function (p, index) {
-                var _a;
-                closeSums[index] = ((_a = closeSums[index]) !== null && _a !== void 0 ? _a : 0) + close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const maxPeriod = Math.max(...params);
+        const closeSums = [];
+        const mas = [];
+        return dataList.map((kLineData, i) => {
+            const bbi = {};
+            const close = kLineData.close;
+            params.forEach((p, index) => {
+                closeSums[index] = (closeSums[index] ?? 0) + close;
                 if (i >= p - 1) {
                     mas[index] = closeSums[index] / p;
                     closeSums[index] -= dataList[i - (p - 1)].close;
                 }
             });
             if (i >= maxPeriod - 1) {
-                var maSum_1 = 0;
-                mas.forEach(function (ma) {
-                    maSum_1 += ma;
+                let maSum = 0;
+                mas.forEach(ma => {
+                    maSum += ma;
                 });
-                bbi.bbi = maSum_1 / 4;
+                bbi.bbi = maSum / 4;
             }
             return bbi;
         });
@@ -1950,33 +2241,33 @@ var bullAndBearIndex = {
  * MD=近N日TP - 当前MA绝对值的累计之和÷N
  *
  */
-var commodityChannelIndex = {
+const commodityChannelIndex = {
     name: 'CCI',
     shortName: 'CCI',
     calcParams: [20],
     figures: [
         { key: 'cci', title: 'CCI: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var p = params[0] - 1;
-        var tpSum = 0;
-        var tpList = [];
-        return dataList.map(function (kLineData, i) {
-            var cci = {};
-            var tp = (kLineData.high + kLineData.low + kLineData.close) / 3;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const p = params[0] - 1;
+        let tpSum = 0;
+        const tpList = [];
+        return dataList.map((kLineData, i) => {
+            const cci = {};
+            const tp = (kLineData.high + kLineData.low + kLineData.close) / 3;
             tpSum += tp;
             tpList.push(tp);
             if (i >= p) {
-                var maTp_1 = tpSum / params[0];
-                var sliceTpList = tpList.slice(i - p, i + 1);
-                var sum_1 = 0;
-                sliceTpList.forEach(function (tp) {
-                    sum_1 += Math.abs(tp - maTp_1);
+                const maTp = tpSum / params[0];
+                const sliceTpList = tpList.slice(i - p, i + 1);
+                let sum = 0;
+                sliceTpList.forEach(tp => {
+                    sum += Math.abs(tp - maTp);
                 });
-                var md = sum_1 / params[0];
-                cci.cci = md !== 0 ? (tp - maTp_1) / md / 0.015 : 0;
-                var agoTp = (dataList[i - p].high + dataList[i - p].low + dataList[i - p].close) / 3;
+                const md = sum / params[0];
+                cci.cci = md !== 0 ? (tp - maTp) / md / 0.015 : 0;
+                const agoTp = (dataList[i - p].high + dataList[i - p].low + dataList[i - p].close) / 3;
                 tpSum -= agoTp;
             }
             return cci;
@@ -2012,7 +2303,7 @@ var commodityChannelIndex = {
  * 输出MA4:M4/2.5+1日前的CR的M4日简单移动平均
  *
  */
-var currentRatio = {
+const currentRatio = {
     name: 'CR',
     shortName: 'CR',
     calcParams: [26, 10, 20, 40, 60],
@@ -2023,28 +2314,27 @@ var currentRatio = {
         { key: 'ma3', title: 'MA3: ', type: 'line' },
         { key: 'ma4', title: 'MA4: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var ma1ForwardPeriod = Math.ceil(params[1] / 2.5 + 1);
-        var ma2ForwardPeriod = Math.ceil(params[2] / 2.5 + 1);
-        var ma3ForwardPeriod = Math.ceil(params[3] / 2.5 + 1);
-        var ma4ForwardPeriod = Math.ceil(params[4] / 2.5 + 1);
-        var ma1Sum = 0;
-        var ma1List = [];
-        var ma2Sum = 0;
-        var ma2List = [];
-        var ma3Sum = 0;
-        var ma3List = [];
-        var ma4Sum = 0;
-        var ma4List = [];
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b, _c, _d, _e;
-            var cr = {};
-            var prevData = (_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData;
-            var prevMid = (prevData.high + prevData.close + prevData.low + prevData.open) / 4;
-            var highSubPreMid = Math.max(0, kLineData.high - prevMid);
-            var preMidSubLow = Math.max(0, prevMid - kLineData.low);
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const ma1ForwardPeriod = Math.ceil(params[1] / 2.5 + 1);
+        const ma2ForwardPeriod = Math.ceil(params[2] / 2.5 + 1);
+        const ma3ForwardPeriod = Math.ceil(params[3] / 2.5 + 1);
+        const ma4ForwardPeriod = Math.ceil(params[4] / 2.5 + 1);
+        let ma1Sum = 0;
+        const ma1List = [];
+        let ma2Sum = 0;
+        const ma2List = [];
+        let ma3Sum = 0;
+        const ma3List = [];
+        let ma4Sum = 0;
+        const ma4List = [];
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const cr = {};
+            const prevData = dataList[i - 1] ?? kLineData;
+            const prevMid = (prevData.high + prevData.close + prevData.low + prevData.open) / 4;
+            const highSubPreMid = Math.max(0, kLineData.high - prevMid);
+            const preMidSubLow = Math.max(0, prevMid - kLineData.low);
             if (i >= params[0] - 1) {
                 if (preMidSubLow !== 0) {
                     cr.cr = highSubPreMid / preMidSubLow * 100;
@@ -2061,28 +2351,28 @@ var currentRatio = {
                     if (i >= params[0] + params[1] + ma1ForwardPeriod - 3) {
                         cr.ma1 = ma1List[ma1List.length - 1 - ma1ForwardPeriod];
                     }
-                    ma1Sum -= ((_b = result[i - (params[1] - 1)].cr) !== null && _b !== void 0 ? _b : 0);
+                    ma1Sum -= (result[i - (params[1] - 1)].cr ?? 0);
                 }
                 if (i >= params[0] + params[2] - 2) {
                     ma2List.push(ma2Sum / params[2]);
                     if (i >= params[0] + params[2] + ma2ForwardPeriod - 3) {
                         cr.ma2 = ma2List[ma2List.length - 1 - ma2ForwardPeriod];
                     }
-                    ma2Sum -= ((_c = result[i - (params[2] - 1)].cr) !== null && _c !== void 0 ? _c : 0);
+                    ma2Sum -= (result[i - (params[2] - 1)].cr ?? 0);
                 }
                 if (i >= params[0] + params[3] - 2) {
                     ma3List.push(ma3Sum / params[3]);
                     if (i >= params[0] + params[3] + ma3ForwardPeriod - 3) {
                         cr.ma3 = ma3List[ma3List.length - 1 - ma3ForwardPeriod];
                     }
-                    ma3Sum -= ((_d = result[i - (params[3] - 1)].cr) !== null && _d !== void 0 ? _d : 0);
+                    ma3Sum -= (result[i - (params[3] - 1)].cr ?? 0);
                 }
                 if (i >= params[0] + params[4] - 2) {
                     ma4List.push(ma4Sum / params[4]);
                     if (i >= params[0] + params[4] + ma4ForwardPeriod - 3) {
                         cr.ma4 = ma4List[ma4List.length - 1 - ma4ForwardPeriod];
                     }
-                    ma4Sum -= ((_e = result[i - (params[4] - 1)].cr) !== null && _e !== void 0 ? _e : 0);
+                    ma4Sum -= (result[i - (params[4] - 1)].cr ?? 0);
                 }
             }
             result.push(cr);
@@ -2108,7 +2398,7 @@ var currentRatio = {
  * DMA
  * 公式：DIF:MA(CLOSE,N1)-MA(CLOSE,N2);DIFMA:MA(DIF,M)
  */
-var differentOfMovingAverage = {
+const differentOfMovingAverage = {
     name: 'DMA',
     shortName: 'DMA',
     calcParams: [10, 50, 10],
@@ -2116,21 +2406,20 @@ var differentOfMovingAverage = {
         { key: 'dma', title: 'DMA: ', type: 'line' },
         { key: 'ama', title: 'AMA: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var maxPeriod = Math.max(params[0], params[1]);
-        var closeSum1 = 0;
-        var closeSum2 = 0;
-        var dmaSum = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a;
-            var dma = {};
-            var close = kLineData.close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const maxPeriod = Math.max(params[0], params[1]);
+        let closeSum1 = 0;
+        let closeSum2 = 0;
+        let dmaSum = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const dma = {};
+            const close = kLineData.close;
             closeSum1 += close;
             closeSum2 += close;
-            var ma1 = 0;
-            var ma2 = 0;
+            let ma1 = 0;
+            let ma2 = 0;
             if (i >= params[0] - 1) {
                 ma1 = closeSum1 / params[0];
                 closeSum1 -= dataList[i - (params[0] - 1)].close;
@@ -2140,12 +2429,12 @@ var differentOfMovingAverage = {
                 closeSum2 -= dataList[i - (params[1] - 1)].close;
             }
             if (i >= maxPeriod - 1) {
-                var dif = ma1 - ma2;
+                const dif = ma1 - ma2;
                 dma.dma = dif;
                 dmaSum += dif;
                 if (i >= maxPeriod + params[2] - 2) {
                     dma.ama = dmaSum / params[2];
-                    dmaSum -= ((_a = result[i - (params[2] - 1)].dma) !== null && _a !== void 0 ? _a : 0);
+                    dmaSum -= (result[i - (params[2] - 1)].dma ?? 0);
                 }
             }
             result.push(dma);
@@ -2192,7 +2481,7 @@ var differentOfMovingAverage = {
  * 输出ADXR:ADX的MM日指数平滑移动平均
  *
  */
-var directionalMovementIndex = {
+const directionalMovementIndex = {
     name: 'DMI',
     shortName: 'DMI',
     calcParams: [14, 6],
@@ -2202,32 +2491,31 @@ var directionalMovementIndex = {
         { key: 'adx', title: 'ADX: ', type: 'line' },
         { key: 'adxr', title: 'ADXR: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var trSum = 0;
-        var hSum = 0;
-        var lSum = 0;
-        var mtr = 0;
-        var dmp = 0;
-        var dmm = 0;
-        var dxSum = 0;
-        var adx = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b;
-            var dmi = {};
-            var prevKLineData = (_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData;
-            var preClose = prevKLineData.close;
-            var high = kLineData.high;
-            var low = kLineData.low;
-            var hl = high - low;
-            var hcy = Math.abs(high - preClose);
-            var lcy = Math.abs(preClose - low);
-            var hhy = high - prevKLineData.high;
-            var lyl = prevKLineData.low - low;
-            var tr = Math.max(Math.max(hl, hcy), lcy);
-            var h = (hhy > 0 && hhy > lyl) ? hhy : 0;
-            var l = (lyl > 0 && lyl > hhy) ? lyl : 0;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let trSum = 0;
+        let hSum = 0;
+        let lSum = 0;
+        let mtr = 0;
+        let dmp = 0;
+        let dmm = 0;
+        let dxSum = 0;
+        let adx = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const dmi = {};
+            const prevKLineData = dataList[i - 1] ?? kLineData;
+            const preClose = prevKLineData.close;
+            const high = kLineData.high;
+            const low = kLineData.low;
+            const hl = high - low;
+            const hcy = Math.abs(high - preClose);
+            const lcy = Math.abs(preClose - low);
+            const hhy = high - prevKLineData.high;
+            const lyl = prevKLineData.low - low;
+            const tr = Math.max(Math.max(hl, hcy), lcy);
+            const h = (hhy > 0 && hhy > lyl) ? hhy : 0;
+            const l = (lyl > 0 && lyl > hhy) ? lyl : 0;
             trSum += tr;
             hSum += h;
             lSum += l;
@@ -2242,15 +2530,15 @@ var directionalMovementIndex = {
                     dmp = hSum;
                     dmm = lSum;
                 }
-                var pdi = 0;
-                var mdi = 0;
+                let pdi = 0;
+                let mdi = 0;
                 if (mtr !== 0) {
                     pdi = dmp * 100 / mtr;
                     mdi = dmm * 100 / mtr;
                 }
                 dmi.pdi = pdi;
                 dmi.mdi = mdi;
-                var dx = 0;
+                let dx = 0;
                 if (mdi + pdi !== 0) {
                     dx = Math.abs((mdi - pdi)) / (mdi + pdi) * 100;
                 }
@@ -2264,7 +2552,7 @@ var directionalMovementIndex = {
                     }
                     dmi.adx = adx;
                     if (i >= params[0] * 2 + params[1] - 3) {
-                        dmi.adxr = (((_b = result[i - (params[1] - 1)].adx) !== null && _b !== void 0 ? _b : 0) + adx) / 2;
+                        dmi.adxr = ((result[i - (params[1] - 1)].adx ?? 0) + adx) / 2;
                     }
                 }
             }
@@ -2299,7 +2587,7 @@ var directionalMovementIndex = {
  * MAEMV=EMV的M日的简单移动平均
  *
  */
-var easeOfMovementValue = {
+const easeOfMovementValue = {
     name: 'EMV',
     shortName: 'EMV',
     calcParams: [14, 9],
@@ -2307,24 +2595,23 @@ var easeOfMovementValue = {
         { key: 'emv', title: 'EMV: ', type: 'line' },
         { key: 'maEmv', title: 'MAEMV: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var emvValueSum = 0;
-        var emvValueList = [];
-        return dataList.map(function (kLineData, i) {
-            var _a;
-            var emv = {};
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let emvValueSum = 0;
+        const emvValueList = [];
+        return dataList.map((kLineData, i) => {
+            const emv = {};
             if (i > 0) {
-                var prevKLineData = dataList[i - 1];
-                var high = kLineData.high;
-                var low = kLineData.low;
-                var volume = (_a = kLineData.volume) !== null && _a !== void 0 ? _a : 0;
-                var distanceMoved = (high + low) / 2 - (prevKLineData.high + prevKLineData.low) / 2;
+                const prevKLineData = dataList[i - 1];
+                const high = kLineData.high;
+                const low = kLineData.low;
+                const volume = kLineData.volume ?? 0;
+                const distanceMoved = (high + low) / 2 - (prevKLineData.high + prevKLineData.low) / 2;
                 if (volume === 0 || high - low === 0) {
                     emv.emv = 0;
                 }
                 else {
-                    var ratio = volume / 100000000 / (high - low);
+                    const ratio = volume / 100000000 / (high - low);
                     emv.emv = distanceMoved / ratio;
                 }
                 emvValueSum += emv.emv;
@@ -2355,7 +2642,7 @@ var easeOfMovementValue = {
 /**
  * EMA 指数移动平均
  */
-var exponentialMovingAverage = {
+const exponentialMovingAverage = {
     name: 'EMA',
     shortName: 'EMA',
     series: 'price',
@@ -2367,16 +2654,16 @@ var exponentialMovingAverage = {
         { key: 'ema2', title: 'EMA12: ', type: 'line' },
         { key: 'ema3', title: 'EMA20: ', type: 'line' }
     ],
-    regenerateFigures: function (params) { return params.map(function (p, i) { return ({ key: "ema".concat(i + 1), title: "EMA".concat(p, ": "), type: 'line' }); }); },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        var closeSum = 0;
-        var emaValues = [];
-        return dataList.map(function (kLineData, i) {
-            var ema = {};
-            var close = kLineData.close;
+    regenerateFigures: (params) => params.map((p, i) => ({ key: `ema${i + 1}`, title: `EMA${p}: `, type: 'line' })),
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        let closeSum = 0;
+        const emaValues = [];
+        return dataList.map((kLineData, i) => {
+            const ema = {};
+            const close = kLineData.close;
             closeSum += close;
-            params.forEach(function (p, index) {
+            params.forEach((p, index) => {
                 if (i >= p - 1) {
                     if (i > p - 1) {
                         emaValues[index] = (2 * close + (p - 1) * emaValues[index]) / (p + 1);
@@ -2409,7 +2696,7 @@ var exponentialMovingAverage = {
  * mtm
  * 公式 MTM（N日）=C－CN
  */
-var momentum = {
+const momentum = {
     name: 'MTM',
     shortName: 'MTM',
     calcParams: [12, 6],
@@ -2417,21 +2704,20 @@ var momentum = {
         { key: 'mtm', title: 'MTM: ', type: 'line' },
         { key: 'maMtm', title: 'MAMTM: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var mtmSum = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a;
-            var mtm = {};
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let mtmSum = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const mtm = {};
             if (i >= params[0]) {
-                var close_1 = kLineData.close;
-                var agoClose = dataList[i - params[0]].close;
-                mtm.mtm = close_1 - agoClose;
+                const close = kLineData.close;
+                const agoClose = dataList[i - params[0]].close;
+                mtm.mtm = close - agoClose;
                 mtmSum += mtm.mtm;
                 if (i >= params[0] + params[1] - 1) {
                     mtm.maMtm = mtmSum / params[1];
-                    mtmSum -= ((_a = result[i - (params[1] - 1)].mtm) !== null && _a !== void 0 ? _a : 0);
+                    mtmSum -= (result[i - (params[1] - 1)].mtm ?? 0);
                 }
             }
             result.push(mtm);
@@ -2456,7 +2742,7 @@ var momentum = {
 /**
  * MA 移动平均
  */
-var movingAverage = {
+const movingAverage = {
     name: 'MA',
     shortName: 'MA',
     series: 'price',
@@ -2469,16 +2755,15 @@ var movingAverage = {
         { key: 'ma3', title: 'MA30: ', type: 'line' },
         { key: 'ma4', title: 'MA60: ', type: 'line' }
     ],
-    regenerateFigures: function (params) { return params.map(function (p, i) { return ({ key: "ma".concat(i + 1), title: "MA".concat(p, ": "), type: 'line' }); }); },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        var closeSums = [];
-        return dataList.map(function (kLineData, i) {
-            var ma = {};
-            var close = kLineData.close;
-            params.forEach(function (p, index) {
-                var _a;
-                closeSums[index] = ((_a = closeSums[index]) !== null && _a !== void 0 ? _a : 0) + close;
+    regenerateFigures: (params) => params.map((p, i) => ({ key: `ma${i + 1}`, title: `MA${p}: `, type: 'line' })),
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        const closeSums = [];
+        return dataList.map((kLineData, i) => {
+            const ma = {};
+            const close = kLineData.close;
+            params.forEach((p, index) => {
+                closeSums[index] = (closeSums[index] ?? 0) + close;
                 if (i >= p - 1) {
                     ma[figures[index].key] = closeSums[index] / p;
                     closeSums[index] -= dataList[i - (p - 1)].close;
@@ -2510,7 +2795,7 @@ var movingAverage = {
  * ⒊再计算DIFF的M日的平均的指数平滑移动平均线，记为DEA。
  * ⒋最后用DIFF减DEA，得MACD。MACD通常绘制成围绕零轴线波动的柱形图。MACD柱状大于0涨颜色，小于0跌颜色。
  */
-var movingAverageConvergenceDivergence = {
+const movingAverageConvergenceDivergence = {
     name: 'MACD',
     shortName: 'MACD',
     calcParams: [12, 26, 9],
@@ -2522,13 +2807,11 @@ var movingAverageConvergenceDivergence = {
             title: 'MACD: ',
             type: 'bar',
             baseValue: 0,
-            styles: function (_a) {
-                var _b, _c;
-                var data = _a.data, indicator = _a.indicator, defaultStyles = _a.defaultStyles;
-                var prev = data.prev, current = data.current;
-                var prevMacd = (_b = prev === null || prev === void 0 ? void 0 : prev.macd) !== null && _b !== void 0 ? _b : Number.MIN_SAFE_INTEGER;
-                var currentMacd = (_c = current === null || current === void 0 ? void 0 : current.macd) !== null && _c !== void 0 ? _c : Number.MIN_SAFE_INTEGER;
-                var color = '';
+            styles: ({ data, indicator, defaultStyles }) => {
+                const { prev, current } = data;
+                const prevMacd = prev?.macd ?? Number.MIN_SAFE_INTEGER;
+                const currentMacd = current?.macd ?? Number.MIN_SAFE_INTEGER;
+                let color = '';
                 if (currentMacd > 0) {
                     color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles.bars)[0].upColor);
                 }
@@ -2538,23 +2821,23 @@ var movingAverageConvergenceDivergence = {
                 else {
                     color = formatValue(indicator.styles, 'bars[0].noChangeColor', (defaultStyles.bars)[0].noChangeColor);
                 }
-                var style = prevMacd < currentMacd ? 'stroke' : 'fill';
-                return { style: style, color: color, borderColor: color };
+                const style = prevMacd < currentMacd ? 'stroke' : 'fill';
+                return { style, color, borderColor: color };
             }
         }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var closeSum = 0;
-        var emaShort = 0;
-        var emaLong = 0;
-        var dif = 0;
-        var difSum = 0;
-        var dea = 0;
-        var maxPeriod = Math.max(params[0], params[1]);
-        return dataList.map(function (kLineData, i) {
-            var macd = {};
-            var close = kLineData.close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let closeSum = 0;
+        let emaShort = 0;
+        let emaLong = 0;
+        let dif = 0;
+        let difSum = 0;
+        let dea = 0;
+        const maxPeriod = Math.max(params[0], params[1]);
+        return dataList.map((kLineData, i) => {
+            const macd = {};
+            const close = kLineData.close;
             closeSum += close;
             if (i >= params[0] - 1) {
                 if (i > params[0] - 1) {
@@ -2609,7 +2892,7 @@ var movingAverageConvergenceDivergence = {
  * OBV
  * OBV = REF(OBV) + sign * V
  */
-var onBalanceVolume = {
+const onBalanceVolume = {
     name: 'OBV',
     shortName: 'OBV',
     calcParams: [30],
@@ -2617,25 +2900,24 @@ var onBalanceVolume = {
         { key: 'obv', title: 'OBV: ', type: 'line' },
         { key: 'maObv', title: 'MAOBV: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var obvSum = 0;
-        var oldObv = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b, _c, _d;
-            var prevKLineData = (_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let obvSum = 0;
+        let oldObv = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const prevKLineData = dataList[i - 1] ?? kLineData;
             if (kLineData.close < prevKLineData.close) {
-                oldObv -= ((_b = kLineData.volume) !== null && _b !== void 0 ? _b : 0);
+                oldObv -= (kLineData.volume ?? 0);
             }
             else if (kLineData.close > prevKLineData.close) {
-                oldObv += ((_c = kLineData.volume) !== null && _c !== void 0 ? _c : 0);
+                oldObv += (kLineData.volume ?? 0);
             }
-            var obv = { obv: oldObv };
+            const obv = { obv: oldObv };
             obvSum += oldObv;
             if (i >= params[0] - 1) {
                 obv.maObv = obvSum / params[0];
-                obvSum -= ((_d = result[i - (params[0] - 1)].obv) !== null && _d !== void 0 ? _d : 0);
+                obvSum -= (result[i - (params[0] - 1)].obv ?? 0);
             }
             result.push(obv);
         });
@@ -2663,22 +2945,21 @@ var onBalanceVolume = {
  * PVT = SUM(X)
  *
  */
-var priceAndVolumeTrend = {
+const priceAndVolumeTrend = {
     name: 'PVT',
     shortName: 'PVT',
     figures: [
         { key: 'pvt', title: 'PVT: ', type: 'line' }
     ],
-    calc: function (dataList) {
-        var sum = 0;
-        return dataList.map(function (kLineData, i) {
-            var _a, _b;
-            var pvt = {};
-            var close = kLineData.close;
-            var volume = (_a = kLineData.volume) !== null && _a !== void 0 ? _a : 1;
-            var prevClose = ((_b = dataList[i - 1]) !== null && _b !== void 0 ? _b : kLineData).close;
-            var x = 0;
-            var total = prevClose * volume;
+    calc: (dataList) => {
+        let sum = 0;
+        return dataList.map((kLineData, i) => {
+            const pvt = {};
+            const close = kLineData.close;
+            const volume = kLineData.volume ?? 1;
+            const prevClose = (dataList[i - 1] ?? kLineData).close;
+            let x = 0;
+            const total = prevClose * volume;
             if (total !== 0) {
                 x = (close - prevClose) / total;
             }
@@ -2706,7 +2987,7 @@ var priceAndVolumeTrend = {
  * PSY
  * 公式：PSY=N日内的上涨天数/N×100%。
  */
-var psychologicalLine = {
+const psychologicalLine = {
     name: 'PSY',
     shortName: 'PSY',
     calcParams: [12, 6],
@@ -2714,17 +2995,16 @@ var psychologicalLine = {
         { key: 'psy', title: 'PSY: ', type: 'line' },
         { key: 'maPsy', title: 'MAPSY: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var upCount = 0;
-        var psySum = 0;
-        var upList = [];
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b;
-            var psy = {};
-            var prevClose = ((_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData).close;
-            var upFlag = kLineData.close - prevClose > 0 ? 1 : 0;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let upCount = 0;
+        let psySum = 0;
+        const upList = [];
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const psy = {};
+            const prevClose = (dataList[i - 1] ?? kLineData).close;
+            const upFlag = kLineData.close - prevClose > 0 ? 1 : 0;
             upList.push(upFlag);
             upCount += upFlag;
             if (i >= params[0] - 1) {
@@ -2732,7 +3012,7 @@ var psychologicalLine = {
                 psySum += psy.psy;
                 if (i >= params[0] + params[1] - 2) {
                     psy.maPsy = psySum / params[1];
-                    psySum -= ((_b = result[i - (params[1] - 1)].psy) !== null && _b !== void 0 ? _b : 0);
+                    psySum -= (result[i - (params[1] - 1)].psy ?? 0);
                 }
                 upCount -= upList[i - (params[0] - 1)];
             }
@@ -2759,7 +3039,7 @@ var psychologicalLine = {
  * 变动率指标
  * 公式：ROC = (CLOSE - REF(CLOSE, N)) / REF(CLOSE, N)
  */
-var rateOfChange = {
+const rateOfChange = {
     name: 'ROC',
     shortName: 'ROC',
     calcParams: [12, 6],
@@ -2767,18 +3047,17 @@ var rateOfChange = {
         { key: 'roc', title: 'ROC: ', type: 'line' },
         { key: 'maRoc', title: 'MAROC: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var result = [];
-        var rocSum = 0;
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b;
-            var roc = {};
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const result = [];
+        let rocSum = 0;
+        dataList.forEach((kLineData, i) => {
+            const roc = {};
             if (i >= params[0] - 1) {
-                var close_1 = kLineData.close;
-                var agoClose = ((_a = dataList[i - params[0]]) !== null && _a !== void 0 ? _a : dataList[i - (params[0] - 1)]).close;
+                const close = kLineData.close;
+                const agoClose = (dataList[i - params[0]] ?? dataList[i - (params[0] - 1)]).close;
                 if (agoClose !== 0) {
-                    roc.roc = (close_1 - agoClose) / agoClose * 100;
+                    roc.roc = (close - agoClose) / agoClose * 100;
                 }
                 else {
                     roc.roc = 0;
@@ -2786,7 +3065,7 @@ var rateOfChange = {
                 rocSum += roc.roc;
                 if (i >= params[0] - 1 + params[1] - 1) {
                     roc.maRoc = rocSum / params[1];
-                    rocSum -= ((_b = result[i - (params[1] - 1)].roc) !== null && _b !== void 0 ? _b : 0);
+                    rocSum -= (result[i - (params[1] - 1)].roc ?? 0);
                 }
             }
             result.push(roc);
@@ -2812,7 +3091,7 @@ var rateOfChange = {
  * RSI
  * RSI = SUM(MAX(CLOSE - REF(CLOSE,1),0),N) / SUM(ABS(CLOSE - REF(CLOSE,1)),N) × 100
  */
-var relativeStrengthIndex = {
+const relativeStrengthIndex = {
     name: 'RSI',
     shortName: 'RSI',
     calcParams: [6, 12, 24],
@@ -2821,26 +3100,24 @@ var relativeStrengthIndex = {
         { key: 'rsi2', title: 'RSI2: ', type: 'line' },
         { key: 'rsi3', title: 'RSI3: ', type: 'line' }
     ],
-    regenerateFigures: function (params) { return params.map(function (_, index) {
-        var num = index + 1;
-        return { key: "rsi".concat(num), title: "RSI".concat(num, ": "), type: 'line' };
-    }); },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        var sumCloseAs = [];
-        var sumCloseBs = [];
-        return dataList.map(function (kLineData, i) {
-            var _a;
-            var rsi = {};
-            var prevClose = ((_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData).close;
-            var tmp = kLineData.close - prevClose;
-            params.forEach(function (p, index) {
-                var _a, _b, _c;
+    regenerateFigures: (params) => params.map((_, index) => {
+        const num = index + 1;
+        return { key: `rsi${num}`, title: `RSI${num}: `, type: 'line' };
+    }),
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        const sumCloseAs = [];
+        const sumCloseBs = [];
+        return dataList.map((kLineData, i) => {
+            const rsi = {};
+            const prevClose = (dataList[i - 1] ?? kLineData).close;
+            const tmp = kLineData.close - prevClose;
+            params.forEach((p, index) => {
                 if (tmp > 0) {
-                    sumCloseAs[index] = ((_a = sumCloseAs[index]) !== null && _a !== void 0 ? _a : 0) + tmp;
+                    sumCloseAs[index] = (sumCloseAs[index] ?? 0) + tmp;
                 }
                 else {
-                    sumCloseBs[index] = ((_b = sumCloseBs[index]) !== null && _b !== void 0 ? _b : 0) + Math.abs(tmp);
+                    sumCloseBs[index] = (sumCloseBs[index] ?? 0) + Math.abs(tmp);
                 }
                 if (i >= p - 1) {
                     if (sumCloseBs[index] !== 0) {
@@ -2849,9 +3126,9 @@ var relativeStrengthIndex = {
                     else {
                         rsi[figures[index].key] = 0;
                     }
-                    var agoData = dataList[i - (p - 1)];
-                    var agoPreData = (_c = dataList[i - p]) !== null && _c !== void 0 ? _c : agoData;
-                    var agoTmp = agoData.close - agoPreData.close;
+                    const agoData = dataList[i - (p - 1)];
+                    const agoPreData = dataList[i - p] ?? agoData;
+                    const agoTmp = agoData.close - agoPreData.close;
                     if (agoTmp > 0) {
                         sumCloseAs[index] -= agoTmp;
                     }
@@ -2881,7 +3158,7 @@ var relativeStrengthIndex = {
 /**
  * sma
  */
-var simpleMovingAverage = {
+const simpleMovingAverage = {
     name: 'SMA',
     shortName: 'SMA',
     series: 'price',
@@ -2891,13 +3168,13 @@ var simpleMovingAverage = {
         { key: 'sma', title: 'SMA: ', type: 'line' }
     ],
     shouldOhlc: true,
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var closeSum = 0;
-        var smaValue = 0;
-        return dataList.map(function (kLineData, i) {
-            var sma = {};
-            var close = kLineData.close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let closeSum = 0;
+        let smaValue = 0;
+        return dataList.map((kLineData, i) => {
+            const sma = {};
+            const close = kLineData.close;
             closeSum += close;
             if (i >= params[0] - 1) {
                 if (i > params[0] - 1) {
@@ -2927,6 +3204,146 @@ var simpleMovingAverage = {
  * limitations under the License.
  */
 /**
+ * Binary search for the nearest result
+ * @param dataList
+ * @param valueKey
+ * @param targetValue
+ * @return {number}
+ */
+function binarySearchNearest(dataList, valueKey, targetValue) {
+    let left = 0;
+    let right = 0;
+    for (right = dataList.length - 1; left !== right;) {
+        const midIndex = Math.floor((right + left) / 2);
+        const mid = right - left;
+        const midValue = dataList[midIndex][valueKey];
+        if (targetValue === dataList[left][valueKey]) {
+            return left;
+        }
+        if (targetValue === dataList[right][valueKey]) {
+            return right;
+        }
+        if (targetValue === midValue) {
+            return midIndex;
+        }
+        if (targetValue > midValue) {
+            left = midIndex;
+        }
+        else {
+            right = midIndex;
+        }
+        if (mid <= 2) {
+            break;
+        }
+    }
+    return left;
+}
+/**
+ * 优化数字
+ * @param value
+ * @return {number|number}
+ */
+function nice(value) {
+    const exponent = Math.floor(log10(value));
+    const exp10 = index10(exponent);
+    const f = value / exp10; // 1 <= f < 10
+    let nf = 0;
+    if (f < 1.5) {
+        nf = 1;
+    }
+    else if (f < 2.5) {
+        nf = 2;
+    }
+    else if (f < 3.5) {
+        nf = 3;
+    }
+    else if (f < 4.5) {
+        nf = 4;
+    }
+    else if (f < 5.5) {
+        nf = 5;
+    }
+    else if (f < 6.5) {
+        nf = 6;
+    }
+    else {
+        nf = 8;
+    }
+    value = nf * exp10;
+    return +value.toFixed(Math.abs(exponent));
+}
+/**
+ * Round
+ * @param value
+ * @param precision
+ * @return {number}
+ */
+function round(value, precision) {
+    precision = Math.max(0, precision ?? 0);
+    const pow = Math.pow(10, precision);
+    return Math.round(value * pow) / pow;
+}
+/**
+ * Get precision
+ * @param value
+ * @return {number|number}
+ */
+function getPrecision(value) {
+    const str = value.toString();
+    const eIndex = str.indexOf('e');
+    if (eIndex > 0) {
+        const precision = +str.slice(eIndex + 1);
+        return precision < 0 ? -precision : 0;
+    }
+    const dotIndex = str.indexOf('.');
+    return dotIndex < 0 ? 0 : str.length - 1 - dotIndex;
+}
+function getMaxMin(dataList, maxKey, minKey) {
+    const maxMin = [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
+    const dataLength = dataList.length;
+    let index = 0;
+    while (index < dataLength) {
+        const data = dataList[index];
+        maxMin[0] = Math.max((data[maxKey] ?? Number.MIN_SAFE_INTEGER), maxMin[0]);
+        maxMin[1] = Math.min((data[minKey] ?? Number.MAX_SAFE_INTEGER), maxMin[1]);
+        ++index;
+    }
+    return maxMin;
+}
+/**
+ * log10
+ * @param value
+ * @return {number}
+ */
+function log10(value) {
+    if (value === 0) {
+        return 0;
+    }
+    return Math.log10(value);
+}
+/**
+ * index 10
+ * @param value
+ * @return {number}
+ */
+function index10(value) {
+    return Math.pow(10, value);
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * KDJ
  *
  * 当日K值=2/3×前一日K值+1/3×当日RSV
@@ -2934,7 +3351,7 @@ var simpleMovingAverage = {
  * 若无前一日K 值与D值，则可分别用50来代替。
  * J值=3*当日K值-2*当日D值
  */
-var stoch = {
+const stoch = {
     name: 'KDJ',
     shortName: 'KDJ',
     calcParams: [9, 3, 3],
@@ -2943,21 +3360,20 @@ var stoch = {
         { key: 'd', title: 'D: ', type: 'line' },
         { key: 'j', title: 'J: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b, _c, _d;
-            var kdj = {};
-            var close = kLineData.close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const kdj = {};
+            const close = kLineData.close;
             if (i >= params[0] - 1) {
-                var lhn = getMaxMin(dataList.slice(i - (params[0] - 1), i + 1), 'high', 'low');
-                var hn = lhn[0];
-                var ln = lhn[1];
-                var hnSubLn = hn - ln;
-                var rsv = (close - ln) / (hnSubLn === 0 ? 1 : hnSubLn) * 100;
-                kdj.k = ((params[1] - 1) * ((_b = (_a = result[i - 1]) === null || _a === void 0 ? void 0 : _a.k) !== null && _b !== void 0 ? _b : 50) + rsv) / params[1];
-                kdj.d = ((params[2] - 1) * ((_d = (_c = result[i - 1]) === null || _c === void 0 ? void 0 : _c.d) !== null && _d !== void 0 ? _d : 50) + kdj.k) / params[2];
+                const lhn = getMaxMin(dataList.slice(i - (params[0] - 1), i + 1), 'high', 'low');
+                const hn = lhn[0];
+                const ln = lhn[1];
+                const hnSubLn = hn - ln;
+                const rsv = (close - ln) / (hnSubLn === 0 ? 1 : hnSubLn) * 100;
+                kdj.k = ((params[1] - 1) * (result[i - 1]?.k ?? 50) + rsv) / params[1];
+                kdj.d = ((params[2] - 1) * (result[i - 1]?.d ?? 50) + kdj.k) / params[2];
                 kdj.j = 3.0 * kdj.k - 2.0 * kdj.d;
             }
             result.push(kdj);
@@ -2979,7 +3395,7 @@ var stoch = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var stopAndReverse = {
+const stopAndReverse = {
     name: 'SAR',
     shortName: 'SAR',
     series: 'price',
@@ -2991,36 +3407,34 @@ var stopAndReverse = {
             key: 'sar',
             title: 'SAR: ',
             type: 'circle',
-            styles: function (_a) {
-                var _b, _c, _d;
-                var data = _a.data, indicator = _a.indicator, defaultStyles = _a.defaultStyles;
-                var current = data.current;
-                var sar = (_b = current === null || current === void 0 ? void 0 : current.sar) !== null && _b !== void 0 ? _b : Number.MIN_SAFE_INTEGER;
-                var halfHL = (((_c = current === null || current === void 0 ? void 0 : current.high) !== null && _c !== void 0 ? _c : 0) + ((_d = current === null || current === void 0 ? void 0 : current.low) !== null && _d !== void 0 ? _d : 0)) / 2;
-                var color = sar < halfHL
+            styles: ({ data, indicator, defaultStyles }) => {
+                const { current } = data;
+                const sar = current?.sar ?? Number.MIN_SAFE_INTEGER;
+                const halfHL = ((current?.high ?? 0) + (current?.low ?? 0)) / 2;
+                const color = sar < halfHL
                     ? formatValue(indicator.styles, 'circles[0].upColor', (defaultStyles.circles)[0].upColor)
                     : formatValue(indicator.styles, 'circles[0].downColor', (defaultStyles.circles)[0].downColor);
-                return { color: color };
+                return { color };
             }
         }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var startAf = params[0] / 100;
-        var step = params[1] / 100;
-        var maxAf = params[2] / 100;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        const startAf = params[0] / 100;
+        const step = params[1] / 100;
+        const maxAf = params[2] / 100;
         // 加速因子
-        var af = startAf;
+        let af = startAf;
         // 极值
-        var ep = -100;
+        let ep = -100;
         // 判断是上涨还是下跌  false：下跌
-        var isIncreasing = false;
-        var sar = 0;
-        return dataList.map(function (kLineData, i) {
+        let isIncreasing = false;
+        let sar = 0;
+        return dataList.map((kLineData, i) => {
             // 上一个周期的sar
-            var preSar = sar;
-            var high = kLineData.high;
-            var low = kLineData.low;
+            const preSar = sar;
+            const high = kLineData.high;
+            const low = kLineData.low;
             if (isIncreasing) {
                 // 上涨
                 if (ep === -100 || ep < high) {
@@ -3029,7 +3443,7 @@ var stopAndReverse = {
                     af = Math.min(af + step, maxAf);
                 }
                 sar = preSar + af * (ep - preSar);
-                var lowMin = Math.min(dataList[Math.max(1, i) - 1].low, low);
+                const lowMin = Math.min(dataList[Math.max(1, i) - 1].low, low);
                 if (sar > kLineData.low) {
                     sar = ep;
                     // 重新初始化值
@@ -3048,7 +3462,7 @@ var stopAndReverse = {
                     af = Math.min(af + step, maxAf);
                 }
                 sar = preSar + af * (ep - preSar);
-                var highMax = Math.max(dataList[Math.max(1, i) - 1].high, high);
+                const highMax = Math.max(dataList[Math.max(1, i) - 1].high, high);
                 if (sar < kLineData.high) {
                     sar = ep;
                     // 重新初始化值
@@ -3060,7 +3474,7 @@ var stopAndReverse = {
                     sar = highMax;
                 }
             }
-            return { high: high, low: low, sar: sar };
+            return { high, low, sar };
         });
     }
 };
@@ -3091,7 +3505,7 @@ var stopAndReverse = {
  * TRMA:MA(TRIX,M)
  *
  */
-var tripleExponentiallySmoothedAverage = {
+const tripleExponentiallySmoothedAverage = {
     name: 'TRIX',
     shortName: 'TRIX',
     calcParams: [12, 9],
@@ -3099,20 +3513,19 @@ var tripleExponentiallySmoothedAverage = {
         { key: 'trix', title: 'TRIX: ', type: 'line' },
         { key: 'maTrix', title: 'MATRIX: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var closeSum = 0;
-        var ema1 = 0;
-        var ema2 = 0;
-        var oldTr = 0;
-        var ema1Sum = 0;
-        var ema2Sum = 0;
-        var trixSum = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a;
-            var trix = {};
-            var close = kLineData.close;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let closeSum = 0;
+        let ema1 = 0;
+        let ema2 = 0;
+        let oldTr = 0;
+        let ema1Sum = 0;
+        let ema2Sum = 0;
+        let trixSum = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const trix = {};
+            const close = kLineData.close;
             closeSum += close;
             if (i >= params[0] - 1) {
                 if (i > params[0] - 1) {
@@ -3131,8 +3544,8 @@ var tripleExponentiallySmoothedAverage = {
                     }
                     ema2Sum += ema2;
                     if (i >= params[0] * 3 - 3) {
-                        var tr = 0;
-                        var trixValue = 0;
+                        let tr = 0;
+                        let trixValue = 0;
                         if (i > params[0] * 3 - 3) {
                             tr = (2 * ema2 + (params[0] - 1) * oldTr) / (params[0] + 1);
                             trixValue = (tr - oldTr) / oldTr * 100;
@@ -3145,7 +3558,7 @@ var tripleExponentiallySmoothedAverage = {
                         trixSum += trixValue;
                         if (i >= params[0] * 3 + params[1] - 4) {
                             trix.maTrix = trixSum / params[1];
-                            trixSum -= ((_a = result[i - (params[1] - 1)].trix) !== null && _a !== void 0 ? _a : 0);
+                            trixSum -= (result[i - (params[1] - 1)].trix ?? 0);
                         }
                     }
                 }
@@ -3175,10 +3588,9 @@ function getVolumeFigure() {
         title: 'VOLUME: ',
         type: 'bar',
         baseValue: 0,
-        styles: function (_a) {
-            var data = _a.data, indicator = _a.indicator, defaultStyles = _a.defaultStyles;
-            var current = data.current;
-            var color = formatValue(indicator.styles, 'bars[0].noChangeColor', (defaultStyles.bars)[0].noChangeColor);
+        styles: ({ data, indicator, defaultStyles }) => {
+            const current = data.current;
+            let color = formatValue(indicator.styles, 'bars[0].noChangeColor', (defaultStyles.bars)[0].noChangeColor);
             if (isValid(current)) {
                 if (current.close > current.open) {
                     color = formatValue(indicator.styles, 'bars[0].upColor', (defaultStyles.bars)[0].upColor);
@@ -3191,7 +3603,7 @@ function getVolumeFigure() {
         }
     };
 }
-var volume = {
+const volume = {
     name: 'VOL',
     shortName: 'VOL',
     series: 'volume',
@@ -3205,24 +3617,22 @@ var volume = {
         { key: 'ma3', title: 'MA20: ', type: 'line' },
         getVolumeFigure()
     ],
-    regenerateFigures: function (params) {
-        var figures = params.map(function (p, i) { return ({ key: "ma".concat(i + 1), title: "MA".concat(p, ": "), type: 'line' }); });
+    regenerateFigures: (params) => {
+        const figures = params.map((p, i) => ({ key: `ma${i + 1}`, title: `MA${p}: `, type: 'line' }));
         figures.push(getVolumeFigure());
         return figures;
     },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        var volSums = [];
-        return dataList.map(function (kLineData, i) {
-            var _a;
-            var volume = (_a = kLineData.volume) !== null && _a !== void 0 ? _a : 0;
-            var vol = { volume: volume, open: kLineData.open, close: kLineData.close };
-            params.forEach(function (p, index) {
-                var _a, _b;
-                volSums[index] = ((_a = volSums[index]) !== null && _a !== void 0 ? _a : 0) + volume;
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        const volSums = [];
+        return dataList.map((kLineData, i) => {
+            const volume = kLineData.volume ?? 0;
+            const vol = { volume, open: kLineData.open, close: kLineData.close };
+            params.forEach((p, index) => {
+                volSums[index] = (volSums[index] ?? 0) + volume;
                 if (i >= p - 1) {
                     vol[figures[index].key] = volSums[index] / p;
-                    volSums[index] -= ((_b = dataList[i - (p - 1)].volume) !== null && _b !== void 0 ? _b : 0);
+                    volSums[index] -= (dataList[i - (p - 1)].volume ?? 0);
                 }
             });
             return vol;
@@ -3251,7 +3661,7 @@ var volume = {
  * 24天以来凡是股价不涨不跌，则那一天的成交量都称为CV，将24天内的CV总和相加后称为PVS
  *
  */
-var volumeRatio = {
+const volumeRatio = {
     name: 'VR',
     shortName: 'VR',
     calcParams: [26, 6],
@@ -3259,19 +3669,18 @@ var volumeRatio = {
         { key: 'vr', title: 'VR: ', type: 'line' },
         { key: 'maVr', title: 'MAVR: ', type: 'line' }
     ],
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams;
-        var uvs = 0;
-        var dvs = 0;
-        var pvs = 0;
-        var vrSum = 0;
-        var result = [];
-        dataList.forEach(function (kLineData, i) {
-            var _a, _b, _c, _d, _e;
-            var vr = {};
-            var close = kLineData.close;
-            var preClose = ((_a = dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData).close;
-            var volume = (_b = kLineData.volume) !== null && _b !== void 0 ? _b : 0;
+    calc: (dataList, indicator) => {
+        const params = indicator.calcParams;
+        let uvs = 0;
+        let dvs = 0;
+        let pvs = 0;
+        let vrSum = 0;
+        const result = [];
+        dataList.forEach((kLineData, i) => {
+            const vr = {};
+            const close = kLineData.close;
+            const preClose = (dataList[i - 1] ?? kLineData).close;
+            const volume = kLineData.volume ?? 0;
             if (close > preClose) {
                 uvs += volume;
             }
@@ -3282,7 +3691,7 @@ var volumeRatio = {
                 pvs += volume;
             }
             if (i >= params[0] - 1) {
-                var halfPvs = pvs / 2;
+                const halfPvs = pvs / 2;
                 if (dvs + halfPvs === 0) {
                     vr.vr = 0;
                 }
@@ -3292,12 +3701,12 @@ var volumeRatio = {
                 vrSum += vr.vr;
                 if (i >= params[0] + params[1] - 2) {
                     vr.maVr = vrSum / params[1];
-                    vrSum -= ((_c = result[i - (params[1] - 1)].vr) !== null && _c !== void 0 ? _c : 0);
+                    vrSum -= (result[i - (params[1] - 1)].vr ?? 0);
                 }
-                var agoData = dataList[i - (params[0] - 1)];
-                var agoPreData = (_d = dataList[i - params[0]]) !== null && _d !== void 0 ? _d : agoData;
-                var agoClose = agoData.close;
-                var agoVolume = (_e = agoData.volume) !== null && _e !== void 0 ? _e : 0;
+                const agoData = dataList[i - (params[0] - 1)];
+                const agoPreData = dataList[i - params[0]] ?? agoData;
+                const agoClose = agoData.close;
+                const agoVolume = agoData.volume ?? 0;
                 if (agoClose > agoPreData.close) {
                     uvs -= agoVolume;
                 }
@@ -3331,7 +3740,7 @@ var volumeRatio = {
  * WR
  * 公式 WR(N) = 100 * [ C - HIGH(N) ] / [ HIGH(N)-LOW(N) ]
  */
-var williamsR = {
+const williamsR = {
     name: 'WR',
     shortName: 'WR',
     calcParams: [6, 10, 14],
@@ -3340,19 +3749,19 @@ var williamsR = {
         { key: 'wr2', title: 'WR2: ', type: 'line' },
         { key: 'wr3', title: 'WR3: ', type: 'line' }
     ],
-    regenerateFigures: function (params) { return params.map(function (_, i) { return ({ key: "wr".concat(i + 1), title: "WR".concat(i + 1, ": "), type: 'line' }); }); },
-    calc: function (dataList, indicator) {
-        var params = indicator.calcParams, figures = indicator.figures;
-        return dataList.map(function (kLineData, i) {
-            var wr = {};
-            var close = kLineData.close;
-            params.forEach(function (param, index) {
-                var p = param - 1;
+    regenerateFigures: (params) => params.map((_, i) => ({ key: `wr${i + 1}`, title: `WR${i + 1}: `, type: 'line' })),
+    calc: (dataList, indicator) => {
+        const { calcParams: params, figures } = indicator;
+        return dataList.map((kLineData, i) => {
+            const wr = {};
+            const close = kLineData.close;
+            params.forEach((param, index) => {
+                const p = param - 1;
                 if (i >= p) {
-                    var hln = getMaxMin(dataList.slice(i - p, i + 1), 'high', 'low');
-                    var hn = hln[0];
-                    var ln = hln[1];
-                    var hnSubLn = hn - ln;
+                    const hln = getMaxMin(dataList.slice(i - p, i + 1), 'high', 'low');
+                    const hn = hln[0];
+                    const ln = hln[1];
+                    const hnSubLn = hn - ln;
                     wr[figures[index].key] = hnSubLn === 0 ? 0 : (close - hn) / hnSubLn * 100;
                 }
             });
@@ -3374,8 +3783,8 @@ var williamsR = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var indicators = {};
-var extensions$2 = [
+const indicators = {};
+const extensions$1 = [
     averagePrice, awesomeOscillator, bias, bollingerBands, brar,
     bullAndBearIndex, commodityChannelIndex, currentRatio, differentOfMovingAverage,
     directionalMovementIndex, easeOfMovementValue, exponentialMovingAverage, momentum,
@@ -3383,15 +3792,14 @@ var extensions$2 = [
     psychologicalLine, rateOfChange, relativeStrengthIndex, simpleMovingAverage,
     stoch, stopAndReverse, tripleExponentiallySmoothedAverage, volume, volumeRatio, williamsR
 ];
-extensions$2.forEach(function (indicator) {
+extensions$1.forEach((indicator) => {
     indicators[indicator.name] = IndicatorImp.extend(indicator);
 });
 function registerIndicator(indicator) {
     indicators[indicator.name] = IndicatorImp.extend(indicator);
 }
 function getIndicatorClass(name) {
-    var _a;
-    return (_a = indicators[name]) !== null && _a !== void 0 ? _a : null;
+    return indicators[name] ?? null;
 }
 function getSupportedIndicators() {
     return Object.keys(indicators);
@@ -3410,214 +3818,23 @@ function getSupportedIndicators() {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function checkOverlayFigureEvent(targetEventType, figure) {
-    var _a;
-    var ignoreEvent = (_a = figure === null || figure === void 0 ? void 0 : figure.ignoreEvent) !== null && _a !== void 0 ? _a : false;
-    if (isBoolean(ignoreEvent)) {
-        return !ignoreEvent;
-    }
-    return !ignoreEvent.includes(targetEventType);
-}
-var OVERLAY_DRAW_STEP_START = 1;
-var OVERLAY_DRAW_STEP_FINISHED = -1;
-var OVERLAY_ID_PREFIX = 'overlay_';
-var OVERLAY_FIGURE_KEY_PREFIX = 'overlay_figure_';
-var OverlayImp = /** @class */ (function () {
-    function OverlayImp(overlay) {
-        this.groupId = '';
-        this.totalStep = 1;
-        this.currentStep = OVERLAY_DRAW_STEP_START;
-        this.lock = false;
-        this.visible = true;
-        this.zLevel = 0;
-        this.needDefaultPointFigure = false;
-        this.needDefaultXAxisFigure = false;
-        this.needDefaultYAxisFigure = false;
-        this.mode = 'normal';
-        this.modeSensitivity = 8;
-        this.points = [];
-        this.styles = null;
-        this.createPointFigures = null;
-        this.createXAxisFigures = null;
-        this.createYAxisFigures = null;
-        this.performEventPressedMove = null;
-        this.performEventMoveForDrawing = null;
-        this.onDrawStart = null;
-        this.onDrawing = null;
-        this.onDrawEnd = null;
-        this.onClick = null;
-        this.onDoubleClick = null;
-        this.onRightClick = null;
-        this.onPressedMoveStart = null;
-        this.onPressedMoving = null;
-        this.onPressedMoveEnd = null;
-        this.onMouseMove = null;
-        this.onMouseEnter = null;
-        this.onMouseLeave = null;
-        this.onRemoved = null;
-        this.onSelected = null;
-        this.onDeselected = null;
-        this._prevZLevel = 0;
-        this._prevPressedPoint = null;
-        this._prevPressedPoints = [];
-        this.override(overlay);
-    }
-    OverlayImp.prototype.override = function (overlay) {
-        var _a, _b;
-        this._prevOverlay = clone(__assign(__assign({}, this), { _prevOverlay: null }));
-        var id = overlay.id, name = overlay.name; overlay.currentStep; var points = overlay.points, styles = overlay.styles, others = __rest(overlay, ["id", "name", "currentStep", "points", "styles"]);
-        merge(this, others);
-        if (!isString(this.name)) {
-            this.name = name !== null && name !== void 0 ? name : '';
-        }
-        if (!isString(this.id) && isString(id)) {
-            this.id = id;
-        }
-        if (isValid(styles)) {
-            (_a = this.styles) !== null && _a !== void 0 ? _a : (this.styles = {});
-            merge(this.styles, styles);
-        }
-        if (isArray(points) && points.length > 0) {
-            var repeatTotalStep = 0;
-            this.points = __spreadArray([], __read(points), false);
-            if (points.length >= this.totalStep - 1) {
-                this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
-                repeatTotalStep = this.totalStep - 1;
-            }
-            else {
-                this.currentStep = points.length + 1;
-                repeatTotalStep = points.length;
-            }
-            // Prevent wrong drawing due to wrong points
-            if (isFunction(this.performEventMoveForDrawing)) {
-                for (var i = 0; i < repeatTotalStep; i++) {
-                    this.performEventMoveForDrawing({
-                        currentStep: i + 2,
-                        mode: this.mode,
-                        points: this.points,
-                        performPointIndex: i,
-                        performPoint: this.points[i]
-                    });
-                }
-            }
-            if (this.currentStep === OVERLAY_DRAW_STEP_FINISHED) {
-                (_b = this.performEventPressedMove) === null || _b === void 0 ? void 0 : _b.call(this, {
-                    currentStep: this.currentStep,
-                    mode: this.mode,
-                    points: this.points,
-                    performPointIndex: this.points.length - 1,
-                    performPoint: this.points[this.points.length - 1]
-                });
-            }
-        }
-    };
-    OverlayImp.prototype.getPrevZLevel = function () { return this._prevZLevel; };
-    OverlayImp.prototype.setPrevZLevel = function (zLevel) { this._prevZLevel = zLevel; };
-    OverlayImp.prototype.shouldUpdate = function () {
-        var sort = this._prevOverlay.zLevel !== this.zLevel;
-        var draw = sort ||
-            JSON.stringify(this._prevOverlay.points) !== JSON.stringify(this.points) ||
-            this._prevOverlay.visible !== this.visible ||
-            this._prevOverlay.extendData !== this.extendData ||
-            this._prevOverlay.styles !== this.styles;
-        return { sort: sort, draw: draw };
-    };
-    OverlayImp.prototype.nextStep = function () {
-        if (this.currentStep === this.totalStep - 1) {
-            this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
-        }
-        else {
-            this.currentStep++;
-        }
-    };
-    OverlayImp.prototype.forceComplete = function () {
-        this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
-    };
-    OverlayImp.prototype.isDrawing = function () {
-        return this.currentStep !== OVERLAY_DRAW_STEP_FINISHED;
-    };
-    OverlayImp.prototype.isStart = function () {
-        return this.currentStep === OVERLAY_DRAW_STEP_START;
-    };
-    OverlayImp.prototype.eventMoveForDrawing = function (point) {
-        var _a;
-        var pointIndex = this.currentStep - 1;
-        var newPoint = {};
-        if (isNumber(point.timestamp)) {
-            newPoint.timestamp = point.timestamp;
-        }
-        if (isNumber(point.dataIndex)) {
-            newPoint.dataIndex = point.dataIndex;
-        }
-        if (isNumber(point.value)) {
-            newPoint.value = point.value;
-        }
-        this.points[pointIndex] = newPoint;
-        (_a = this.performEventMoveForDrawing) === null || _a === void 0 ? void 0 : _a.call(this, {
-            currentStep: this.currentStep,
-            mode: this.mode,
-            points: this.points,
-            performPointIndex: pointIndex,
-            performPoint: newPoint
-        });
-    };
-    OverlayImp.prototype.eventPressedPointMove = function (point, pointIndex) {
-        var _a;
-        this.points[pointIndex].timestamp = point.timestamp;
-        if (isNumber(point.value)) {
-            this.points[pointIndex].value = point.value;
-        }
-        (_a = this.performEventPressedMove) === null || _a === void 0 ? void 0 : _a.call(this, {
-            currentStep: this.currentStep,
-            points: this.points,
-            mode: this.mode,
-            performPointIndex: pointIndex,
-            performPoint: this.points[pointIndex]
-        });
-    };
-    OverlayImp.prototype.startPressedMove = function (point) {
-        this._prevPressedPoint = __assign({}, point);
-        this._prevPressedPoints = clone(this.points);
-    };
-    OverlayImp.prototype.eventPressedOtherMove = function (point, chartStore) {
-        if (this._prevPressedPoint !== null) {
-            var difDataIndex_1 = null;
-            if (isNumber(point.dataIndex) && isNumber(this._prevPressedPoint.dataIndex)) {
-                difDataIndex_1 = point.dataIndex - this._prevPressedPoint.dataIndex;
-            }
-            var difValue_1 = null;
-            if (isNumber(point.value) && isNumber(this._prevPressedPoint.value)) {
-                difValue_1 = point.value - this._prevPressedPoint.value;
-            }
-            this.points = this._prevPressedPoints.map(function (p) {
-                var _a;
-                if (isNumber(p.timestamp)) {
-                    p.dataIndex = chartStore.timestampToDataIndex(p.timestamp);
-                }
-                var newPoint = __assign({}, p);
-                if (isNumber(difDataIndex_1) && isNumber(p.dataIndex)) {
-                    newPoint.dataIndex = p.dataIndex + difDataIndex_1;
-                    newPoint.timestamp = (_a = chartStore.dataIndexToTimestamp(newPoint.dataIndex)) !== null && _a !== void 0 ? _a : undefined;
-                }
-                if (isNumber(difValue_1) && isNumber(p.value)) {
-                    newPoint.value = p.value + difValue_1;
-                }
-                return newPoint;
-            });
-        }
-    };
-    OverlayImp.extend = function (template) {
-        var Custom = /** @class */ (function (_super) {
-            __extends(Custom, _super);
-            function Custom() {
-                return _super.call(this, template) || this;
-            }
-            return Custom;
-        }(OverlayImp));
-        return Custom;
-    };
-    return OverlayImp;
-}());
+const zhCN = {
+    time: '时间：',
+    open: '开：',
+    high: '高：',
+    low: '低：',
+    close: '收：',
+    volume: '成交量：',
+    turnover: '成交额：',
+    change: '涨幅：',
+    second: '秒',
+    minute: '',
+    hour: '小时',
+    day: '天',
+    week: '周',
+    month: '月',
+    year: '年'
+};
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -3632,44 +3849,339 @@ var OverlayImp = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var fibonacciLine = {
+const enUS = {
+    time: 'Time: ',
+    open: 'Open: ',
+    high: 'High: ',
+    low: 'Low: ',
+    close: 'Close: ',
+    volume: 'Volume: ',
+    turnover: 'Turnover: ',
+    change: 'Change: ',
+    second: 'S',
+    minute: '',
+    hour: 'H',
+    day: 'D',
+    week: 'W',
+    month: 'M',
+    year: 'Y'
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const locales = {
+    'zh-CN': zhCN,
+    'en-US': enUS
+};
+function registerLocale(locale, ls) {
+    locales[locale] = { ...locales[locale], ...ls };
+}
+function getSupportedLocales() {
+    return Object.keys(locales);
+}
+function i18n(key, locale) {
+    return locales[locale][key] ?? key;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function checkOverlayFigureEvent(targetEventType, figure) {
+    const ignoreEvent = figure?.ignoreEvent ?? false;
+    if (isBoolean(ignoreEvent)) {
+        return !ignoreEvent;
+    }
+    return !ignoreEvent.includes(targetEventType);
+}
+const OVERLAY_DRAW_STEP_START = 1;
+const OVERLAY_DRAW_STEP_FINISHED = -1;
+const OVERLAY_ID_PREFIX = 'overlay_';
+const OVERLAY_FIGURE_KEY_PREFIX = 'overlay_figure_';
+class OverlayImp {
+    id;
+    groupId = '';
+    paneId;
+    name;
+    totalStep = 1;
+    currentStep = OVERLAY_DRAW_STEP_START;
+    lock = false;
+    visible = true;
+    zLevel = 0;
+    needDefaultPointFigure = false;
+    needDefaultXAxisFigure = false;
+    needDefaultYAxisFigure = false;
+    mode = 'normal';
+    modeSensitivity = 8;
+    points = [];
+    extendData;
+    styles = null;
+    createPointFigures = null;
+    createXAxisFigures = null;
+    createYAxisFigures = null;
+    performEventPressedMove = null;
+    performEventMoveForDrawing = null;
+    onDrawStart = null;
+    onDrawing = null;
+    onDrawEnd = null;
+    onClick = null;
+    onDoubleClick = null;
+    onRightClick = null;
+    onPressedMoveStart = null;
+    onPressedMoving = null;
+    onPressedMoveEnd = null;
+    onMouseMove = null;
+    onMouseEnter = null;
+    onMouseLeave = null;
+    onRemoved = null;
+    onSelected = null;
+    onDeselected = null;
+    _prevZLevel = 0;
+    _prevOverlay;
+    _prevPressedPoint = null;
+    _prevPressedPoints = [];
+    constructor(overlay) {
+        this.override(overlay);
+    }
+    override(overlay) {
+        this._prevOverlay = clone({
+            ...this,
+            _prevOverlay: null
+        });
+        const { id, name, currentStep: _, points, styles, ...others } = overlay;
+        merge(this, others);
+        if (!isString(this.name)) {
+            this.name = name ?? '';
+        }
+        if (!isString(this.id) && isString(id)) {
+            this.id = id;
+        }
+        if (isValid(styles)) {
+            this.styles ??= {};
+            merge(this.styles, styles);
+        }
+        if (isArray(points) && points.length > 0) {
+            let repeatTotalStep = 0;
+            this.points = [...points];
+            if (points.length >= this.totalStep - 1) {
+                this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
+                repeatTotalStep = this.totalStep - 1;
+            }
+            else {
+                this.currentStep = points.length + 1;
+                repeatTotalStep = points.length;
+            }
+            // Prevent wrong drawing due to wrong points
+            if (isFunction(this.performEventMoveForDrawing)) {
+                for (let i = 0; i < repeatTotalStep; i++) {
+                    this.performEventMoveForDrawing({
+                        currentStep: i + 2,
+                        mode: this.mode,
+                        points: this.points,
+                        performPointIndex: i,
+                        performPoint: this.points[i]
+                    });
+                }
+            }
+            if (this.currentStep === OVERLAY_DRAW_STEP_FINISHED) {
+                this.performEventPressedMove?.({
+                    currentStep: this.currentStep,
+                    mode: this.mode,
+                    points: this.points,
+                    performPointIndex: this.points.length - 1,
+                    performPoint: this.points[this.points.length - 1]
+                });
+            }
+        }
+    }
+    getPrevZLevel() { return this._prevZLevel; }
+    setPrevZLevel(zLevel) { this._prevZLevel = zLevel; }
+    shouldUpdate() {
+        const sort = this._prevOverlay.zLevel !== this.zLevel;
+        const draw = sort ||
+            JSON.stringify(this._prevOverlay.points) !== JSON.stringify(this.points) ||
+            this._prevOverlay.visible !== this.visible ||
+            this._prevOverlay.extendData !== this.extendData ||
+            this._prevOverlay.styles !== this.styles;
+        return { sort, draw };
+    }
+    nextStep() {
+        if (this.currentStep === this.totalStep - 1) {
+            this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
+        }
+        else {
+            this.currentStep++;
+        }
+    }
+    forceComplete() {
+        this.currentStep = OVERLAY_DRAW_STEP_FINISHED;
+    }
+    isDrawing() {
+        return this.currentStep !== OVERLAY_DRAW_STEP_FINISHED;
+    }
+    isStart() {
+        return this.currentStep === OVERLAY_DRAW_STEP_START;
+    }
+    eventMoveForDrawing(point) {
+        const pointIndex = this.currentStep - 1;
+        const newPoint = {};
+        if (isNumber(point.timestamp)) {
+            newPoint.timestamp = point.timestamp;
+        }
+        if (isNumber(point.dataIndex)) {
+            newPoint.dataIndex = point.dataIndex;
+        }
+        if (isNumber(point.value)) {
+            newPoint.value = point.value;
+        }
+        this.points[pointIndex] = newPoint;
+        this.performEventMoveForDrawing?.({
+            currentStep: this.currentStep,
+            mode: this.mode,
+            points: this.points,
+            performPointIndex: pointIndex,
+            performPoint: newPoint
+        });
+    }
+    eventPressedPointMove(point, pointIndex) {
+        this.points[pointIndex].timestamp = point.timestamp;
+        if (isNumber(point.value)) {
+            this.points[pointIndex].value = point.value;
+        }
+        this.performEventPressedMove?.({
+            currentStep: this.currentStep,
+            points: this.points,
+            mode: this.mode,
+            performPointIndex: pointIndex,
+            performPoint: this.points[pointIndex]
+        });
+    }
+    startPressedMove(point) {
+        this._prevPressedPoint = { ...point };
+        this._prevPressedPoints = clone(this.points);
+    }
+    eventPressedOtherMove(point, chartStore) {
+        if (this._prevPressedPoint !== null) {
+            let difDataIndex = null;
+            if (isNumber(point.dataIndex) && isNumber(this._prevPressedPoint.dataIndex)) {
+                difDataIndex = point.dataIndex - this._prevPressedPoint.dataIndex;
+            }
+            let difValue = null;
+            if (isNumber(point.value) && isNumber(this._prevPressedPoint.value)) {
+                difValue = point.value - this._prevPressedPoint.value;
+            }
+            this.points = this._prevPressedPoints.map(p => {
+                if (isNumber(p.timestamp)) {
+                    p.dataIndex = chartStore.timestampToDataIndex(p.timestamp);
+                }
+                const newPoint = { ...p };
+                if (isNumber(difDataIndex) && isNumber(p.dataIndex)) {
+                    newPoint.dataIndex = p.dataIndex + difDataIndex;
+                    newPoint.timestamp = chartStore.dataIndexToTimestamp(newPoint.dataIndex) ?? undefined;
+                }
+                if (isNumber(difValue) && isNumber(p.value)) {
+                    newPoint.value = p.value + difValue;
+                }
+                return newPoint;
+            });
+        }
+    }
+    static extend(template) {
+        class Custom extends OverlayImp {
+            constructor() {
+                super(template);
+            }
+        }
+        return Custom;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const SymbolDefaultPrecisionConstants = {
+    PRICE: 2,
+    VOLUME: 0
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const fibonacciLine = {
     name: 'fibonacciLine',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var _b, _c, _d;
-        var chart = _a.chart, coordinates = _a.coordinates, bounding = _a.bounding, overlay = _a.overlay, yAxis = _a.yAxis;
-        var points = overlay.points;
+    createPointFigures: ({ chart, coordinates, bounding, overlay, yAxis }) => {
+        const points = overlay.points;
         if (coordinates.length > 0) {
-            var precision_1 = 0;
-            if ((_b = yAxis === null || yAxis === void 0 ? void 0 : yAxis.isInCandle()) !== null && _b !== void 0 ? _b : true) {
-                precision_1 = (_d = (_c = chart.getSymbol()) === null || _c === void 0 ? void 0 : _c.pricePrecision) !== null && _d !== void 0 ? _d : SymbolDefaultPrecisionConstants.PRICE;
+            let precision = 0;
+            if (yAxis?.isInCandle() ?? true) {
+                precision = chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
             }
             else {
-                var indicators = chart.getIndicators({ paneId: overlay.paneId });
-                indicators.forEach(function (indicator) {
-                    precision_1 = Math.max(precision_1, indicator.precision);
+                const indicators = chart.getIndicators({ paneId: overlay.paneId });
+                indicators.forEach(indicator => {
+                    precision = Math.max(precision, indicator.precision);
                 });
             }
-            var lines_1 = [];
-            var texts_1 = [];
-            var startX_1 = 0;
-            var endX_1 = bounding.width;
+            const lines = [];
+            const texts = [];
+            const startX = 0;
+            const endX = bounding.width;
             if (coordinates.length > 1 && isNumber(points[0].value) && isNumber(points[1].value)) {
-                var percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
-                var yDif_1 = coordinates[0].y - coordinates[1].y;
-                var valueDif_1 = points[0].value - points[1].value;
-                percents.forEach(function (percent) {
-                    var _a;
-                    var y = coordinates[1].y + yDif_1 * percent;
-                    var value = chart.getDecimalFold().format(chart.getThousandsSeparator().format((((_a = points[1].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * percent).toFixed(precision_1)));
-                    lines_1.push({ coordinates: [{ x: startX_1, y: y }, { x: endX_1, y: y }] });
-                    texts_1.push({
-                        x: startX_1,
-                        y: y,
-                        text: "".concat(value, " (").concat((percent * 100).toFixed(1), "%)"),
+                const percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+                const yDif = coordinates[0].y - coordinates[1].y;
+                const valueDif = points[0].value - points[1].value;
+                percents.forEach(percent => {
+                    const y = coordinates[1].y + yDif * percent;
+                    const value = chart.getDecimalFold().format(chart.getThousandsSeparator().format(((points[1].value ?? 0) + valueDif * percent).toFixed(precision)));
+                    lines.push({ coordinates: [{ x: startX, y }, { x: endX, y }] });
+                    texts.push({
+                        x: startX,
+                        y,
+                        text: `${value} (${(percent * 100).toFixed(1)}%)`,
                         baseline: 'bottom'
                     });
                 });
@@ -3677,11 +4189,11 @@ var fibonacciLine = {
             return [
                 {
                     type: 'line',
-                    attrs: lines_1
+                    attrs: lines
                 }, {
                     type: 'text',
                     isCheckEvent: false,
-                    attrs: texts_1
+                    attrs: texts
                 }
             ];
         }
@@ -3702,15 +4214,14 @@ var fibonacciLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var horizontalRayLine = {
+const horizontalRayLine = {
     name: 'horizontalRayLine',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        var coordinate = { x: 0, y: coordinates[0].y };
+    createPointFigures: ({ coordinates, bounding }) => {
+        const coordinate = { x: 0, y: coordinates[0].y };
         if (isValid(coordinates[1]) && coordinates[0].x < coordinates[1].x) {
             coordinate.x = bounding.width;
         }
@@ -3721,13 +4232,11 @@ var horizontalRayLine = {
             }
         ];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPoint }) => {
         points[0].value = performPoint.value;
         points[1].value = performPoint.value;
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
             points[0].value = performPoint.value;
         }
@@ -3747,17 +4256,16 @@ var horizontalRayLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var horizontalSegment = {
+const horizontalSegment = {
     name: 'horizontalSegment',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var lines = [];
+    createPointFigures: ({ coordinates }) => {
+        const lines = [];
         if (coordinates.length === 2) {
-            lines.push({ coordinates: coordinates });
+            lines.push({ coordinates });
         }
         return [
             {
@@ -3766,13 +4274,11 @@ var horizontalSegment = {
             }
         ];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPoint }) => {
         points[0].value = performPoint.value;
         points[1].value = performPoint.value;
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
             points[0].value = performPoint.value;
         }
@@ -3792,322 +4298,26 @@ var horizontalSegment = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var horizontalStraightLine = {
+const horizontalStraightLine = {
     name: 'horizontalStraightLine',
     totalStep: 2,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [{
-                type: 'line',
-                attrs: {
-                    coordinates: [
-                        {
-                            x: 0,
-                            y: coordinates[0].y
-                        }, {
-                            x: bounding.width,
-                            y: coordinates[0].y
-                        }
-                    ]
-                }
-            }];
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var Eventful = /** @class */ (function () {
-    function Eventful() {
-        this._children = [];
-        this._callbacks = new Map();
-    }
-    Eventful.prototype.registerEvent = function (name, callback) {
-        this._callbacks.set(name, callback);
-        return this;
-    };
-    Eventful.prototype.onEvent = function (name, event) {
-        var callback = this._callbacks.get(name);
-        if (isValid(callback) && this.checkEventOn(event)) {
-            return callback(event);
-        }
-        return false;
-    };
-    Eventful.prototype.dispatchEventToChildren = function (name, event) {
-        var start = this._children.length - 1;
-        if (start > -1) {
-            for (var i = start; i > -1; i--) {
-                if (this._children[i].dispatchEvent(name, event)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-    Eventful.prototype.dispatchEvent = function (name, event) {
-        if (this.dispatchEventToChildren(name, event)) {
-            return true;
-        }
-        return this.onEvent(name, event);
-    };
-    Eventful.prototype.addChild = function (eventful) {
-        this._children.push(eventful);
-        return this;
-    };
-    Eventful.prototype.clear = function () {
-        this._children = [];
-    };
-    return Eventful;
-}());
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var DEVIATION = 2;
-var FigureImp = /** @class */ (function (_super) {
-    __extends(FigureImp, _super);
-    function FigureImp(figure) {
-        var _this = _super.call(this) || this;
-        _this.attrs = figure.attrs;
-        _this.styles = figure.styles;
-        return _this;
-    }
-    FigureImp.prototype.checkEventOn = function (event) {
-        return this.checkEventOnImp(event, this.attrs, this.styles);
-    };
-    FigureImp.prototype.setAttrs = function (attrs) {
-        this.attrs = attrs;
-        return this;
-    };
-    FigureImp.prototype.setStyles = function (styles) {
-        this.styles = styles;
-        return this;
-    };
-    FigureImp.prototype.draw = function (ctx) {
-        this.drawImp(ctx, this.attrs, this.styles);
-    };
-    FigureImp.extend = function (figure) {
-        var Custom = /** @class */ (function (_super) {
-            __extends(Custom, _super);
-            function Custom() {
-                return _super !== null && _super.apply(this, arguments) || this;
-            }
-            Custom.prototype.checkEventOnImp = function (coordinate, attrs, styles) {
-                return figure.checkEventOn(coordinate, attrs, styles);
-            };
-            Custom.prototype.drawImp = function (ctx, attrs, styles) {
-                figure.draw(ctx, attrs, styles);
-            };
-            return Custom;
-        }(FigureImp));
-        return Custom;
-    };
-    return FigureImp;
-}(Eventful));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function checkCoordinateOnLine(coordinate, attrs) {
-    var e_1, _a;
-    var lines = [];
-    lines = lines.concat(attrs);
-    try {
-        for (var lines_1 = __values(lines), lines_1_1 = lines_1.next(); !lines_1_1.done; lines_1_1 = lines_1.next()) {
-            var line_1 = lines_1_1.value;
-            var coordinates = line_1.coordinates;
-            if (coordinates.length > 1) {
-                for (var i = 1; i < coordinates.length; i++) {
-                    var prevCoordinate = coordinates[i - 1];
-                    var currentCoordinate = coordinates[i];
-                    if (prevCoordinate.x === currentCoordinate.x) {
-                        if (Math.abs(prevCoordinate.y - coordinate.y) + Math.abs(currentCoordinate.y - coordinate.y) - Math.abs(prevCoordinate.y - currentCoordinate.y) < DEVIATION + DEVIATION &&
-                            Math.abs(coordinate.x - prevCoordinate.x) < DEVIATION) {
-                            return true;
-                        }
+    createPointFigures: ({ coordinates, bounding }) => [{
+            type: 'line',
+            attrs: {
+                coordinates: [
+                    {
+                        x: 0,
+                        y: coordinates[0].y
+                    }, {
+                        x: bounding.width,
+                        y: coordinates[0].y
                     }
-                    else {
-                        var kb = getLinearSlopeIntercept(prevCoordinate, currentCoordinate);
-                        var y = getLinearYFromSlopeIntercept(kb, coordinate);
-                        var yDif = Math.abs(y - coordinate.y);
-                        if (Math.abs(prevCoordinate.x - coordinate.x) + Math.abs(currentCoordinate.x - coordinate.x) - Math.abs(prevCoordinate.x - currentCoordinate.x) < DEVIATION + DEVIATION &&
-                            yDif * yDif / (kb[0] * kb[0] + 1) < DEVIATION * DEVIATION) {
-                            return true;
-                        }
-                    }
-                }
+                ]
             }
-        }
-    }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (lines_1_1 && !lines_1_1.done && (_a = lines_1.return)) _a.call(lines_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function getLinearYFromSlopeIntercept(kb, coordinate) {
-    if (kb !== null) {
-        return coordinate.x * kb[0] + kb[1];
-    }
-    return coordinate.y;
-}
-/**
- * 获取点在两点决定的一次函数上的y值
- * @param coordinate1
- * @param coordinate2
- * @param targetCoordinate
- */
-function getLinearYFromCoordinates(coordinate1, coordinate2, targetCoordinate) {
-    var kb = getLinearSlopeIntercept(coordinate1, coordinate2);
-    return getLinearYFromSlopeIntercept(kb, targetCoordinate);
-}
-function getLinearSlopeIntercept(coordinate1, coordinate2) {
-    var difX = coordinate1.x - coordinate2.x;
-    if (difX !== 0) {
-        var k = (coordinate1.y - coordinate2.y) / difX;
-        var b = coordinate1.y - k * coordinate1.x;
-        return [k, b];
-    }
-    return null;
-}
-function lineTo(ctx, coordinates, smooth) {
-    var length = coordinates.length;
-    var smoothParam = isNumber(smooth) ? (smooth > 0 && smooth < 1 ? smooth : 0) : (smooth ? 0.5 : 0);
-    if ((smoothParam > 0) && length > 2) {
-        var cpx0 = coordinates[0].x;
-        var cpy0 = coordinates[0].y;
-        for (var i = 1; i < length - 1; i++) {
-            var prevCoordinate = coordinates[i - 1];
-            var coordinate = coordinates[i];
-            var nextCoordinate = coordinates[i + 1];
-            var dx01 = coordinate.x - prevCoordinate.x;
-            var dy01 = coordinate.y - prevCoordinate.y;
-            var dx12 = nextCoordinate.x - coordinate.x;
-            var dy12 = nextCoordinate.y - coordinate.y;
-            var dx02 = nextCoordinate.x - prevCoordinate.x;
-            var dy02 = nextCoordinate.y - prevCoordinate.y;
-            var prevSegmentLength = Math.sqrt(dx01 * dx01 + dy01 * dy01);
-            var nextSegmentLength = Math.sqrt(dx12 * dx12 + dy12 * dy12);
-            var segmentLengthRatio = nextSegmentLength / (nextSegmentLength + prevSegmentLength);
-            var nextCpx = coordinate.x + dx02 * smoothParam * segmentLengthRatio;
-            var nextCpy = coordinate.y + dy02 * smoothParam * segmentLengthRatio;
-            nextCpx = Math.min(nextCpx, Math.max(nextCoordinate.x, coordinate.x));
-            nextCpy = Math.min(nextCpy, Math.max(nextCoordinate.y, coordinate.y));
-            nextCpx = Math.max(nextCpx, Math.min(nextCoordinate.x, coordinate.x));
-            nextCpy = Math.max(nextCpy, Math.min(nextCoordinate.y, coordinate.y));
-            dx02 = nextCpx - coordinate.x;
-            dy02 = nextCpy - coordinate.y;
-            var cpx1 = coordinate.x - dx02 * prevSegmentLength / nextSegmentLength;
-            var cpy1 = coordinate.y - dy02 * prevSegmentLength / nextSegmentLength;
-            cpx1 = Math.min(cpx1, Math.max(prevCoordinate.x, coordinate.x));
-            cpy1 = Math.min(cpy1, Math.max(prevCoordinate.y, coordinate.y));
-            cpx1 = Math.max(cpx1, Math.min(prevCoordinate.x, coordinate.x));
-            cpy1 = Math.max(cpy1, Math.min(prevCoordinate.y, coordinate.y));
-            dx02 = coordinate.x - cpx1;
-            dy02 = coordinate.y - cpy1;
-            nextCpx = coordinate.x + dx02 * nextSegmentLength / prevSegmentLength;
-            nextCpy = coordinate.y + dy02 * nextSegmentLength / prevSegmentLength;
-            ctx.bezierCurveTo(cpx0, cpy0, cpx1, cpy1, coordinate.x, coordinate.y);
-            cpx0 = nextCpx;
-            cpy0 = nextCpy;
-        }
-        var lastCoordinate = coordinates[length - 1];
-        ctx.bezierCurveTo(cpx0, cpy0, lastCoordinate.x, lastCoordinate.y, lastCoordinate.x, lastCoordinate.y);
-    }
-    else {
-        for (var i = 1; i < length; i++) {
-            ctx.lineTo(coordinates[i].x, coordinates[i].y);
-        }
-    }
-}
-function drawLine(ctx, attrs, styles) {
-    var lines = [];
-    lines = lines.concat(attrs);
-    var _a = styles.style, style = _a === void 0 ? 'solid' : _a, _b = styles.smooth, smooth = _b === void 0 ? false : _b, _c = styles.size, size = _c === void 0 ? 1 : _c, _d = styles.color, color = _d === void 0 ? 'currentColor' : _d, _e = styles.dashedValue, dashedValue = _e === void 0 ? [2, 2] : _e;
-    ctx.lineWidth = size;
-    ctx.strokeStyle = color;
-    if (style === 'dashed') {
-        ctx.setLineDash(dashedValue);
-    }
-    else {
-        ctx.setLineDash([]);
-    }
-    var correction = size % 2 === 1 ? 0.5 : 0;
-    lines.forEach(function (_a) {
-        var coordinates = _a.coordinates;
-        if (coordinates.length > 1) {
-            if (coordinates.length === 2 &&
-                (coordinates[0].x === coordinates[1].x ||
-                    coordinates[0].y === coordinates[1].y)) {
-                ctx.beginPath();
-                if (coordinates[0].x === coordinates[1].x) {
-                    ctx.moveTo(coordinates[0].x + correction, coordinates[0].y);
-                    ctx.lineTo(coordinates[1].x + correction, coordinates[1].y);
-                }
-                else {
-                    ctx.moveTo(coordinates[0].x, coordinates[0].y + correction);
-                    ctx.lineTo(coordinates[1].x, coordinates[1].y + correction);
-                }
-                ctx.stroke();
-                ctx.closePath();
-            }
-            else {
-                ctx.save();
-                if (size % 2 === 1) {
-                    ctx.translate(0.5, 0.5);
-                }
-                ctx.beginPath();
-                ctx.moveTo(coordinates[0].x, coordinates[0].y);
-                lineTo(ctx, coordinates, smooth);
-                ctx.stroke();
-                ctx.closePath();
-                ctx.restore();
-            }
-        }
-    });
-}
-var line = {
-    name: 'line',
-    checkEventOn: checkCoordinateOnLine,
-    draw: function (ctx, attrs, styles) {
-        drawLine(ctx, attrs, styles);
-    }
+        }]
 };
 
 /**
@@ -4131,35 +4341,35 @@ var line = {
  * @returns {Array}
  */
 function getParallelLines(coordinates, bounding, extendParallelLineCount) {
-    var count = extendParallelLineCount !== null && extendParallelLineCount !== void 0 ? extendParallelLineCount : 0;
-    var lines = [];
+    const count = extendParallelLineCount ?? 0;
+    const lines = [];
     if (coordinates.length > 1) {
         if (coordinates[0].x === coordinates[1].x) {
-            var startY = 0;
-            var endY = bounding.height;
+            const startY = 0;
+            const endY = bounding.height;
             lines.push({ coordinates: [{ x: coordinates[0].x, y: startY }, { x: coordinates[0].x, y: endY }] });
             if (coordinates.length > 2) {
                 lines.push({ coordinates: [{ x: coordinates[2].x, y: startY }, { x: coordinates[2].x, y: endY }] });
-                var distance = coordinates[0].x - coordinates[2].x;
-                for (var i = 0; i < count; i++) {
-                    var d = distance * (i + 1);
+                const distance = coordinates[0].x - coordinates[2].x;
+                for (let i = 0; i < count; i++) {
+                    const d = distance * (i + 1);
                     lines.push({ coordinates: [{ x: coordinates[0].x + d, y: startY }, { x: coordinates[0].x + d, y: endY }] });
                 }
             }
         }
         else {
-            var startX = 0;
-            var endX = bounding.width;
-            var kb = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
-            var k = kb[0];
-            var b = kb[1];
+            const startX = 0;
+            const endX = bounding.width;
+            const kb = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            const k = kb[0];
+            const b = kb[1];
             lines.push({ coordinates: [{ x: startX, y: startX * k + b }, { x: endX, y: endX * k + b }] });
             if (coordinates.length > 2) {
-                var b1 = coordinates[2].y - k * coordinates[2].x;
+                const b1 = coordinates[2].y - k * coordinates[2].x;
                 lines.push({ coordinates: [{ x: startX, y: startX * k + b1 }, { x: endX, y: endX * k + b1 }] });
-                var distance = b - b1;
-                for (var i = 0; i < count; i++) {
-                    var b2 = b + distance * (i + 1);
+                const distance = b - b1;
+                for (let i = 0; i < count; i++) {
+                    const b2 = b + distance * (i + 1);
                     lines.push({ coordinates: [{ x: startX, y: startX * k + b2 }, { x: endX, y: endX * k + b2 }] });
                 }
             }
@@ -4167,21 +4377,18 @@ function getParallelLines(coordinates, bounding, extendParallelLineCount) {
     }
     return lines;
 }
-var parallelStraightLine = {
+const parallelStraightLine = {
     name: 'parallelStraightLine',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            {
-                type: 'line',
-                attrs: getParallelLines(coordinates, bounding)
-            }
-        ];
-    }
+    createPointFigures: ({ coordinates, bounding }) => [
+        {
+            type: 'line',
+            attrs: getParallelLines(coordinates, bounding)
+        }
+    ]
 };
 
 /**
@@ -4197,21 +4404,18 @@ var parallelStraightLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var priceChannelLine = {
+const priceChannelLine = {
     name: 'priceChannelLine',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            {
-                type: 'line',
-                attrs: getParallelLines(coordinates, bounding, 1)
-            }
-        ];
-    }
+    createPointFigures: ({ coordinates, bounding }) => [
+        {
+            type: 'line',
+            attrs: getParallelLines(coordinates, bounding, 1)
+        }
+    ]
 };
 
 /**
@@ -4227,26 +4431,24 @@ var priceChannelLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var priceLine = {
+const priceLine = {
     name: 'priceLine',
     totalStep: 2,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var _b, _c, _d;
-        var chart = _a.chart, coordinates = _a.coordinates, bounding = _a.bounding, overlay = _a.overlay, yAxis = _a.yAxis;
-        var precision = 0;
-        if ((_b = yAxis === null || yAxis === void 0 ? void 0 : yAxis.isInCandle()) !== null && _b !== void 0 ? _b : true) {
-            precision = (_d = (_c = chart.getSymbol()) === null || _c === void 0 ? void 0 : _c.pricePrecision) !== null && _d !== void 0 ? _d : SymbolDefaultPrecisionConstants.PRICE;
+    createPointFigures: ({ chart, coordinates, bounding, overlay, yAxis }) => {
+        let precision = 0;
+        if (yAxis?.isInCandle() ?? true) {
+            precision = chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
         }
         else {
-            var indicators = chart.getIndicators({ paneId: overlay.paneId });
-            indicators.forEach(function (indicator) {
+            const indicators = chart.getIndicators({ paneId: overlay.paneId });
+            indicators.forEach(indicator => {
                 precision = Math.max(precision, indicator.precision);
             });
         }
-        var _e = (overlay.points)[0].value, value = _e === void 0 ? 0 : _e;
+        const { value = 0 } = (overlay.points)[0];
         return [
             {
                 type: 'line',
@@ -4279,9 +4481,9 @@ var priceLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function getRayLine(coordinates, bounding) {
+function getRayLine$1(coordinates, bounding) {
     if (coordinates.length > 1) {
-        var coordinate = { x: 0, y: 0 };
+        let coordinate = { x: 0, y: 0 };
         if (coordinates[0].x === coordinates[1].x && coordinates[0].y !== coordinates[1].y) {
             if (coordinates[0].y < coordinates[1].y) {
                 coordinate = {
@@ -4312,21 +4514,18 @@ function getRayLine(coordinates, bounding) {
     }
     return [];
 }
-var rayLine = {
+const rayLine = {
     name: 'rayLine',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            {
-                type: 'line',
-                attrs: getRayLine(coordinates, bounding)
-            }
-        ];
-    }
+    createPointFigures: ({ coordinates, bounding }) => [
+        {
+            type: 'line',
+            attrs: getRayLine$1(coordinates, bounding)
+        }
+    ]
 };
 
 /**
@@ -4342,19 +4541,18 @@ var rayLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var segment = {
+const segment = {
     name: 'segment',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length === 2) {
             return [
                 {
                     type: 'line',
-                    attrs: { coordinates: coordinates }
+                    attrs: { coordinates }
                 }
             ];
         }
@@ -4375,14 +4573,13 @@ var segment = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var straightLine = {
+const straightLine = {
     name: 'straightLine',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, bounding }) => {
         if (coordinates.length === 2) {
             if (coordinates[0].x === coordinates[1].x) {
                 return [
@@ -4436,16 +4633,15 @@ var straightLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var verticalRayLine = {
+const verticalRayLine = {
     name: 'verticalRayLine',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, bounding }) => {
         if (coordinates.length === 2) {
-            var coordinate = { x: coordinates[0].x, y: 0 };
+            const coordinate = { x: coordinates[0].x, y: 0 };
             if (coordinates[0].y < coordinates[1].y) {
                 coordinate.y = bounding.height;
             }
@@ -4458,15 +4654,13 @@ var verticalRayLine = {
         }
         return [];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPoint }) => {
         points[0].timestamp = performPoint.timestamp;
         points[0].dataIndex = performPoint.dataIndex;
         points[1].timestamp = performPoint.timestamp;
         points[1].dataIndex = performPoint.dataIndex;
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
             points[0].timestamp = performPoint.timestamp;
             points[0].dataIndex = performPoint.dataIndex;
@@ -4487,33 +4681,30 @@ var verticalRayLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var verticalSegment = {
+const verticalSegment = {
     name: 'verticalSegment',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length === 2) {
             return [
                 {
                     type: 'line',
-                    attrs: { coordinates: coordinates }
+                    attrs: { coordinates }
                 }
             ];
         }
         return [];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPoint }) => {
         points[0].timestamp = performPoint.timestamp;
         points[0].dataIndex = performPoint.dataIndex;
         points[1].timestamp = performPoint.timestamp;
         points[1].dataIndex = performPoint.dataIndex;
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
             points[0].timestamp = performPoint.timestamp;
             points[0].dataIndex = performPoint.dataIndex;
@@ -4534,31 +4725,28 @@ var verticalSegment = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var verticalStraightLine = {
+const verticalStraightLine = {
     name: 'verticalStraightLine',
     totalStep: 2,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            {
-                type: 'line',
-                attrs: {
-                    coordinates: [
-                        {
-                            x: coordinates[0].x,
-                            y: 0
-                        }, {
-                            x: coordinates[0].x,
-                            y: bounding.height
-                        }
-                    ]
-                }
+    createPointFigures: ({ coordinates, bounding }) => [
+        {
+            type: 'line',
+            attrs: {
+                coordinates: [
+                    {
+                        x: coordinates[0].x,
+                        y: 0
+                    }, {
+                        x: coordinates[0].x,
+                        y: bounding.height
+                    }
+                ]
             }
-        ];
-    }
+        }
+    ]
 };
 
 /**
@@ -4574,28 +4762,26 @@ var verticalStraightLine = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var simpleAnnotation = {
+const simpleAnnotation = {
     name: 'simpleAnnotation',
     totalStep: 2,
     styles: {
         line: { style: 'dashed' }
     },
-    createPointFigures: function (_a) {
-        var _b;
-        var overlay = _a.overlay, coordinates = _a.coordinates;
-        var text = '';
+    createPointFigures: ({ overlay, coordinates }) => {
+        let text = '';
         if (isValid(overlay.extendData)) {
             if (!isFunction(overlay.extendData)) {
-                text = ((_b = overlay.extendData) !== null && _b !== void 0 ? _b : '');
+                text = (overlay.extendData ?? '');
             }
             else {
                 text = (overlay.extendData(overlay));
             }
         }
-        var startX = coordinates[0].x;
-        var startY = coordinates[0].y - 6;
-        var lineEndY = startY - 50;
-        var arrowEndY = lineEndY - 5;
+        const startX = coordinates[0].x;
+        const startY = coordinates[0].y - 6;
+        const lineEndY = startY - 50;
+        const arrowEndY = lineEndY - 5;
         return [
             {
                 type: 'line',
@@ -4609,7 +4795,7 @@ var simpleAnnotation = {
             },
             {
                 type: 'text',
-                attrs: { x: startX, y: arrowEndY, text: text, align: 'center', baseline: 'bottom' },
+                attrs: { x: startX, y: arrowEndY, text, align: 'center', baseline: 'bottom' },
                 ignoreEvent: true
             }
         ];
@@ -4629,31 +4815,26 @@ var simpleAnnotation = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var simpleTag = {
+const simpleTag = {
     name: 'simpleTag',
     totalStep: 2,
     styles: {
         line: { style: 'dashed' }
     },
-    createPointFigures: function (_a) {
-        var bounding = _a.bounding, coordinates = _a.coordinates;
-        return ({
-            type: 'line',
-            attrs: {
-                coordinates: [
-                    { x: 0, y: coordinates[0].y },
-                    { x: bounding.width, y: coordinates[0].y }
-                ]
-            },
-            ignoreEvent: true
-        });
-    },
-    createYAxisFigures: function (_a) {
-        var _b, _c, _d, _e;
-        var chart = _a.chart, overlay = _a.overlay, coordinates = _a.coordinates, bounding = _a.bounding, yAxis = _a.yAxis;
-        var isFromZero = (_b = yAxis === null || yAxis === void 0 ? void 0 : yAxis.isFromZero()) !== null && _b !== void 0 ? _b : false;
-        var textAlign = 'left';
-        var x = 0;
+    createPointFigures: ({ bounding, coordinates }) => ({
+        type: 'line',
+        attrs: {
+            coordinates: [
+                { x: 0, y: coordinates[0].y },
+                { x: bounding.width, y: coordinates[0].y }
+            ]
+        },
+        ignoreEvent: true
+    }),
+    createYAxisFigures: ({ chart, overlay, coordinates, bounding, yAxis }) => {
+        const isFromZero = yAxis?.isFromZero() ?? false;
+        let textAlign = 'left';
+        let x = 0;
         if (isFromZero) {
             textAlign = 'left';
             x = 0;
@@ -4662,51 +4843,50 @@ var simpleTag = {
             textAlign = 'right';
             x = bounding.width;
         }
-        var text = '';
+        let text = '';
         if (isValid(overlay.extendData)) {
             if (!isFunction(overlay.extendData)) {
-                text = ((_c = overlay.extendData) !== null && _c !== void 0 ? _c : '');
+                text = (overlay.extendData ?? '');
             }
             else {
                 text = overlay.extendData(overlay);
             }
         }
         if (!isValid(text) && isNumber(overlay.points[0].value)) {
-            text = formatPrecision(overlay.points[0].value, (_e = (_d = chart.getSymbol()) === null || _d === void 0 ? void 0 : _d.pricePrecision) !== null && _e !== void 0 ? _e : SymbolDefaultPrecisionConstants.PRICE);
+            text = formatPrecision(overlay.points[0].value, chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE);
         }
-        return { type: 'text', attrs: { x: x, y: coordinates[0].y, text: text, align: textAlign, baseline: 'middle' } };
+        return { type: 'text', attrs: { x, y: coordinates[0].y, text, align: textAlign, baseline: 'middle' } };
     }
 };
 
-function rotatePoint$2(point, center, angle) {
-    var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
-    var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
-    return { x: x, y: y };
+function rotatePoint$1(point, center, angle) {
+    const x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
+    const y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
+    return { x, y };
 }
-var arrow$1 = {
+const arrow$1 = {
     name: 'arrow',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
-            var slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
-            var angle = void 0;
+            const direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            const slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            let angle;
             if (slopeIntercept) {
                 angle = Math.atan(slopeIntercept[0]) + Math.PI * direction;
             }
             else {
                 angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
             }
-            var arrowLeft = rotatePoint$2({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
-            var arrowRight = rotatePoint$2({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
+            const arrowLeft = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
+            const arrowRight = rotatePoint$1({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
             return [
                 {
                     type: 'line',
-                    attrs: { coordinates: coordinates }
+                    attrs: { coordinates }
                 },
                 {
                     type: 'line',
@@ -4722,11 +4902,11 @@ var arrow$1 = {
 };
 
 function distance$2(p1, p2) {
-    var dx = Math.abs(p1.x - p2.x);
-    var dy = Math.abs(p1.y - p2.y);
+    const dx = Math.abs(p1.x - p2.x);
+    const dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-var circle$2 = {
+const circle$1 = {
     name: 'circle',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4735,13 +4915,12 @@ var circle$2 = {
     styles: {
         circle: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var r = distance$2(coordinates[0], coordinates[1]);
+            const r = distance$2(coordinates[0], coordinates[1]);
             return {
                 type: 'circle',
-                attrs: __assign(__assign({}, coordinates[0]), { r: r }),
+                attrs: { ...coordinates[0], r },
                 styles: { style: 'stroke_fill' }
             };
         }
@@ -4749,7 +4928,7 @@ var circle$2 = {
     }
 };
 
-var rect$2 = {
+const rect$1 = {
     name: 'rect',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -4758,26 +4937,23 @@ var rect$2 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        return coordinates.length > 1
-            ? [{
-                    type: 'polygon',
-                    attrs: {
-                        coordinates: [
-                            coordinates[0],
-                            { x: coordinates[1].x, y: coordinates[0].y },
-                            coordinates[1],
-                            { x: coordinates[0].x, y: coordinates[1].y }
-                        ]
-                    },
-                    styles: { style: 'stroke_fill' }
-                }]
-            : [];
-    }
+    createPointFigures: ({ coordinates }) => coordinates.length > 1
+        ? [{
+                type: 'polygon',
+                attrs: {
+                    coordinates: [
+                        coordinates[0],
+                        { x: coordinates[1].x, y: coordinates[0].y },
+                        coordinates[1],
+                        { x: coordinates[0].x, y: coordinates[1].y }
+                    ]
+                },
+                styles: { style: 'stroke_fill' }
+            }]
+        : []
 };
 
-var triangle$1 = {
+const triangle$1 = {
     name: 'triangle',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -4786,17 +4962,14 @@ var triangle$1 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        return [{
-                type: 'polygon',
-                attrs: { coordinates: coordinates },
-                styles: { style: 'stroke_fill' }
-            }];
-    }
+    createPointFigures: ({ coordinates }) => [{
+            type: 'polygon',
+            attrs: { coordinates },
+            styles: { style: 'stroke_fill' }
+        }]
 };
 
-var parallelogram$1 = {
+const parallelogram$1 = {
     name: 'parallelogram',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -4805,17 +4978,16 @@ var parallelogram$1 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length === 2) {
             return [{
                     type: 'line',
                     ignoreEvent: true,
-                    attrs: { coordinates: coordinates }
+                    attrs: { coordinates }
                 }];
         }
         if (coordinates.length === 3) {
-            var fourth = {
+            const fourth = {
                 x: coordinates[0].x + coordinates[2].x - coordinates[1].x,
                 y: coordinates[0].y + coordinates[2].y - coordinates[1].y
             };
@@ -4829,15 +5001,13 @@ var parallelogram$1 = {
         }
         return [];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         if (performPointIndex < 2) {
             points[0].value = performPoint.value;
             points[1].value = performPoint.value;
         }
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
             points[0].value = performPoint.value;
         }
@@ -4845,69 +5015,64 @@ var parallelogram$1 = {
 };
 
 function distance$1(p1, p2) {
-    var dx = Math.abs(p1.x - p2.x);
-    var dy = Math.abs(p1.y - p2.y);
+    const dx = Math.abs(p1.x - p2.x);
+    const dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-var fibonacciCircle$1 = {
+const fibonacciCircle$1 = {
     name: 'fibonacciCircle',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var radius_1 = distance$1(coordinates[0], coordinates[1]);
-            var percents = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            var circles_1 = [];
-            var texts_1 = [];
-            percents.forEach(function (p) {
-                var r = radius_1 * p;
-                circles_1.push(__assign(__assign({}, coordinates[0]), { r: r }));
-                texts_1.push({
+            const radius = distance$1(coordinates[0], coordinates[1]);
+            const percents = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            const circles = [];
+            const texts = [];
+            percents.forEach(p => {
+                const r = radius * p;
+                circles.push({ ...coordinates[0], r });
+                texts.push({
                     x: coordinates[0].x,
                     y: coordinates[0].y + r + 6,
-                    text: "".concat((p * 100).toFixed(1), "%")
+                    text: `${(p * 100).toFixed(1)}%`
                 });
             });
             return [
-                { type: 'circle', attrs: circles_1, styles: { style: 'stroke' } },
-                { type: 'text', ignoreEvent: true, attrs: texts_1 }
+                { type: 'circle', attrs: circles, styles: { style: 'stroke' } },
+                { type: 'text', ignoreEvent: true, attrs: texts }
             ];
         }
         return [];
     }
 };
 
-var fibonacciSegment$1 = {
+const fibonacciSegment$1 = {
     name: 'fibonacciSegment',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var _b, _c;
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var lines = [];
-        var texts = [];
+    createPointFigures: ({ coordinates, overlay }) => {
+        const lines = [];
+        const texts = [];
         if (coordinates.length > 1) {
-            var leftX_1 = coordinates[1].x > coordinates[0].x ? coordinates[0].x : coordinates[1].x;
-            var percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
-            var yDif_1 = coordinates[0].y - coordinates[1].y;
-            var points_1 = overlay.points;
-            var valueDif_1 = ((_b = points_1[0].value) !== null && _b !== void 0 ? _b : 0) - ((_c = points_1[1].value) !== null && _c !== void 0 ? _c : 0);
-            percents.forEach(function (p) {
-                var _a;
-                var y = coordinates[1].y + yDif_1 * p;
-                var value = (((_a = points_1[1].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
+            const leftX = coordinates[1].x > coordinates[0].x ? coordinates[0].x : coordinates[1].x;
+            const percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+            const yDif = coordinates[0].y - coordinates[1].y;
+            const points = overlay.points;
+            const valueDif = (points[0].value ?? 0) - (points[1].value ?? 0);
+            percents.forEach(p => {
+                const y = coordinates[1].y + yDif * p;
+                const value = ((points[1].value ?? 0) + valueDif * p).toFixed(2);
                 lines.push({
-                    coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }]
+                    coordinates: [{ x: coordinates[0].x, y }, { x: coordinates[1].x, y }]
                 });
                 texts.push({
-                    x: leftX_1,
-                    y: y,
-                    text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                    x: leftX, y,
+                    text: `${value} (${(p * 100).toFixed(1)}%)`,
                     baseline: 'bottom'
                 });
             });
@@ -4919,40 +5084,36 @@ var fibonacciSegment$1 = {
     }
 };
 
-var fibonacciExtension$1 = {
+const fibonacciExtension$1 = {
     name: 'fibonacciExtension',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var _b, _c;
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var lines = [];
-        var texts = [];
+    createPointFigures: ({ coordinates, overlay }) => {
+        const lines = [];
+        const texts = [];
         if (coordinates.length > 2) {
-            var points_1 = overlay.points;
-            var valueDif_1 = ((_b = points_1[1].value) !== null && _b !== void 0 ? _b : 0) - ((_c = points_1[0].value) !== null && _c !== void 0 ? _c : 0);
-            var yDif_1 = coordinates[1].y - coordinates[0].y;
-            var percents = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            var leftX_1 = coordinates[2].x > coordinates[1].x ? coordinates[1].x : coordinates[2].x;
-            percents.forEach(function (p) {
-                var _a;
-                var y = coordinates[2].y + yDif_1 * p;
-                var value = (((_a = points_1[2].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
+            const points = overlay.points;
+            const valueDif = (points[1].value ?? 0) - (points[0].value ?? 0);
+            const yDif = coordinates[1].y - coordinates[0].y;
+            const percents = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            const leftX = coordinates[2].x > coordinates[1].x ? coordinates[1].x : coordinates[2].x;
+            percents.forEach(p => {
+                const y = coordinates[2].y + yDif * p;
+                const value = ((points[2].value ?? 0) + valueDif * p).toFixed(2);
                 lines.push({
-                    coordinates: [{ x: coordinates[1].x, y: y }, { x: coordinates[2].x, y: y }]
+                    coordinates: [{ x: coordinates[1].x, y }, { x: coordinates[2].x, y }]
                 });
                 texts.push({
-                    x: leftX_1,
-                    y: y,
-                    text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                    x: leftX, y,
+                    text: `${value} (${(p * 100).toFixed(1)}%)`,
                     baseline: 'bottom'
                 });
             });
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates }, styles: { style: 'dashed' } },
+            { type: 'line', attrs: { coordinates }, styles: { style: 'dashed' } },
             { type: 'line', attrs: lines },
             { type: 'text', ignoreEvent: true, attrs: texts }
         ];
@@ -4960,18 +5121,18 @@ var fibonacciExtension$1 = {
 };
 
 function distance(p1, p2) {
-    var dx = Math.abs(p1.x - p2.x);
-    var dy = Math.abs(p1.y - p2.y);
+    const dx = Math.abs(p1.x - p2.x);
+    const dy = Math.abs(p1.y - p2.y);
     return Math.sqrt(dx * dx + dy * dy);
 }
-function rotatePoint$1(point, center, angle) {
-    var x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
-    var y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
-    return { x: x, y: y };
+function rotatePoint(point, center, angle) {
+    const x = (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle) + center.x;
+    const y = (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) + center.y;
+    return { x, y };
 }
-function extendLine$2(coords, bounding) {
+function extendLine$1(coords, bounding) {
     if (coords.length > 1) {
-        var end = void 0;
+        let end;
         if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
             end = coords[0].y < coords[1].y
                 ? { x: coords[0].x, y: bounding.height }
@@ -4987,36 +5148,35 @@ function extendLine$2(coords, bounding) {
     }
     return [];
 }
-var fibonacciSpiral$1 = {
+const fibonacciSpiral$1 = {
     name: 'fibonacciSpiral',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, bounding }) => {
         if (coordinates.length > 1) {
-            var baseRadius = distance(coordinates[0], coordinates[1]) / Math.sqrt(24);
-            var direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
-            var slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
-            var angle = void 0;
+            const baseRadius = distance(coordinates[0], coordinates[1]) / Math.sqrt(24);
+            const direction = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            const slopeIntercept = getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            let angle;
             if (slopeIntercept) {
                 angle = Math.atan(slopeIntercept[0]) + Math.PI * direction;
             }
             else {
                 angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
             }
-            var p1 = rotatePoint$1({ x: coordinates[0].x - baseRadius, y: coordinates[0].y }, coordinates[0], angle);
-            var p2 = rotatePoint$1({ x: coordinates[0].x - baseRadius, y: coordinates[0].y - baseRadius }, coordinates[0], angle);
-            var arcs = [
-                __assign(__assign({}, p1), { r: baseRadius, startAngle: angle, endAngle: angle + Math.PI / 2 }),
-                __assign(__assign({}, p2), { r: baseRadius * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI })
+            const p1 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y }, coordinates[0], angle);
+            const p2 = rotatePoint({ x: coordinates[0].x - baseRadius, y: coordinates[0].y - baseRadius }, coordinates[0], angle);
+            const arcs = [
+                { ...p1, r: baseRadius, startAngle: angle, endAngle: angle + Math.PI / 2 },
+                { ...p2, r: baseRadius * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI }
             ];
-            var cx = coordinates[0].x - baseRadius;
-            var cy = coordinates[0].y - baseRadius;
-            for (var i = 2; i < 9; i++) {
-                var r = arcs[i - 2].r + arcs[i - 1].r;
-                var startAngle = 0;
+            let cx = coordinates[0].x - baseRadius;
+            let cy = coordinates[0].y - baseRadius;
+            for (let i = 2; i < 9; i++) {
+                const r = arcs[i - 2].r + arcs[i - 1].r;
+                let startAngle = 0;
                 switch (i % 4) {
                     case 0:
                         startAngle = angle;
@@ -5035,21 +5195,21 @@ var fibonacciSpiral$1 = {
                         cy += arcs[i - 2].r;
                         break;
                 }
-                var center = rotatePoint$1({ x: cx, y: cy }, coordinates[0], angle);
-                arcs.push(__assign(__assign({}, center), { r: r, startAngle: startAngle, endAngle: startAngle + Math.PI / 2 }));
+                const center = rotatePoint({ x: cx, y: cy }, coordinates[0], angle);
+                arcs.push({ ...center, r, startAngle, endAngle: startAngle + Math.PI / 2 });
             }
             return [
                 { type: 'arc', attrs: arcs },
-                { type: 'line', attrs: extendLine$2(coordinates, bounding) }
+                { type: 'line', attrs: extendLine$1(coordinates, bounding) }
             ];
         }
         return [];
     }
 };
 
-function extendLine$1(coords, bounding) {
+function extendLine(coords, bounding) {
     if (coords.length > 1) {
-        var end = void 0;
+        let end;
         if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
             end = coords[0].y < coords[1].y
                 ? { x: coords[0].x, y: bounding.height }
@@ -5065,33 +5225,32 @@ function extendLine$1(coords, bounding) {
     }
     return [];
 }
-var fibonacciSpeedResistanceFan$1 = {
+const fibonacciSpeedResistanceFan$1 = {
     name: 'fibonacciSpeedResistanceFan',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        var gridLines = [];
-        var fanLines = [];
-        var texts = [];
+    createPointFigures: ({ coordinates, bounding }) => {
+        const gridLines = [];
+        let fanLines = [];
+        const texts = [];
         if (coordinates.length > 1) {
-            var _b = __read(coordinates, 2), p0_1 = _b[0], p1_1 = _b[1];
-            var textOffsetX_1 = p1_1.x > p0_1.x ? -38 : 4;
-            var textOffsetY_1 = p1_1.y > p0_1.y ? -2 : 20;
-            var dx_1 = p1_1.x - p0_1.x;
-            var dy_1 = p1_1.y - p0_1.y;
-            var percents = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
-            percents.forEach(function (p) {
-                var x = p1_1.x - dx_1 * p;
-                var y = p1_1.y - dy_1 * p;
-                gridLines.push({ coordinates: [{ x: x, y: p0_1.y }, { x: x, y: p1_1.y }] });
-                gridLines.push({ coordinates: [{ x: p0_1.x, y: y }, { x: p1_1.x, y: y }] });
-                fanLines = fanLines.concat(extendLine$1([p0_1, { x: x, y: p1_1.y }], bounding));
-                fanLines = fanLines.concat(extendLine$1([p0_1, { x: p1_1.x, y: y }], bounding));
-                texts.unshift({ x: p0_1.x + textOffsetX_1, y: y + 10, text: "".concat(p.toFixed(3)) });
-                texts.unshift({ x: x - 18, y: p0_1.y + textOffsetY_1, text: "".concat(p.toFixed(3)) });
+            const [p0, p1] = coordinates;
+            const textOffsetX = p1.x > p0.x ? -38 : 4;
+            const textOffsetY = p1.y > p0.y ? -2 : 20;
+            const dx = p1.x - p0.x;
+            const dy = p1.y - p0.y;
+            const percents = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
+            percents.forEach(p => {
+                const x = p1.x - dx * p;
+                const y = p1.y - dy * p;
+                gridLines.push({ coordinates: [{ x, y: p0.y }, { x, y: p1.y }] });
+                gridLines.push({ coordinates: [{ x: p0.x, y }, { x: p1.x, y }] });
+                fanLines = fanLines.concat(extendLine([p0, { x, y: p1.y }], bounding));
+                fanLines = fanLines.concat(extendLine([p0, { x: p1.x, y }], bounding));
+                texts.unshift({ x: p0.x + textOffsetX, y: y + 10, text: `${p.toFixed(3)}` });
+                texts.unshift({ x: x - 18, y: p0.y + textOffsetY, text: `${p.toFixed(3)}` });
             });
         }
         return [
@@ -5102,54 +5261,51 @@ var fibonacciSpeedResistanceFan$1 = {
     }
 };
 
-var fibonacciDiagonal$1 = {
+const fibonacciDiagonal$1 = {
     name: 'fibonacciDiagonal',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var points = overlay.points;
+    createPointFigures: ({ coordinates, overlay }) => {
+        const points = overlay.points;
         if (coordinates.length > 0) {
-            var lines_1 = [];
-            var texts_1 = [];
-            var startX_1 = coordinates[0].x;
-            var endX_1 = coordinates[coordinates.length - 1].x;
+            const lines = [];
+            const texts = [];
+            const startX = coordinates[0].x;
+            const endX = coordinates[coordinates.length - 1].x;
             if (coordinates.length > 1 && points[0].value !== undefined && points[1].value !== undefined) {
-                var percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
-                var yDif_1 = coordinates[0].y - coordinates[1].y;
-                var valueDif_1 = points[0].value - points[1].value;
-                percents.forEach(function (p) {
-                    var _a;
-                    var y = coordinates[1].y + yDif_1 * p;
-                    var value = (((_a = points[1].value) !== null && _a !== void 0 ? _a : 0) + valueDif_1 * p).toFixed(2);
-                    lines_1.push({ coordinates: [{ x: startX_1, y: y }, { x: endX_1, y: y }] });
-                    texts_1.push({
-                        x: startX_1,
-                        y: y,
-                        text: "".concat(value, " (").concat((p * 100).toFixed(1), "%)"),
+                const percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+                const yDif = coordinates[0].y - coordinates[1].y;
+                const valueDif = points[0].value - points[1].value;
+                percents.forEach(p => {
+                    const y = coordinates[1].y + yDif * p;
+                    const value = ((points[1].value ?? 0) + valueDif * p).toFixed(2);
+                    lines.push({ coordinates: [{ x: startX, y }, { x: endX, y }] });
+                    texts.push({
+                        x: startX, y,
+                        text: `${value} (${(p * 100).toFixed(1)}%)`,
                         baseline: 'bottom'
                     });
                 });
                 // Diagonal line connecting first to last level
-                lines_1.push({
+                lines.push({
                     coordinates: [
-                        { x: lines_1[0].coordinates[0].x, y: lines_1[0].coordinates[0].y },
-                        { x: lines_1[percents.length - 1].coordinates[1].x, y: lines_1[percents.length - 1].coordinates[1].y }
+                        { x: lines[0].coordinates[0].x, y: lines[0].coordinates[0].y },
+                        { x: lines[percents.length - 1].coordinates[1].x, y: lines[percents.length - 1].coordinates[1].y }
                     ]
                 });
             }
             return [
-                { type: 'line', attrs: lines_1 },
-                { type: 'text', isCheckEvent: false, attrs: texts_1 }
+                { type: 'line', attrs: lines },
+                { type: 'text', isCheckEvent: false, attrs: texts }
             ];
         }
         return [];
     }
 };
 
-var gannBox$1 = {
+const gannBox$1 = {
     name: 'gannBox',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5158,25 +5314,24 @@ var gannBox$1 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var _b = __read(coordinates, 2), p0 = _b[0], p1 = _b[1];
-            var yQuarter = (p1.y - p0.y) / 4;
-            var xDif = p1.x - p0.x;
+            const [p0, p1] = coordinates;
+            const yQuarter = (p1.y - p0.y) / 4;
+            const xDif = p1.x - p0.x;
             // Dashed internal lines
-            var dashed = [
+            const dashed = [
                 { coordinates: [p0, { x: p1.x, y: p1.y - yQuarter }] },
                 { coordinates: [p0, { x: p1.x, y: p1.y - yQuarter * 2 }] },
                 { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y + yQuarter }] },
                 { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y + yQuarter * 2 }] },
-                { coordinates: [__assign({}, p0), { x: p0.x + xDif * 0.236, y: p1.y }] },
-                { coordinates: [__assign({}, p0), { x: p0.x + xDif * 0.5, y: p1.y }] },
+                { coordinates: [{ ...p0 }, { x: p0.x + xDif * 0.236, y: p1.y }] },
+                { coordinates: [{ ...p0 }, { x: p0.x + xDif * 0.5, y: p1.y }] },
                 { coordinates: [{ x: p0.x, y: p1.y }, { x: p0.x + xDif * 0.236, y: p0.y }] },
                 { coordinates: [{ x: p0.x, y: p1.y }, { x: p0.x + xDif * 0.5, y: p0.y }] }
             ];
             // Diagonals
-            var diagonals = [
+            const diagonals = [
                 { coordinates: [p0, p1] },
                 { coordinates: [{ x: p0.x, y: p1.y }, { x: p1.x, y: p0.y }] }
             ];
@@ -5208,38 +5363,44 @@ var gannBox$1 = {
 
 function createWaveOverlay(name, totalStep) {
     return {
-        name: name,
-        totalStep: totalStep,
+        name,
+        totalStep,
         needDefaultPointFigure: true,
         needDefaultXAxisFigure: true,
         needDefaultYAxisFigure: true,
-        createPointFigures: function (_a) {
-            var coordinates = _a.coordinates;
-            var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { text: "(".concat(i, ")"), baseline: 'bottom' })); });
+        createPointFigures: ({ coordinates }) => {
+            const texts = coordinates.map((c, i) => ({
+                ...c,
+                text: `(${i})`,
+                baseline: 'bottom'
+            }));
             return [
-                { type: 'line', attrs: { coordinates: coordinates } },
+                { type: 'line', attrs: { coordinates } },
                 { type: 'text', ignoreEvent: true, attrs: texts }
             ];
         }
     };
 }
-var threeWaves$1 = createWaveOverlay('threeWaves', 5);
-var fiveWaves$1 = createWaveOverlay('fiveWaves', 7);
-var eightWaves$1 = createWaveOverlay('eightWaves', 10);
-var anyWaves$1 = createWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
+const threeWaves$1 = createWaveOverlay('threeWaves', 5);
+const fiveWaves$1 = createWaveOverlay('fiveWaves', 7);
+const eightWaves$1 = createWaveOverlay('eightWaves', 10);
+const anyWaves$1 = createWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
 
-var abcd$1 = {
+const abcd$1 = {
     name: 'abcd',
     totalStep: 5,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var labels = ['A', 'B', 'C', 'D'];
-        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
-        var acLine = [];
-        var bdLine = [];
+    createPointFigures: ({ coordinates }) => {
+        const labels = ['A', 'B', 'C', 'D'];
+        const texts = coordinates.map((c, i) => ({
+            ...c,
+            baseline: 'bottom',
+            text: `(${labels[i]})`
+        }));
+        let acLine = [];
+        let bdLine = [];
         if (coordinates.length > 2) {
             acLine = [coordinates[0], coordinates[2]];
             if (coordinates.length > 3) {
@@ -5247,7 +5408,7 @@ var abcd$1 = {
             }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: { coordinates } },
             {
                 type: 'line',
                 attrs: [{ coordinates: acLine }, { coordinates: bdLine }],
@@ -5258,7 +5419,7 @@ var abcd$1 = {
     }
 };
 
-var xabcd$1 = {
+const xabcd$1 = {
     name: 'xabcd',
     totalStep: 6,
     needDefaultPointFigure: true,
@@ -5267,12 +5428,15 @@ var xabcd$1 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var dashed = [];
-        var polygons = [];
-        var labels = ['X', 'A', 'B', 'C', 'D'];
-        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+    createPointFigures: ({ coordinates }) => {
+        const dashed = [];
+        const polygons = [];
+        const labels = ['X', 'A', 'B', 'C', 'D'];
+        const texts = coordinates.map((c, i) => ({
+            ...c,
+            baseline: 'bottom',
+            text: `(${labels[i]})`
+        }));
         if (coordinates.length > 2) {
             dashed.push({ coordinates: [coordinates[0], coordinates[2]] });
             polygons.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
@@ -5285,7 +5449,7 @@ var xabcd$1 = {
             }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: { coordinates } },
             { type: 'line', attrs: dashed, styles: { style: 'dashed' } },
             { type: 'polygon', ignoreEvent: true, attrs: polygons },
             { type: 'text', ignoreEvent: true, attrs: texts }
@@ -5293,25 +5457,26 @@ var xabcd$1 = {
     }
 };
 
-var elliotTripleComboWaves = {
+const elliotTripleComboWaves$1 = {
     name: 'elliotTripleComboWaves',
     totalStep: 6,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var labels = ['(0)', '(W)', '(X)', '(Y)', '(Z)'];
-        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
+    createPointFigures: ({ coordinates }) => {
+        const labels = ['(0)', '(W)', '(X)', '(Y)', '(Z)'];
+        const texts = coordinates.map((c, i) => ({
+            ...c, baseline: 'bottom', text: `(${labels[i]})`
+        }));
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: { coordinates } },
             { type: 'line', attrs: [{ coordinates: [] }, { coordinates: [] }], styles: { style: 'dashed' } },
             { type: 'text', ignoreEvent: true, attrs: texts }
         ];
     }
 };
 
-var headAndShoulders$1 = {
+const headAndShoulders$1 = {
     name: 'headAndShoulders',
     totalStep: 8,
     needDefaultPointFigure: true,
@@ -5320,12 +5485,13 @@ var headAndShoulders$1 = {
     styles: {
         polygon: { color: 'rgba(22, 119, 255, 0.15)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var dashed = [];
-        var polygons = [];
-        var labels = ['1', 'Left Shoulder', '2', 'Head', '3', 'Right Shoulder', '4'];
-        var texts = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "".concat(labels[i]) })); });
+    createPointFigures: ({ coordinates }) => {
+        const dashed = [];
+        const polygons = [];
+        const labels = ['1', 'Left Shoulder', '2', 'Head', '3', 'Right Shoulder', '4'];
+        const texts = coordinates.map((c, i) => ({
+            ...c, baseline: 'bottom', text: `${labels[i]}`
+        }));
         if (coordinates.length > 2) {
             dashed.push({ coordinates: [coordinates[0], coordinates[2]] });
             polygons.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
@@ -5339,7 +5505,7 @@ var headAndShoulders$1 = {
             }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
+            { type: 'line', attrs: { coordinates } },
             { type: 'line', attrs: dashed, styles: { style: 'dashed' } },
             { type: 'polygon', ignoreEvent: true, attrs: polygons },
             { type: 'text', ignoreEvent: true, attrs: texts }
@@ -5347,7 +5513,7 @@ var headAndShoulders$1 = {
     }
 };
 
-var measure$1 = {
+const measure$1 = {
     name: 'measure',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5358,27 +5524,25 @@ var measure$1 = {
         tipBackgroundColor: '#1677FF',
         lineColor: '#1677FF'
     },
-    createPointFigures: function (_a) {
-        var _b, _c, _d, _e, _f, _g, _h, _j;
-        var coordinates = _a.coordinates, overlay = _a.overlay, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, overlay, bounding }) => {
         if (coordinates.length > 1) {
-            var _k = __read(coordinates, 2), p0 = _k[0], p1 = _k[1];
-            var val1 = (_b = overlay.points[1]) === null || _b === void 0 ? void 0 : _b.value;
-            var val0 = (_c = overlay.points[0]) === null || _c === void 0 ? void 0 : _c.value;
-            var pctChange = 0;
-            var priceDiff = 0;
+            const [p0, p1] = coordinates;
+            const val1 = overlay.points[1]?.value;
+            const val0 = overlay.points[0]?.value;
+            let pctChange = 0;
+            let priceDiff = 0;
             if (val0 !== undefined && val1 !== undefined) {
                 pctChange = (val1 - val0) / val0 * 100;
                 priceDiff = val1 - val0;
             }
-            var isRight = p0.x < p1.x;
-            var isDown = p0.y < p1.y;
-            var center = { x: Math.round((p0.x + p1.x) / 2), y: Math.round((p0.y + p1.y) / 2) };
-            var bgColor = (_e = (_d = overlay.styles) === null || _d === void 0 ? void 0 : _d.backgroundColor) !== null && _e !== void 0 ? _e : 'rgba(22, 119, 255, 0.25)';
-            var tipColor = (_g = (_f = overlay.styles) === null || _f === void 0 ? void 0 : _f.tipBackgroundColor) !== null && _g !== void 0 ? _g : '#1677FF';
-            var lineColor = (_j = (_h = overlay.styles) === null || _h === void 0 ? void 0 : _h.lineColor) !== null && _j !== void 0 ? _j : '#1677FF';
-            var label = "".concat(priceDiff.toFixed(2), " (").concat(pctChange.toFixed(2), "%)");
-            var figures = [
+            const isRight = p0.x < p1.x;
+            const isDown = p0.y < p1.y;
+            const center = { x: Math.round((p0.x + p1.x) / 2), y: Math.round((p0.y + p1.y) / 2) };
+            const bgColor = overlay.styles?.backgroundColor ?? 'rgba(22, 119, 255, 0.25)';
+            const tipColor = overlay.styles?.tipBackgroundColor ?? '#1677FF';
+            const lineColor = overlay.styles?.lineColor ?? '#1677FF';
+            const label = `${priceDiff.toFixed(2)} (${pctChange.toFixed(2)}%)`;
+            const figures = [
                 // Background rect
                 {
                     type: 'polygon',
@@ -5407,9 +5571,9 @@ var measure$1 = {
                 figures.push({ type: 'line', attrs: { coordinates: [{ x: center.x - 4, y: p1.y + 6 }, { x: center.x, y: p1.y }, { x: center.x + 4, y: p1.y + 6 }] }, styles: { color: lineColor } });
             }
             // Tooltip
-            var tipHeight = 1 * 12 + 8 * 2;
-            var tipWidth = calcTextWidth(label) + 12 * 2;
-            var tipY = void 0;
+            const tipHeight = 1 * 12 + 8 * 2;
+            let tipWidth = calcTextWidth(label) + 12 * 2;
+            let tipY;
             if (isDown) {
                 tipY = p1.y + 8 + tipHeight > bounding.height ? bounding.height - tipHeight : p1.y + 8;
             }
@@ -5432,28 +5596,25 @@ var measure$1 = {
     }
 };
 
-var crossLine$1 = {
+const crossLine$1 = {
     name: 'crossLine',
     totalStep: 2,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            {
-                type: 'line',
-                attrs: { coordinates: [{ x: 0, y: coordinates[0].y }, { x: bounding.width, y: coordinates[0].y }] }
-            },
-            {
-                type: 'line',
-                attrs: { coordinates: [{ x: coordinates[0].x, y: 0 }, { x: coordinates[0].x, y: bounding.height }] }
-            }
-        ];
-    }
+    createPointFigures: ({ coordinates, bounding }) => [
+        {
+            type: 'line',
+            attrs: { coordinates: [{ x: 0, y: coordinates[0].y }, { x: bounding.width, y: coordinates[0].y }] }
+        },
+        {
+            type: 'line',
+            attrs: { coordinates: [{ x: coordinates[0].x, y: 0 }, { x: coordinates[0].x, y: bounding.height }] }
+        }
+    ]
 };
 
-var flatTopBottom = {
+const flatTopBottom = {
     name: 'faltTopBottom',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -5463,11 +5624,10 @@ var flatTopBottom = {
         polygon: { color: '#FCB9002b' },
         line: { size: 2, color: '#FCB900' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var lines = [];
-        var polygons = [];
-        var topLines = [];
+    createPointFigures: ({ coordinates }) => {
+        let lines = [];
+        const polygons = [];
+        const topLines = [];
         if (coordinates.length > 2) {
             lines = [{ coordinates: [{ x: coordinates[0].x, y: coordinates[2].y }, { x: coordinates[1].x, y: coordinates[2].y }] }];
             polygons.push({
@@ -5480,7 +5640,7 @@ var flatTopBottom = {
             topLines.push({ coordinates: [coordinates[0], coordinates[1]] });
         }
         else {
-            lines = [{ coordinates: coordinates }];
+            lines = [{ coordinates }];
         }
         return [
             { type: 'line', attrs: lines, size: 2 },
@@ -5488,15 +5648,13 @@ var flatTopBottom = {
             { type: 'line', attrs: topLines, size: 2 }
         ];
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 3) {
             points[1].timestamp = performPoint.timestamp;
             points[1].dataIndex = performPoint.dataIndex;
         }
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         switch (performPointIndex) {
             case 1:
                 points[2].timestamp = performPoint.timestamp;
@@ -5513,7 +5671,7 @@ var flatTopBottom = {
     }
 };
 
-var disJointChannel = {
+const disJointChannel$1 = {
     name: 'disJointChannel',
     totalStep: 4,
     needDefaultPointFigure: true,
@@ -5523,11 +5681,10 @@ var disJointChannel = {
         polygon: { color: '#FCB9002b' },
         line: { size: 2, color: '#FCB900' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var mainLines = [];
-        var secondLines = [];
-        var height = 0;
+    createPointFigures: ({ coordinates }) => {
+        let mainLines = [];
+        const secondLines = [];
+        let height = 0;
         if (coordinates.length >= 2) {
             height = Math.abs(coordinates[1].y - coordinates[0].y);
         }
@@ -5546,22 +5703,20 @@ var disJointChannel = {
             });
         }
         else {
-            mainLines = [{ coordinates: coordinates }];
+            mainLines = [{ coordinates }];
         }
         return [
             { type: 'line', ignoreEvent: false, attrs: mainLines },
             { type: 'line', ignoreEvent: false, attrs: secondLines }
         ];
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 3) {
             points[1].timestamp = performPoint.timestamp;
             points[1].dataIndex = performPoint.dataIndex;
         }
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         switch (performPointIndex) {
             case 1:
                 points[2].timestamp = performPoint.timestamp;
@@ -5575,7 +5730,7 @@ var disJointChannel = {
     }
 };
 
-var arcOverlay$1 = {
+const arcOverlay = {
     name: 'arc',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -5584,16 +5739,15 @@ var arcOverlay$1 = {
     styles: {
         arc: { color: 'rgba(22, 119, 255)' }
     },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var cx = (coordinates[0].x + coordinates[1].x) / 2;
-            var cy = (coordinates[0].y + coordinates[1].y) / 2;
-            var r = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
+            const cx = (coordinates[0].x + coordinates[1].x) / 2;
+            const cy = (coordinates[0].y + coordinates[1].y) / 2;
+            const r = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
                 Math.pow(coordinates[1].y - coordinates[0].y, 2)) / 2;
             return [{
                     type: 'arc',
-                    attrs: { x: cx, y: cy, r: r, startAngle: 0, endAngle: Math.PI },
+                    attrs: { x: cx, y: cy, r, startAngle: 0, endAngle: Math.PI },
                     styles: { style: 'solid' }
                 }];
         }
@@ -5601,21 +5755,20 @@ var arcOverlay$1 = {
     }
 };
 
-var tradingPlan$1 = {
+const tradingPlan$1 = {
     name: 'tradingPlan',
     totalStep: 5,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: false,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var len = coordinates.length;
+    createPointFigures: ({ coordinates }) => {
+        const len = coordinates.length;
         if (len >= 2) {
             if (len === 2) {
-                return [{ type: 'line', attrs: { coordinates: coordinates } }];
+                return [{ type: 'line', attrs: { coordinates } }];
             }
             if (len >= 3) {
-                var stopLoss = {
+                const stopLoss = {
                     type: 'polygon',
                     attrs: {
                         coordinates: [
@@ -5628,7 +5781,7 @@ var tradingPlan$1 = {
                 };
                 if (len === 3)
                     return [stopLoss];
-                var takeProfit = {
+                const takeProfit = {
                     type: 'polygon',
                     attrs: {
                         coordinates: [
@@ -5644,8 +5797,7 @@ var tradingPlan$1 = {
         }
         return [];
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         switch (currentStep) {
             case 2:
                 points[0].value = performPoint.value;
@@ -5660,8 +5812,7 @@ var tradingPlan$1 = {
                 break;
         }
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         switch (performPointIndex) {
             case 0:
                 points[1].value = performPoint.value;
@@ -5696,38 +5847,36 @@ var tradingPlan$1 = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var overlays = {};
-var extensions$1 = [
+const overlays$1 = {};
+const extensions = [
     // Base overlays
     fibonacciLine, horizontalRayLine, horizontalSegment, horizontalStraightLine,
     parallelStraightLine, priceChannelLine, priceLine, rayLine, segment,
     straightLine, verticalRayLine, verticalSegment, verticalStraightLine,
     simpleAnnotation, simpleTag,
     // Pro overlays
-    arrow$1, circle$2, rect$2, triangle$1, parallelogram$1,
+    arrow$1, circle$1, rect$1, triangle$1, parallelogram$1,
     fibonacciCircle$1, fibonacciSegment$1, fibonacciExtension$1,
     fibonacciSpiral$1, fibonacciSpeedResistanceFan$1, fibonacciDiagonal$1,
     gannBox$1, threeWaves$1, fiveWaves$1, eightWaves$1, anyWaves$1,
-    abcd$1, xabcd$1, elliotTripleComboWaves, headAndShoulders$1,
-    measure$1, crossLine$1, flatTopBottom, disJointChannel,
-    arcOverlay$1, tradingPlan$1
+    abcd$1, xabcd$1, elliotTripleComboWaves$1, headAndShoulders$1,
+    measure$1, crossLine$1, flatTopBottom, disJointChannel$1,
+    arcOverlay, tradingPlan$1
 ];
-extensions$1.forEach(function (template) {
-    overlays[template.name] = OverlayImp.extend(template);
+extensions.forEach((template) => {
+    overlays$1[template.name] = OverlayImp.extend(template);
 });
 function registerOverlay(template) {
-    overlays[template.name] = OverlayImp.extend(template);
+    overlays$1[template.name] = OverlayImp.extend(template);
 }
 function getOverlayInnerClass(name) {
-    var _a;
-    return (_a = overlays[name]) !== null && _a !== void 0 ? _a : null;
+    return overlays$1[name] ?? null;
 }
 function getOverlayClass(name) {
-    var _a;
-    return (_a = overlays[name]) !== null && _a !== void 0 ? _a : null;
+    return overlays$1[name] ?? null;
 }
 function getSupportedOverlays() {
-    return Object.keys(overlays);
+    return Object.keys(overlays$1);
 }
 
 /**
@@ -5743,7 +5892,7 @@ function getSupportedOverlays() {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var light = {
+const light = {
     grid: {
         horizontal: {
             color: '#EDEDED'
@@ -5844,7 +5993,7 @@ var light = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var dark = {
+const dark = {
     grid: {
         horizontal: {
             color: '#292929'
@@ -5945,16 +6094,15 @@ var dark = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var styles = {
-    light: light,
-    dark: dark
+const styles = {
+    light,
+    dark
 };
 function registerStyles(name, ss) {
     styles[name] = ss;
 }
 function getStyles(name) {
-    var _a;
-    return (_a = styles[name]) !== null && _a !== void 0 ? _a : null;
+    return styles[name] ?? null;
 }
 
 /**
@@ -5970,9 +6118,286 @@ function getStyles(name) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var PANE_MIN_HEIGHT = 30;
-var PANE_DEFAULT_HEIGHT = 100;
-var PaneIdConstants = {
+function getDefaultAxisRange() {
+    return {
+        from: 0,
+        to: 0,
+        range: 0,
+        realFrom: 0,
+        realTo: 0,
+        realRange: 0,
+        displayFrom: 0,
+        displayTo: 0,
+        displayRange: 0
+    };
+}
+class AxisImp {
+    name;
+    scrollZoomEnabled = true;
+    createTicks;
+    _parent;
+    _range = getDefaultAxisRange();
+    _prevRange = getDefaultAxisRange();
+    _ticks = [];
+    _autoCalcTickFlag = true;
+    constructor(parent) {
+        this._parent = parent;
+    }
+    getParent() { return this._parent; }
+    buildTicks(force) {
+        if (this._autoCalcTickFlag) {
+            this._range = this.createRangeImp();
+        }
+        if (this._prevRange.from !== this._range.from || this._prevRange.to !== this._range.to || force) {
+            this._prevRange = this._range;
+            this._ticks = this.createTicksImp();
+            return true;
+        }
+        return false;
+    }
+    getTicks() {
+        return this._ticks;
+    }
+    setRange(range) {
+        this._autoCalcTickFlag = false;
+        this._range = range;
+    }
+    getRange() { return this._range; }
+    setAutoCalcTickFlag(flag) {
+        this._autoCalcTickFlag = flag;
+    }
+    getAutoCalcTickFlag() { return this._autoCalcTickFlag; }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const PeriodTypeXAxisFormat = {
+    second: 'HH:mm:ss',
+    minute: 'HH:mm',
+    hour: 'MM-DD HH:mm',
+    day: 'YYYY-MM-DD',
+    week: 'YYYY-MM-DD',
+    month: 'YYYY-MM',
+    year: 'YYYY'
+};
+const PeriodTypeCrosshairTooltipFormat = {
+    second: 'HH:mm:ss',
+    minute: 'YYYY-MM-DD HH:mm',
+    hour: 'YYYY-MM-DD HH:mm',
+    day: 'YYYY-MM-DD',
+    week: 'YYYY-MM-DD',
+    month: 'YYYY-MM',
+    year: 'YYYY'
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class XAxisImp extends AxisImp {
+    constructor(parent, xAxis) {
+        super(parent);
+        this.override(xAxis);
+    }
+    override(xAxis) {
+        const { name, scrollZoomEnabled, createTicks } = xAxis;
+        if (!isString(this.name)) {
+            this.name = name;
+        }
+        this.scrollZoomEnabled = scrollZoomEnabled ?? this.scrollZoomEnabled;
+        this.createTicks = createTicks ?? this.createTicks;
+    }
+    createRangeImp() {
+        const chartStore = this.getParent().getChart().getChartStore();
+        const visibleDataRange = chartStore.getVisibleRange();
+        const { realFrom, realTo } = visibleDataRange;
+        const af = realFrom;
+        const at = realTo;
+        const diff = realTo - realFrom + 1;
+        const range = {
+            from: af,
+            to: at,
+            range: diff,
+            realFrom: af,
+            realTo: at,
+            realRange: diff,
+            displayFrom: af,
+            displayTo: at,
+            displayRange: diff
+        };
+        return range;
+    }
+    createTicksImp() {
+        const { realFrom, realTo, from } = this.getRange();
+        const chartStore = this.getParent().getChart().getChartStore();
+        const formatDate = chartStore.getInnerFormatter().formatDate;
+        const period = chartStore.getPeriod();
+        const ticks = [];
+        const barSpace = chartStore.getBarSpace().bar;
+        const textStyles = chartStore.getStyles().xAxis.tickText;
+        const tickTextWidth = Math.max(calcTextWidth('YYYY-MM-DD HH:mm:ss', textStyles.size, textStyles.weight, textStyles.family), this.getBounding().width / 8);
+        let tickBetweenBarCount = Math.ceil(tickTextWidth / barSpace);
+        if (tickBetweenBarCount % 2 !== 0) {
+            tickBetweenBarCount += 1;
+        }
+        const startDataIndex = Math.max(0, Math.floor(realFrom / tickBetweenBarCount) * tickBetweenBarCount);
+        for (let i = startDataIndex; i < realTo; i += tickBetweenBarCount) {
+            if (i >= from) {
+                const timestamp = chartStore.dataIndexToTimestamp(i);
+                if (isNumber(timestamp)) {
+                    ticks.push({
+                        coord: this.convertToPixel(i),
+                        value: timestamp,
+                        text: formatDate(timestamp, PeriodTypeXAxisFormat[period?.type ?? 'day'], 'xAxis')
+                    });
+                }
+            }
+        }
+        if (isFunction(this.createTicks)) {
+            return this.createTicks({
+                range: this.getRange(),
+                bounding: this.getBounding(),
+                defaultTicks: ticks
+            });
+        }
+        return ticks;
+    }
+    getAutoSize() {
+        const styles = this.getParent().getChart().getStyles();
+        const xAxisStyles = styles.xAxis;
+        const height = xAxisStyles.size;
+        if (height !== 'auto') {
+            return height;
+        }
+        const crosshairStyles = styles.crosshair;
+        let xAxisHeight = 0;
+        if (xAxisStyles.show) {
+            if (xAxisStyles.axisLine.show) {
+                xAxisHeight += xAxisStyles.axisLine.size;
+            }
+            if (xAxisStyles.tickLine.show) {
+                xAxisHeight += xAxisStyles.tickLine.length;
+            }
+            if (xAxisStyles.tickText.show) {
+                xAxisHeight += (xAxisStyles.tickText.marginStart + xAxisStyles.tickText.marginEnd + xAxisStyles.tickText.size);
+            }
+        }
+        let crosshairVerticalTextHeight = 0;
+        if (crosshairStyles.show &&
+            crosshairStyles.vertical.show &&
+            crosshairStyles.vertical.text.show) {
+            crosshairVerticalTextHeight += (crosshairStyles.vertical.text.paddingTop +
+                crosshairStyles.vertical.text.paddingBottom +
+                crosshairStyles.vertical.text.borderSize * 2 +
+                crosshairStyles.vertical.text.size);
+        }
+        return Math.max(xAxisHeight, crosshairVerticalTextHeight);
+    }
+    getBounding() {
+        return this.getParent().getMainWidget().getBounding();
+    }
+    convertTimestampFromPixel(pixel) {
+        const chartStore = this.getParent().getChart().getChartStore();
+        const dataIndex = chartStore.coordinateToDataIndex(pixel);
+        return chartStore.dataIndexToTimestamp(dataIndex);
+    }
+    convertTimestampToPixel(timestamp) {
+        const chartStore = this.getParent().getChart().getChartStore();
+        const dataIndex = chartStore.timestampToDataIndex(timestamp);
+        return chartStore.dataIndexToCoordinate(dataIndex);
+    }
+    convertFromPixel(pixel) {
+        return this.getParent().getChart().getChartStore().coordinateToDataIndex(pixel);
+    }
+    convertToPixel(value) {
+        return this.getParent().getChart().getChartStore().dataIndexToCoordinate(value);
+    }
+    static extend(template) {
+        class Custom extends XAxisImp {
+            constructor(parent) {
+                super(parent, template);
+            }
+        }
+        return Custom;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const normal$1 = {
+    name: 'normal'
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const xAxises = {
+    normal: XAxisImp.extend(normal$1)
+};
+function registerXAxis(axis) {
+    xAxises[axis.name] = XAxisImp.extend(axis);
+}
+function getXAxisClass(name) {
+    return xAxises[name] ?? xAxises.normal;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const PANE_MIN_HEIGHT = 30;
+const PANE_DEFAULT_HEIGHT = 100;
+const PaneIdConstants = {
     CANDLE: 'candle_pane',
     INDICATOR: 'indicator_pane_',
     X_AXIS: 'x_axis_pane'
@@ -5991,203 +6416,1050 @@ var PaneIdConstants = {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var BarSpaceLimitConstants = {
+const TICK_COUNT = 8;
+class YAxisImp extends AxisImp {
+    reverse = false;
+    inside = false;
+    position = 'right';
+    gap = {
+        top: 0.2,
+        bottom: 0.1
+    };
+    createRange = params => params.defaultRange;
+    minSpan = precision => index10(-precision);
+    valueToRealValue = value => value;
+    realValueToDisplayValue = value => value;
+    displayValueToRealValue = value => value;
+    realValueToValue = value => value;
+    displayValueToText = (value, precision) => formatPrecision(value, precision);
+    constructor(parent, yAxis) {
+        super(parent);
+        this.override(yAxis);
+    }
+    override(yAxis) {
+        const { name, gap, ...others } = yAxis;
+        if (!isString(this.name)) {
+            this.name = name;
+        }
+        merge(this.gap, gap);
+        merge(this, others);
+    }
+    createRangeImp() {
+        const parent = this.getParent();
+        const chart = parent.getChart();
+        const chartStore = chart.getChartStore();
+        const paneId = parent.getId();
+        let min = Number.MAX_SAFE_INTEGER;
+        let max = Number.MIN_SAFE_INTEGER;
+        let shouldOhlc = false;
+        let specifyMin = Number.MAX_SAFE_INTEGER;
+        let specifyMax = Number.MIN_SAFE_INTEGER;
+        let indicatorPrecision = Number.MAX_SAFE_INTEGER;
+        const indicators = chartStore.getIndicatorsByPaneId(paneId);
+        indicators.forEach(indicator => {
+            shouldOhlc ||= indicator.shouldOhlc;
+            indicatorPrecision = Math.min(indicatorPrecision, indicator.precision);
+            if (isNumber(indicator.minValue)) {
+                specifyMin = Math.min(specifyMin, indicator.minValue);
+            }
+            if (isNumber(indicator.maxValue)) {
+                specifyMax = Math.max(specifyMax, indicator.maxValue);
+            }
+        });
+        let precision = 4;
+        const inCandle = this.isInCandle();
+        if (inCandle) {
+            const pricePrecision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
+            if (indicatorPrecision !== Number.MAX_SAFE_INTEGER) {
+                precision = Math.min(indicatorPrecision, pricePrecision);
+            }
+            else {
+                precision = pricePrecision;
+            }
+        }
+        else {
+            if (indicatorPrecision !== Number.MAX_SAFE_INTEGER) {
+                precision = indicatorPrecision;
+            }
+        }
+        const visibleRangeDataList = chartStore.getVisibleRangeDataList();
+        const candleStyles = chart.getStyles().candle;
+        const isArea = candleStyles.type === 'area';
+        const areaValueKey = candleStyles.area.value;
+        const shouldCompareHighLow = (inCandle && !isArea) || (!inCandle && shouldOhlc);
+        visibleRangeDataList.forEach((visibleData) => {
+            const dataIndex = visibleData.dataIndex;
+            const data = visibleData.data.current;
+            if (isValid(data)) {
+                if (shouldCompareHighLow) {
+                    min = Math.min(min, data.low);
+                    max = Math.max(max, data.high);
+                }
+                if (inCandle && isArea) {
+                    const value = data[areaValueKey];
+                    if (isNumber(value)) {
+                        min = Math.min(min, value);
+                        max = Math.max(max, value);
+                    }
+                }
+            }
+            indicators.forEach(({ result, figures }) => {
+                const data = result[dataIndex] ?? {};
+                figures.forEach(figure => {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
+                    const value = data[figure.key];
+                    if (isNumber(value)) {
+                        min = Math.min(min, value);
+                        max = Math.max(max, value);
+                    }
+                });
+            });
+        });
+        if (min !== Number.MAX_SAFE_INTEGER && max !== Number.MIN_SAFE_INTEGER) {
+            min = Math.min(specifyMin, min);
+            max = Math.max(specifyMax, max);
+        }
+        else {
+            min = 0;
+            max = 10;
+        }
+        const defaultDiff = max - min;
+        const defaultRange = {
+            from: min,
+            to: max,
+            range: defaultDiff,
+            realFrom: min,
+            realTo: max,
+            realRange: defaultDiff,
+            displayFrom: min,
+            displayTo: max,
+            displayRange: defaultDiff
+        };
+        const range = this.createRange({
+            chart,
+            paneId,
+            defaultRange
+        });
+        let realFrom = range.realFrom;
+        let realTo = range.realTo;
+        let realRange = range.realRange;
+        const minSpan = this.minSpan(precision);
+        if (realFrom === realTo || realRange < minSpan) {
+            const minCheck = specifyMin === realFrom;
+            const maxCheck = specifyMax === realTo;
+            const halfTickCount = TICK_COUNT / 2;
+            realFrom = minCheck ? realFrom : (maxCheck ? realFrom - TICK_COUNT * minSpan : realFrom - halfTickCount * minSpan);
+            realTo = maxCheck ? realTo : (minCheck ? realTo + TICK_COUNT * minSpan : realTo + halfTickCount * minSpan);
+        }
+        const height = this.getBounding().height;
+        const { top, bottom } = this.gap;
+        let topRate = top;
+        if (topRate >= 1) {
+            topRate = topRate / height;
+        }
+        let bottomRate = bottom;
+        if (bottomRate >= 1) {
+            bottomRate = bottomRate / height;
+        }
+        realRange = realTo - realFrom;
+        realFrom = realFrom - realRange * bottomRate;
+        realTo = realTo + realRange * topRate;
+        const from = this.realValueToValue(realFrom, { range });
+        const to = this.realValueToValue(realTo, { range });
+        const displayFrom = this.realValueToDisplayValue(realFrom, { range });
+        const displayTo = this.realValueToDisplayValue(realTo, { range });
+        return {
+            from,
+            to,
+            range: to - from,
+            realFrom,
+            realTo,
+            realRange: realTo - realFrom,
+            displayFrom,
+            displayTo,
+            displayRange: displayTo - displayFrom
+        };
+    }
+    /**
+     * 是否是蜡烛图轴
+     * @return {boolean}
+     */
+    isInCandle() {
+        return this.getParent().getId() === PaneIdConstants.CANDLE;
+    }
+    /**
+     * 是否从y轴0开始
+     * @return {boolean}
+     */
+    isFromZero() {
+        return ((this.position === 'left' && this.inside) ||
+            (this.position === 'right' && !this.inside));
+    }
+    createTicksImp() {
+        const range = this.getRange();
+        const { displayFrom, displayTo, displayRange } = range;
+        const ticks = [];
+        if (displayRange >= 0) {
+            const interval = nice(displayRange / TICK_COUNT);
+            const precision = getPrecision(interval);
+            const first = round(Math.ceil(displayFrom / interval) * interval, precision);
+            const last = round(Math.floor(displayTo / interval) * interval, precision);
+            let n = 0;
+            let f = first;
+            if (interval !== 0) {
+                while (f <= last) {
+                    const v = f.toFixed(precision);
+                    ticks[n] = { text: v, coord: 0, value: v };
+                    ++n;
+                    f += interval;
+                }
+            }
+        }
+        const pane = this.getParent();
+        const height = pane.getYAxisWidget()?.getBounding().height ?? 0;
+        const chartStore = pane.getChart().getChartStore();
+        const optimalTicks = [];
+        const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+        const styles = chartStore.getStyles();
+        let precision = 0;
+        let shouldFormatBigNumber = false;
+        if (this.isInCandle()) {
+            precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
+        }
+        else {
+            indicators.forEach(indicator => {
+                precision = Math.max(precision, indicator.precision);
+                shouldFormatBigNumber ||= indicator.shouldFormatBigNumber;
+            });
+        }
+        const formatter = chartStore.getInnerFormatter();
+        const thousandsSeparator = chartStore.getThousandsSeparator();
+        const decimalFold = chartStore.getDecimalFold();
+        const textHeight = styles.xAxis.tickText.size;
+        let validY = NaN;
+        ticks.forEach(({ value }) => {
+            let v = this.displayValueToText(+value, precision);
+            const y = this.convertToPixel(this.realValueToValue(this.displayValueToRealValue(+value, { range }), { range }));
+            if (shouldFormatBigNumber) {
+                v = formatter.formatBigNumber(value);
+            }
+            v = decimalFold.format(thousandsSeparator.format(v));
+            const validYNumber = isNumber(validY);
+            if (y > textHeight &&
+                y < height - textHeight &&
+                ((validYNumber && (Math.abs(validY - y) > textHeight * 2)) || !validYNumber)) {
+                optimalTicks.push({ text: v, coord: y, value });
+                validY = y;
+            }
+        });
+        if (isFunction(this.createTicks)) {
+            return this.createTicks({
+                range: this.getRange(),
+                bounding: this.getBounding(),
+                defaultTicks: optimalTicks
+            });
+        }
+        return optimalTicks;
+    }
+    getAutoSize() {
+        const pane = this.getParent();
+        const chart = pane.getChart();
+        const chartStore = chart.getChartStore();
+        const styles = chartStore.getStyles();
+        const yAxisStyles = styles.yAxis;
+        const width = yAxisStyles.size;
+        if (width !== 'auto') {
+            return width;
+        }
+        let yAxisWidth = 0;
+        if (yAxisStyles.show) {
+            if (yAxisStyles.axisLine.show) {
+                yAxisWidth += yAxisStyles.axisLine.size;
+            }
+            if (yAxisStyles.tickLine.show) {
+                yAxisWidth += yAxisStyles.tickLine.length;
+            }
+            if (yAxisStyles.tickText.show) {
+                let textWidth = 0;
+                this.getTicks().forEach(tick => {
+                    textWidth = Math.max(textWidth, calcTextWidth(tick.text, yAxisStyles.tickText.size, yAxisStyles.tickText.weight, yAxisStyles.tickText.family));
+                });
+                yAxisWidth += (yAxisStyles.tickText.marginStart + yAxisStyles.tickText.marginEnd + textWidth);
+            }
+        }
+        const priceMarkStyles = styles.candle.priceMark;
+        const lastPriceMarkTextVisible = priceMarkStyles.show && priceMarkStyles.last.show && priceMarkStyles.last.text.show;
+        let lastPriceTextWidth = 0;
+        const crosshairStyles = styles.crosshair;
+        const crosshairHorizontalTextVisible = crosshairStyles.show && crosshairStyles.horizontal.show && crosshairStyles.horizontal.text.show;
+        let crosshairHorizontalTextWidth = 0;
+        if (lastPriceMarkTextVisible || crosshairHorizontalTextVisible) {
+            const pricePrecision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
+            const max = this.getRange().displayTo;
+            if (lastPriceMarkTextVisible) {
+                const dataList = chartStore.getDataList();
+                const data = dataList[dataList.length - 1];
+                if (isValid(data)) {
+                    const { paddingLeft, paddingRight, size, family, weight } = priceMarkStyles.last.text;
+                    lastPriceTextWidth = paddingLeft + calcTextWidth(formatPrecision(data.close, pricePrecision), size, weight, family) + paddingRight;
+                    const formatExtendText = chartStore.getInnerFormatter().formatExtendText;
+                    priceMarkStyles.last.extendTexts.forEach((item, index) => {
+                        const text = formatExtendText({ type: 'last_price', data, index });
+                        if (text.length > 0 && item.show) {
+                            lastPriceTextWidth = Math.max(lastPriceTextWidth, item.paddingLeft + calcTextWidth(text, item.size, item.weight, item.family) + item.paddingRight);
+                        }
+                    });
+                }
+            }
+            if (crosshairHorizontalTextVisible) {
+                const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+                let indicatorPrecision = 0;
+                let shouldFormatBigNumber = false;
+                indicators.forEach(indicator => {
+                    indicatorPrecision = Math.max(indicator.precision, indicatorPrecision);
+                    shouldFormatBigNumber ||= indicator.shouldFormatBigNumber;
+                });
+                let precision = 2;
+                if (this.isInCandle()) {
+                    const lastValueMarkStyles = styles.indicator.lastValueMark;
+                    if (lastValueMarkStyles.show && lastValueMarkStyles.text.show) {
+                        precision = Math.max(indicatorPrecision, pricePrecision);
+                    }
+                    else {
+                        precision = pricePrecision;
+                    }
+                }
+                else {
+                    precision = indicatorPrecision;
+                }
+                let valueText = formatPrecision(max, precision);
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
+                if (shouldFormatBigNumber) {
+                    valueText = chartStore.getInnerFormatter().formatBigNumber(valueText);
+                }
+                valueText = chartStore.getDecimalFold().format(valueText);
+                crosshairHorizontalTextWidth += (crosshairStyles.horizontal.text.paddingLeft +
+                    crosshairStyles.horizontal.text.paddingRight +
+                    crosshairStyles.horizontal.text.borderSize * 2 +
+                    calcTextWidth(valueText, crosshairStyles.horizontal.text.size, crosshairStyles.horizontal.text.weight, crosshairStyles.horizontal.text.family));
+            }
+        }
+        return Math.max(yAxisWidth, lastPriceTextWidth, crosshairHorizontalTextWidth);
+    }
+    getBounding() {
+        return this.getParent().getYAxisWidget().getBounding();
+    }
+    convertFromPixel(pixel) {
+        const height = this.getBounding().height;
+        const range = this.getRange();
+        const { realFrom, realRange } = range;
+        const rate = this.reverse ? pixel / height : 1 - pixel / height;
+        const realValue = rate * realRange + realFrom;
+        return this.realValueToValue(realValue, { range });
+    }
+    convertToPixel(value) {
+        const range = this.getRange();
+        const realValue = this.valueToRealValue(value, { range });
+        const height = this.getParent().getYAxisWidget()?.getBounding().height ?? 0;
+        const { realFrom, realRange } = range;
+        const rate = (realValue - realFrom) / realRange;
+        return this.reverse ? Math.round(rate * height) : Math.round((1 - rate) * height);
+    }
+    convertToNicePixel(value) {
+        const height = this.getParent().getYAxisWidget()?.getBounding().height ?? 0;
+        const pixel = this.convertToPixel(value);
+        return Math.round(Math.max(height * 0.05, Math.min(pixel, height * 0.98)));
+    }
+    static extend(template) {
+        class Custom extends YAxisImp {
+            constructor(parent) {
+                super(parent, template);
+            }
+        }
+        return Custom;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const normal = {
+    name: 'normal'
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const percentage = {
+    name: 'percentage',
+    minSpan: () => Math.pow(10, -2),
+    displayValueToText: value => `${formatPrecision(value, 2)}%`,
+    valueToRealValue: (value, { range }) => (value - range.from) / range.range * range.realRange + range.realFrom,
+    realValueToValue: (value, { range }) => (value - range.realFrom) / range.realRange * range.range + range.from,
+    createRange: ({ chart, defaultRange }) => {
+        const kLineDataList = chart.getDataList();
+        const visibleRange = chart.getVisibleRange();
+        const kLineData = kLineDataList[visibleRange.from];
+        if (isValid(kLineData)) {
+            const { from, to, range } = defaultRange;
+            const realFrom = (defaultRange.from - kLineData.close) / kLineData.close * 100;
+            const realTo = (defaultRange.to - kLineData.close) / kLineData.close * 100;
+            const realRange = realTo - realFrom;
+            return {
+                from,
+                to,
+                range,
+                realFrom,
+                realTo,
+                realRange,
+                displayFrom: realFrom,
+                displayTo: realTo,
+                displayRange: realRange
+            };
+        }
+        return defaultRange;
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const logarithm = {
+    name: 'logarithm',
+    minSpan: (precision) => 0.05 * index10(-precision),
+    valueToRealValue: (value) => value < 0 ? -log10(Math.abs(value)) : log10(value),
+    realValueToDisplayValue: (value) => value < 0 ? -index10(Math.abs(value)) : index10(value),
+    displayValueToRealValue: (value) => value < 0 ? -log10(Math.abs(value)) : log10(value),
+    realValueToValue: (value) => value < 0 ? -index10(Math.abs(value)) : index10(value),
+    createRange: ({ defaultRange }) => {
+        const { from, to, range } = defaultRange;
+        const realFrom = from < 0 ? -log10(Math.abs(from)) : log10(from);
+        const realTo = to < 0 ? -log10(Math.abs(to)) : log10(to);
+        return {
+            from,
+            to,
+            range,
+            realFrom,
+            realTo,
+            realRange: realTo - realFrom,
+            displayFrom: from,
+            displayTo: to,
+            displayRange: range
+        };
+    }
+};
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const yAxises = {
+    normal: YAxisImp.extend(normal),
+    percentage: YAxisImp.extend(percentage),
+    logarithm: YAxisImp.extend(logarithm)
+};
+function registerYAxis(axis) {
+    yAxises[axis.name] = YAxisImp.extend(axis);
+}
+function getYAxisClass(name) {
+    return yAxises[name] ?? yAxises.normal;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// @ts-ignore
+const DEV = process.env.NODE_ENV === 'development';
+function log(templateText, tagStyle, messageStyle, api, invalidParam, append) {
+    if (DEV) {
+        const apiStr = api !== '' ? `Call api \`${api}\`${invalidParam !== '' || append !== '' ? ', ' : '.'}` : '';
+        const invalidParamStr = invalidParam !== '' ? `invalid parameter \`${invalidParam}\`${append !== '' ? ', ' : '.'}` : '';
+        const appendStr = append !== '' ? append : '';
+        console.log(templateText, tagStyle, messageStyle, apiStr, invalidParamStr, appendStr);
+    }
+}
+function logWarn(api, invalidParam, append) {
+    log('%c😑 klinecharts warning%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#FF9600', 'color:#FF9600', api, invalidParam, append ?? '');
+}
+function logError(api, invalidParam, append) {
+    log('%c😟 klinecharts error%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#F92855;', 'color:#F92855;', api, invalidParam, append);
+}
+function logTag() {
+    log('%c❤️ Welcome to klinecharts. Version is 10.0.0-beta1', 'border-radius:4px;border:dashed 1px #1677FF;line-height:70px;padding:0 20px;margin:16px 0;font-size:14px;color:#1677FF;', '', '', '', '');
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function createDefaultBounding(bounding) {
+    const defaultBounding = {
+        width: 0,
+        height: 0,
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0
+    };
+    if (isValid(bounding)) {
+        merge(defaultBounding, bounding);
+    }
+    return defaultBounding;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const DEFAULT_REQUEST_ID = -1;
+function requestAnimationFrame(fn) {
+    if (isFunction(window.requestAnimationFrame)) {
+        return window.requestAnimationFrame(fn);
+    }
+    return window.setTimeout(fn, 20);
+}
+function cancelAnimationFrame(id) {
+    if (isFunction(window.cancelAnimationFrame)) {
+        window.cancelAnimationFrame(id);
+    }
+    else {
+        window.clearTimeout(id);
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class Animation {
+    _options = { duration: 500, iterationCount: 1 };
+    _doFrameCallback;
+    _currentIterationCount = 0;
+    _running = false;
+    _time = 0;
+    constructor(options) {
+        merge(this._options, options);
+    }
+    _loop() {
+        this._running = true;
+        const step = () => {
+            if (this._running) {
+                const diffTime = new Date().getTime() - this._time;
+                if (diffTime < this._options.duration) {
+                    this._doFrameCallback?.(diffTime);
+                    requestAnimationFrame(step);
+                }
+                else {
+                    this.stop();
+                    this._currentIterationCount++;
+                    if (this._currentIterationCount < this._options.iterationCount) {
+                        this.start();
+                    }
+                }
+            }
+        };
+        requestAnimationFrame(step);
+    }
+    doFrame(callback) {
+        this._doFrameCallback = callback;
+        return this;
+    }
+    setDuration(duration) {
+        this._options.duration = duration;
+        return this;
+    }
+    setIterationCount(iterationCount) {
+        this._options.iterationCount = iterationCount;
+        return this;
+    }
+    start() {
+        if (!this._running) {
+            this._time = new Date().getTime();
+            this._loop();
+        }
+    }
+    stop() {
+        if (this._running) {
+            this._doFrameCallback?.(this._options.duration);
+        }
+        this._running = false;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+let baseId = 1;
+let prevIdTimestamp = new Date().getTime();
+function createId(prefix) {
+    const timestamp = new Date().getTime();
+    if (timestamp === prevIdTimestamp) {
+        ++baseId;
+    }
+    else {
+        baseId = 1;
+    }
+    prevIdTimestamp = timestamp;
+    return `${prefix ?? ''}${timestamp}_${baseId}`;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Create dom
+ * @param tagName
+ * @param styles
+ * @return {*}
+ */
+function createDom(tagName, styles) {
+    const dom = document.createElement(tagName);
+    const s = styles ?? {};
+    // eslint-disable-next-line guard-for-in -- ignore
+    for (const key in s) {
+        (dom.style)[key] = s[key] ?? '';
+    }
+    return dom;
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function getDefaultVisibleRange() {
+    return { from: 0, to: 0, realFrom: 0, realTo: 0 };
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class TaskScheduler {
+    _holdingTasks = null;
+    _running = false;
+    _callback;
+    constructor(callback) {
+        this._callback = callback;
+    }
+    add(tasks) {
+        if (!this._running) {
+            void this._runTask(tasks);
+        }
+        else {
+            if (isValid(this._holdingTasks)) {
+                this._holdingTasks = {
+                    ...this._holdingTasks,
+                    ...tasks
+                };
+            }
+            else {
+                this._holdingTasks = tasks;
+            }
+        }
+    }
+    async _runTask(tasks) {
+        this._running = true;
+        try {
+            await Promise.all(Object.values(tasks));
+        }
+        finally {
+            this._running = false;
+            this._callback?.();
+            if (isValid(this._holdingTasks)) {
+                const next = this._holdingTasks;
+                void this._runTask(next);
+                this._holdingTasks = null;
+            }
+        }
+    }
+    clear() {
+        this._holdingTasks = null;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class Action {
+    _callbacks = [];
+    subscribe(callback) {
+        const index = this._callbacks.indexOf(callback);
+        if (index < 0) {
+            this._callbacks.push(callback);
+        }
+    }
+    unsubscribe(callback) {
+        if (isFunction(callback)) {
+            const index = this._callbacks.indexOf(callback);
+            if (index > -1) {
+                this._callbacks.splice(index, 1);
+            }
+        }
+        else {
+            this._callbacks = [];
+        }
+    }
+    execute(data) {
+        this._callbacks.forEach(callback => {
+            callback(data);
+        });
+    }
+    isEmpty() {
+        return this._callbacks.length === 0;
+    }
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+const BarSpaceLimitConstants = {
     MIN: 1,
     MAX: 50
 };
-var DEFAULT_BAR_SPACE = 10;
-var DEFAULT_OFFSET_RIGHT_DISTANCE = 80;
-var BAR_GAP_RATIO = 0.2;
-var SCALE_MULTIPLIER = 10;
-var StoreImp = /** @class */ (function () {
-    function StoreImp(chart, options) {
-        var _this = this;
-        /**
-         * Styles
-         */
-        this._styles = getDefaultStyles();
-        /**
-         * Custom api
-         */
-        this._formatter = {
-            formatDate: function (_a) {
-                var dateTimeFormat = _a.dateTimeFormat, timestamp = _a.timestamp, template = _a.template;
-                return formatTimestampByTemplate(dateTimeFormat, timestamp, template);
-            },
-            formatBigNumber: formatBigNumber,
-            formatExtendText: function (_) { return ''; }
-        };
-        /**
-         * Inner formatter
-         * @description Internal use only
-         */
-        this._innerFormatter = {
-            formatDate: function (timestamp, template, type) { return _this._formatter.formatDate({ dateTimeFormat: _this._dateTimeFormat, timestamp: timestamp, template: template, type: type }); },
-            formatBigNumber: function (value) { return _this._formatter.formatBigNumber(value); },
-            formatExtendText: function (params) { return _this._formatter.formatExtendText(params); }
-        };
-        /**
-         * Locale
-         */
-        this._locale = 'en-US';
-        /**
-         * Thousands separator
-         */
-        this._thousandsSeparator = {
-            sign: ',',
-            format: function (value) { return formatThousands(value, _this._thousandsSeparator.sign); }
-        };
-        /**
-         * Decimal fold
-         */
-        this._decimalFold = {
-            threshold: 3,
-            format: function (value) { return formatFoldDecimal(value, _this._decimalFold.threshold); }
-        };
-        /**
-         * Symbol
-         */
-        this._symbol = null;
-        /**
-         * Period
-         */
-        this._period = null;
-        /**
-         * Data source
-         */
-        this._dataList = [];
-        /**
-         * Load more data callback
-         */
-        this._dataLoader = null;
-        /**
-         * Is loading data flag
-         */
-        this._loading = false;
-        /**
-        * Whether there are forward and backward more flag
-         */
-        this._dataLoadMore = { forward: false, backward: false };
-        /**
-         * Scale enabled flag
-         */
-        this._zoomEnabled = true;
-        /**
-         * Zoom anchor point flag
-         */
-        this._zoomAnchor = {
-            main: 'cursor',
-            xAxis: 'cursor'
-        };
-        /**
-         * Scroll enabled flag
-         */
-        this._scrollEnabled = true;
-        /**
-         * Total space of drawing area
-         */
-        this._totalBarSpace = 0;
-        /**
-         * Space occupied by a single piece of data
-         */
-        this._barSpace = DEFAULT_BAR_SPACE;
-        /**
-         * Distance from the last data to the right of the drawing area
-         */
-        this._offsetRightDistance = DEFAULT_OFFSET_RIGHT_DISTANCE;
-        /**
-         * The number of bar to the right of the drawing area from the last data when scrolling starts
-         */
-        this._startLastBarRightSideDiffBarCount = 0;
-        /**
-         * Scroll limit role
-         */
-        this._scrollLimitRole = 'bar_count';
-        /**
-         * Scroll to the leftmost and rightmost visible bar
-         */
-        this._minVisibleBarCount = { left: 2, right: 2 };
-        /**
-         * Scroll to the leftmost and rightmost distance
-         */
-        this._maxOffsetDistance = { left: 50, right: 50 };
-        /**
-         * Start and end points of visible area data index
-         */
-        this._visibleRange = getDefaultVisibleRange();
-        /**
-         * Visible data array
-         */
-        this._visibleRangeDataList = [];
-        /**
-         * Visible highest lowest price data
-         */
-        this._visibleRangeHighLowPrice = [
-            { x: 0, price: Number.MIN_SAFE_INTEGER },
-            { x: 0, price: Number.MAX_SAFE_INTEGER }
-        ];
-        /**
-         * Crosshair info
-         */
-        this._crosshair = {};
-        /**
-         * Actions
-         */
-        this._actions = new Map();
-        /**
-         * Indicator
-         */
-        this._indicators = new Map();
-        /**
-         * Overlay
-         */
-        this._overlays = new Map();
-        /**
-         * Overlay information in painting
-         */
-        this._progressOverlayInfo = null;
-        this._lastPriceMarkExtendTextUpdateTimers = [];
-        /**
-         * Overlay information by the mouse pressed
-         */
-        this._pressedOverlayInfo = {
-            paneId: '',
-            overlay: null,
-            figureType: 'none',
-            figureIndex: -1,
-            figure: null
-        };
-        /**
-         * Overlay information by hover
-         */
-        this._hoverOverlayInfo = {
-            paneId: '',
-            overlay: null,
-            figureType: 'none',
-            figureIndex: -1,
-            figure: null
-        };
-        /**
-         * Overlay information by the mouse click
-         */
-        this._clickOverlayInfo = {
-            paneId: '',
-            overlay: null,
-            figureType: 'none',
-            figureIndex: -1,
-            figure: null
-        };
+const DEFAULT_BAR_SPACE = 10;
+const DEFAULT_OFFSET_RIGHT_DISTANCE = 80;
+const BAR_GAP_RATIO = 0.2;
+const SCALE_MULTIPLIER = 10;
+class StoreImp {
+    /**
+     * Internal chart
+     */
+    _chart;
+    /**
+     * Styles
+     */
+    _styles = getDefaultStyles();
+    /**
+     * Custom api
+     */
+    _formatter = {
+        formatDate: ({ dateTimeFormat, timestamp, template }) => formatTimestampByTemplate(dateTimeFormat, timestamp, template),
+        formatBigNumber,
+        formatExtendText: (_) => ''
+    };
+    /**
+     * Inner formatter
+     * @description Internal use only
+     */
+    _innerFormatter = {
+        formatDate: (timestamp, template, type) => this._formatter.formatDate({ dateTimeFormat: this._dateTimeFormat, timestamp, template, type }),
+        formatBigNumber: (value) => this._formatter.formatBigNumber(value),
+        formatExtendText: (params) => this._formatter.formatExtendText(params)
+    };
+    /**
+     * Locale
+     */
+    _locale = 'en-US';
+    /**
+     * Thousands separator
+     */
+    _thousandsSeparator = {
+        sign: ',',
+        format: (value) => formatThousands$1(value, this._thousandsSeparator.sign)
+    };
+    /**
+     * Decimal fold
+     */
+    _decimalFold = {
+        threshold: 3,
+        format: (value) => formatFoldDecimal(value, this._decimalFold.threshold)
+    };
+    /**
+     * Symbol
+     */
+    _symbol = null;
+    /**
+     * Period
+     */
+    _period = null;
+    /**
+     * Data source
+     */
+    _dataList = [];
+    /**
+     * Load more data callback
+     */
+    _dataLoader = null;
+    /**
+     * Is loading data flag
+     */
+    _loading = false;
+    /**
+    * Whether there are forward and backward more flag
+     */
+    _dataLoadMore = { forward: false, backward: false };
+    /**
+       * Time format
+       */
+    _dateTimeFormat;
+    /**
+     * Scale enabled flag
+     */
+    _zoomEnabled = true;
+    /**
+     * Zoom anchor point flag
+     */
+    _zoomAnchor = {
+        main: 'cursor',
+        xAxis: 'cursor'
+    };
+    /**
+     * Scroll enabled flag
+     */
+    _scrollEnabled = true;
+    _yScrolling = true;
+    /**
+     * Total space of drawing area
+     */
+    _totalBarSpace = 0;
+    /**
+     * Space occupied by a single piece of data
+     */
+    _barSpace = DEFAULT_BAR_SPACE;
+    /**
+     * The space of the draw bar
+     */
+    _gapBarSpace;
+    /**
+     * Distance from the last data to the right of the drawing area
+     */
+    _offsetRightDistance = DEFAULT_OFFSET_RIGHT_DISTANCE;
+    /**
+     * The number of bar calculated from the distance of the last data to the right of the drawing area
+     */
+    _lastBarRightSideDiffBarCount;
+    /**
+     * The number of bar to the right of the drawing area from the last data when scrolling starts
+     */
+    _startLastBarRightSideDiffBarCount = 0;
+    /**
+     * Scroll limit role
+     */
+    _scrollLimitRole = 'bar_count';
+    /**
+     * Scroll to the leftmost and rightmost visible bar
+     */
+    _minVisibleBarCount = { left: 2, right: 2 };
+    /**
+     * Scroll to the leftmost and rightmost distance
+     */
+    _maxOffsetDistance = { left: 50, right: 50 };
+    /**
+     * Start and end points of visible area data index
+     */
+    _visibleRange = getDefaultVisibleRange();
+    /**
+     * Visible data array
+     */
+    _visibleRangeDataList = [];
+    /**
+     * Visible highest lowest price data
+     */
+    _visibleRangeHighLowPrice = [
+        { x: 0, price: Number.MIN_SAFE_INTEGER },
+        { x: 0, price: Number.MAX_SAFE_INTEGER }
+    ];
+    /**
+     * Crosshair info
+     */
+    _crosshair = {};
+    /**
+     * Actions
+     */
+    _actions = new Map();
+    /**
+     * Indicator
+     */
+    _indicators = new Map();
+    /**
+     * Task scheduler
+     */
+    _taskScheduler;
+    /**
+     * Overlay
+     */
+    _overlays = new Map();
+    /**
+     * Overlay information in painting
+     */
+    _progressOverlayInfo = null;
+    _lastPriceMarkExtendTextUpdateTimers = [];
+    /**
+     * Overlay information by the mouse pressed
+     */
+    _pressedOverlayInfo = {
+        paneId: '',
+        overlay: null,
+        figureType: 'none',
+        figureIndex: -1,
+        figure: null
+    };
+    /**
+     * Overlay information by hover
+     */
+    _hoverOverlayInfo = {
+        paneId: '',
+        overlay: null,
+        figureType: 'none',
+        figureIndex: -1,
+        figure: null
+    };
+    /**
+     * Overlay information by the mouse click
+     */
+    _clickOverlayInfo = {
+        paneId: '',
+        overlay: null,
+        figureType: 'none',
+        figureIndex: -1,
+        figure: null
+    };
+    constructor(chart, options) {
         this._chart = chart;
         this._calcOptimalBarSpace();
         this._lastBarRightSideDiffBarCount = this._offsetRightDistance / this._barSpace;
-        var _a = options !== null && options !== void 0 ? options : {}, styles = _a.styles, locale = _a.locale, timezone = _a.timezone, formatter = _a.formatter, thousandsSeparator = _a.thousandsSeparator, decimalFold = _a.decimalFold, zoomAnchor = _a.zoomAnchor;
+        const { styles, locale, timezone, formatter, thousandsSeparator, decimalFold, zoomAnchor } = options ?? {};
         if (isValid(styles)) {
             this.setStyles(styles);
         }
         if (isString(locale)) {
             this.setLocale(locale);
         }
-        this.setTimezone(timezone !== null && timezone !== void 0 ? timezone : '');
+        this.setTimezone(timezone ?? '');
         if (isValid(formatter)) {
             this.setFormatter(formatter);
         }
@@ -6200,18 +7472,16 @@ var StoreImp = /** @class */ (function () {
         if (isValid(zoomAnchor)) {
             this.setZoomAnchor(zoomAnchor);
         }
-        this._taskScheduler = new TaskScheduler(function () {
-            _this._chart.layout({
+        this._taskScheduler = new TaskScheduler(() => {
+            this._chart.layout({
                 measureWidth: true,
                 update: true,
                 buildYAxisTick: true
             });
         });
     }
-    StoreImp.prototype.setStyles = function (value) {
-        var _this = this;
-        var _a, _b, _c, _d, _e, _f;
-        var styles = null;
+    setStyles(value) {
+        let styles = null;
         if (isString(value)) {
             styles = getStyles(value);
         }
@@ -6220,38 +7490,38 @@ var StoreImp = /** @class */ (function () {
         }
         merge(this._styles, styles);
         // `candle.tooltip.custom` should override
-        if (isArray((_c = (_b = (_a = styles === null || styles === void 0 ? void 0 : styles.candle) === null || _a === void 0 ? void 0 : _a.tooltip) === null || _b === void 0 ? void 0 : _b.legend) === null || _c === void 0 ? void 0 : _c.template)) {
+        if (isArray(styles?.candle?.tooltip?.legend?.template)) {
             this._styles.candle.tooltip.legend.template = styles.candle.tooltip.legend.template;
         }
-        if (isValid((_f = (_e = (_d = styles === null || styles === void 0 ? void 0 : styles.candle) === null || _d === void 0 ? void 0 : _d.priceMark) === null || _e === void 0 ? void 0 : _e.last) === null || _f === void 0 ? void 0 : _f.extendTexts)) {
+        if (isValid(styles?.candle?.priceMark?.last?.extendTexts)) {
             this._clearLastPriceMarkExtendTextUpdateTimer();
-            var intervals_1 = [];
-            this._styles.candle.priceMark.last.extendTexts.forEach(function (item) {
-                var updateInterval = item.updateInterval;
-                if (item.show && updateInterval > 0 && !intervals_1.includes(updateInterval)) {
-                    intervals_1.push(updateInterval);
-                    var timer = setInterval(function () {
-                        _this._chart.updatePane(0 /* UpdateLevel.Main */, PaneIdConstants.CANDLE);
+            const intervals = [];
+            this._styles.candle.priceMark.last.extendTexts.forEach(item => {
+                const updateInterval = item.updateInterval;
+                if (item.show && updateInterval > 0 && !intervals.includes(updateInterval)) {
+                    intervals.push(updateInterval);
+                    const timer = setInterval(() => {
+                        this._chart.updatePane(0 /* UpdateLevel.Main */, PaneIdConstants.CANDLE);
                     }, updateInterval);
-                    _this._lastPriceMarkExtendTextUpdateTimers.push(timer);
+                    this._lastPriceMarkExtendTextUpdateTimers.push(timer);
                 }
             });
         }
-    };
-    StoreImp.prototype.getStyles = function () { return this._styles; };
-    StoreImp.prototype.setFormatter = function (formatter) {
+    }
+    getStyles() { return this._styles; }
+    setFormatter(formatter) {
         merge(this._formatter, formatter);
-    };
-    StoreImp.prototype.getFormatter = function () { return this._formatter; };
-    StoreImp.prototype.getInnerFormatter = function () {
+    }
+    getFormatter() { return this._formatter; }
+    getInnerFormatter() {
         return this._innerFormatter;
-    };
-    StoreImp.prototype.setLocale = function (locale) { this._locale = locale; };
-    StoreImp.prototype.getLocale = function () { return this._locale; };
-    StoreImp.prototype.setTimezone = function (timezone) {
+    }
+    setLocale(locale) { this._locale = locale; }
+    getLocale() { return this._locale; }
+    setTimezone(timezone) {
         if (!isValid(this._dateTimeFormat) ||
             (this.getTimezone() !== timezone)) {
-            var options = {
+            const options = {
                 hour12: false,
                 year: 'numeric',
                 month: '2-digit',
@@ -6263,7 +7533,7 @@ var StoreImp = /** @class */ (function () {
             if (timezone.length > 0) {
                 options.timeZone = timezone;
             }
-            var dateTimeFormat = null;
+            let dateTimeFormat = null;
             try {
                 dateTimeFormat = new Intl.DateTimeFormat('en', options);
             }
@@ -6274,61 +7544,63 @@ var StoreImp = /** @class */ (function () {
                 this._dateTimeFormat = dateTimeFormat;
             }
         }
-    };
-    StoreImp.prototype.getTimezone = function () { return this._dateTimeFormat.resolvedOptions().timeZone; };
-    StoreImp.prototype.getDateTimeFormat = function () {
+    }
+    getTimezone() { return this._dateTimeFormat.resolvedOptions().timeZone; }
+    getDateTimeFormat() {
         return this._dateTimeFormat;
-    };
-    StoreImp.prototype.setThousandsSeparator = function (thousandsSeparator) {
+    }
+    setThousandsSeparator(thousandsSeparator) {
         merge(this._thousandsSeparator, thousandsSeparator);
-    };
-    StoreImp.prototype.getThousandsSeparator = function () { return this._thousandsSeparator; };
-    StoreImp.prototype.setDecimalFold = function (decimalFold) { merge(this._decimalFold, decimalFold); };
-    StoreImp.prototype.getDecimalFold = function () { return this._decimalFold; };
-    StoreImp.prototype.setSymbol = function (symbol) {
-        var _this = this;
-        this.resetData(function () {
+    }
+    getThousandsSeparator() { return this._thousandsSeparator; }
+    setDecimalFold(decimalFold) { merge(this._decimalFold, decimalFold); }
+    getDecimalFold() { return this._decimalFold; }
+    setSymbol(symbol) {
+        this.resetData(() => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
             // @ts-expect-error
-            _this._symbol = __assign(__assign({ pricePrecision: SymbolDefaultPrecisionConstants.PRICE, volumePrecision: SymbolDefaultPrecisionConstants.VOLUME }, _this._symbol), symbol);
-            _this._synchronizeIndicatorSeriesPrecision();
+            this._symbol = {
+                pricePrecision: SymbolDefaultPrecisionConstants.PRICE,
+                volumePrecision: SymbolDefaultPrecisionConstants.VOLUME,
+                ...this._symbol,
+                ...symbol
+            };
+            this._synchronizeIndicatorSeriesPrecision();
         });
-    };
-    StoreImp.prototype.getSymbol = function () {
+    }
+    getSymbol() {
         return this._symbol;
-    };
-    StoreImp.prototype.setPeriod = function (period) {
-        var _this = this;
-        this.resetData(function () {
-            _this._period = period;
+    }
+    setPeriod(period) {
+        this.resetData(() => {
+            this._period = period;
         });
-    };
-    StoreImp.prototype.getPeriod = function () {
+    }
+    getPeriod() {
         return this._period;
-    };
-    StoreImp.prototype.getDataList = function () {
+    }
+    getDataList() {
         return this._dataList;
-    };
-    StoreImp.prototype.getVisibleRangeDataList = function () {
+    }
+    getVisibleRangeDataList() {
         return this._visibleRangeDataList;
-    };
-    StoreImp.prototype.getVisibleRangeHighLowPrice = function () {
+    }
+    getVisibleRangeHighLowPrice() {
         return this._visibleRangeHighLowPrice;
-    };
-    StoreImp.prototype._addData = function (data, type, more) {
-        var _a, _b;
-        var success = false;
-        var adjustFlag = false;
-        var dataLengthChange = 0;
+    }
+    _addData(data, type, more) {
+        let success = false;
+        let adjustFlag = false;
+        let dataLengthChange = 0;
         if (isArray(data)) {
-            var realMore = { backward: false, forward: false };
+            const realMore = { backward: false, forward: false };
             if (isBoolean(more)) {
                 realMore.backward = more;
                 realMore.forward = more;
             }
             else {
-                realMore.backward = (_a = more === null || more === void 0 ? void 0 : more.backward) !== null && _a !== void 0 ? _a : false;
-                realMore.forward = (_b = more === null || more === void 0 ? void 0 : more.forward) !== null && _b !== void 0 ? _b : false;
+                realMore.backward = more?.backward ?? false;
+                realMore.forward = more?.forward ?? false;
             }
             dataLengthChange = data.length;
             switch (type) {
@@ -6358,13 +7630,13 @@ var StoreImp = /** @class */ (function () {
             success = true;
         }
         else {
-            var dataCount = this._dataList.length;
+            const dataCount = this._dataList.length;
             // Determine where individual data should be added
-            var timestamp = data.timestamp;
-            var lastDataTimestamp = formatValue(this._dataList[dataCount - 1], 'timestamp', 0);
+            const timestamp = data.timestamp;
+            const lastDataTimestamp = formatValue(this._dataList[dataCount - 1], 'timestamp', 0);
             if (timestamp > lastDataTimestamp) {
                 this._dataList.push(data);
-                var lastBarRightSideDiffBarCount = this.getLastBarRightSideDiffBarCount();
+                let lastBarRightSideDiffBarCount = this.getLastBarRightSideDiffBarCount();
                 if (lastBarRightSideDiffBarCount < 0) {
                     this.setLastBarRightSideDiffBarCount(--lastBarRightSideDiffBarCount);
                 }
@@ -6381,7 +7653,7 @@ var StoreImp = /** @class */ (function () {
         if (success && adjustFlag) {
             this._adjustVisibleRange();
             this.setCrosshair(this._crosshair, { notInvalidate: true });
-            var filterIndicators = this.getIndicatorsByFilter({});
+            const filterIndicators = this.getIndicatorsByFilter({});
             if (filterIndicators.length > 0) {
                 this._calcIndicator(filterIndicators);
             }
@@ -6394,28 +7666,26 @@ var StoreImp = /** @class */ (function () {
                 });
             }
         }
-    };
-    StoreImp.prototype.setDataLoader = function (dataLoader) {
-        var _this = this;
-        this.resetData(function () {
-            _this._dataLoader = dataLoader;
+    }
+    setDataLoader(dataLoader) {
+        this.resetData(() => {
+            this._dataLoader = dataLoader;
         });
-    };
-    StoreImp.prototype._calcOptimalBarSpace = function () {
-        var specialBarSpace = 4;
-        var ratio = 1 - BAR_GAP_RATIO * Math.atan(Math.max(specialBarSpace, this._barSpace) - specialBarSpace) / (Math.PI * 0.5);
-        var gapBarSpace = Math.min(Math.floor(this._barSpace * ratio), Math.floor(this._barSpace));
+    }
+    _calcOptimalBarSpace() {
+        const specialBarSpace = 4;
+        const ratio = 1 - BAR_GAP_RATIO * Math.atan(Math.max(specialBarSpace, this._barSpace) - specialBarSpace) / (Math.PI * 0.5);
+        let gapBarSpace = Math.min(Math.floor(this._barSpace * ratio), Math.floor(this._barSpace));
         if (gapBarSpace % 2 === 0 && gapBarSpace + 2 >= this._barSpace) {
             --gapBarSpace;
         }
         this._gapBarSpace = Math.max(1, gapBarSpace);
-    };
-    StoreImp.prototype._adjustVisibleRange = function () {
-        var _a, _b;
-        var totalBarCount = this._dataList.length;
-        var visibleBarCount = this._totalBarSpace / this._barSpace;
-        var leftMinVisibleBarCount = 0;
-        var rightMinVisibleBarCount = 0;
+    }
+    _adjustVisibleRange() {
+        const totalBarCount = this._dataList.length;
+        const visibleBarCount = this._totalBarSpace / this._barSpace;
+        let leftMinVisibleBarCount = 0;
+        let rightMinVisibleBarCount = 0;
         if (this._scrollLimitRole === 'distance') {
             leftMinVisibleBarCount = (this._totalBarSpace - this._maxOffsetDistance.right) / this._barSpace;
             rightMinVisibleBarCount = (this._totalBarSpace - this._maxOffsetDistance.left) / this._barSpace;
@@ -6426,41 +7696,41 @@ var StoreImp = /** @class */ (function () {
         }
         leftMinVisibleBarCount = Math.max(0, leftMinVisibleBarCount);
         rightMinVisibleBarCount = Math.max(0, rightMinVisibleBarCount);
-        var maxRightOffsetBarCount = visibleBarCount - Math.min(leftMinVisibleBarCount, totalBarCount);
+        const maxRightOffsetBarCount = visibleBarCount - Math.min(leftMinVisibleBarCount, totalBarCount);
         if (this._lastBarRightSideDiffBarCount > maxRightOffsetBarCount) {
             this._lastBarRightSideDiffBarCount = maxRightOffsetBarCount;
         }
-        var minRightOffsetBarCount = -totalBarCount + Math.min(rightMinVisibleBarCount, totalBarCount);
+        const minRightOffsetBarCount = -totalBarCount + Math.min(rightMinVisibleBarCount, totalBarCount);
         if (this._lastBarRightSideDiffBarCount < minRightOffsetBarCount) {
             this._lastBarRightSideDiffBarCount = minRightOffsetBarCount;
         }
-        var to = Math.round(this._lastBarRightSideDiffBarCount + totalBarCount + 0.5);
-        var realTo = to;
+        let to = Math.round(this._lastBarRightSideDiffBarCount + totalBarCount + 0.5);
+        const realTo = to;
         if (to > totalBarCount) {
             to = totalBarCount;
         }
-        var from = Math.round(to - visibleBarCount) - 1;
+        let from = Math.round(to - visibleBarCount) - 1;
         if (from < 0) {
             from = 0;
         }
-        var realFrom = this._lastBarRightSideDiffBarCount > 0 ? Math.round(totalBarCount + this._lastBarRightSideDiffBarCount - visibleBarCount) - 1 : from;
-        this._visibleRange = { from: from, to: to, realFrom: realFrom, realTo: realTo };
+        const realFrom = this._lastBarRightSideDiffBarCount > 0 ? Math.round(totalBarCount + this._lastBarRightSideDiffBarCount - visibleBarCount) - 1 : from;
+        this._visibleRange = { from, to, realFrom, realTo };
         this.executeAction('onVisibleRangeChange', this._visibleRange);
         this._visibleRangeDataList = [];
         this._visibleRangeHighLowPrice = [
             { x: 0, price: Number.MIN_SAFE_INTEGER },
             { x: 0, price: Number.MAX_SAFE_INTEGER }
         ];
-        for (var i = realFrom; i < realTo; i++) {
-            var kLineData = this._dataList[i];
-            var x = this.dataIndexToCoordinate(i);
+        for (let i = realFrom; i < realTo; i++) {
+            const kLineData = this._dataList[i];
+            const x = this.dataIndexToCoordinate(i);
             this._visibleRangeDataList.push({
                 dataIndex: i,
-                x: x,
+                x,
                 data: {
-                    prev: (_a = this._dataList[i - 1]) !== null && _a !== void 0 ? _a : kLineData,
+                    prev: this._dataList[i - 1] ?? kLineData,
                     current: kLineData,
-                    next: (_b = this._dataList[i + 1]) !== null && _b !== void 0 ? _b : kLineData
+                    next: this._dataList[i + 1] ?? kLineData
                 }
             });
             if (isValid(kLineData)) {
@@ -6485,27 +7755,24 @@ var StoreImp = /** @class */ (function () {
                 this._processDataLoad('backward');
             }
         }
-    };
-    StoreImp.prototype._processDataLoad = function (type) {
-        var _this = this;
-        var _a, _b, _c, _d;
+    }
+    _processDataLoad(type) {
         if (!this._loading && isValid(this._dataLoader) && isValid(this._symbol) && isValid(this._period)) {
             this._loading = true;
-            var params = {
-                type: type,
+            const params = {
+                type,
                 symbol: this._symbol,
                 period: this._period,
                 timestamp: null,
-                callback: function (data, more) {
-                    var _a, _b;
-                    _this._loading = false;
-                    _this._addData(data, type, more);
+                callback: (data, more) => {
+                    this._loading = false;
+                    this._addData(data, type, more);
                     if (type === 'init') {
-                        (_b = (_a = _this._dataLoader) === null || _a === void 0 ? void 0 : _a.subscribeBar) === null || _b === void 0 ? void 0 : _b.call(_a, {
-                            symbol: _this._symbol,
-                            period: _this._period,
-                            callback: function (data) {
-                                _this._addData(data, 'update');
+                        this._dataLoader?.subscribeBar?.({
+                            symbol: this._symbol,
+                            period: this._period,
+                            callback: (data) => {
+                                this._addData(data, 'update');
                             }
                         });
                     }
@@ -6513,47 +7780,46 @@ var StoreImp = /** @class */ (function () {
             };
             switch (type) {
                 case 'backward': {
-                    params.timestamp = (_b = (_a = this._dataList[this._dataList.length - 1]) === null || _a === void 0 ? void 0 : _a.timestamp) !== null && _b !== void 0 ? _b : null;
+                    params.timestamp = this._dataList[this._dataList.length - 1]?.timestamp ?? null;
                     break;
                 }
                 case 'forward': {
-                    params.timestamp = (_d = (_c = this._dataList[0]) === null || _c === void 0 ? void 0 : _c.timestamp) !== null && _d !== void 0 ? _d : null;
+                    params.timestamp = this._dataList[0]?.timestamp ?? null;
                     break;
                 }
             }
             void this._dataLoader.getBars(params);
         }
-    };
-    StoreImp.prototype._processDataUnsubscribe = function () {
-        var _a, _b;
+    }
+    _processDataUnsubscribe() {
         if (isValid(this._dataLoader) && isValid(this._symbol) && isValid(this._period)) {
-            (_b = (_a = this._dataLoader).unsubscribeBar) === null || _b === void 0 ? void 0 : _b.call(_a, {
+            this._dataLoader.unsubscribeBar?.({
                 symbol: this._symbol,
                 period: this._period
             });
         }
-    };
-    StoreImp.prototype.resetData = function (fn) {
+    }
+    resetData(fn) {
         this._processDataUnsubscribe();
-        fn === null || fn === void 0 ? void 0 : fn();
+        fn?.();
         this._loading = false;
         this._processDataLoad('init');
-    };
-    StoreImp.prototype.getBarSpace = function () {
+    }
+    getBarSpace() {
         return {
             bar: this._barSpace,
             halfBar: this._barSpace / 2,
             gapBar: this._gapBarSpace,
             halfGapBar: Math.floor(this._gapBarSpace / 2)
         };
-    };
-    StoreImp.prototype.setBarSpace = function (barSpace, adjustBeforeFunc) {
+    }
+    setBarSpace(barSpace, adjustBeforeFunc) {
         if (barSpace < BarSpaceLimitConstants.MIN || barSpace > BarSpaceLimitConstants.MAX || this._barSpace === barSpace) {
             return;
         }
         this._barSpace = barSpace;
         this._calcOptimalBarSpace();
-        adjustBeforeFunc === null || adjustBeforeFunc === void 0 ? void 0 : adjustBeforeFunc();
+        adjustBeforeFunc?.();
         this._adjustVisibleRange();
         this.setCrosshair(this._crosshair, { notInvalidate: true });
         this._chart.layout({
@@ -6562,18 +7828,24 @@ var StoreImp = /** @class */ (function () {
             buildYAxisTick: true,
             cacheYAxisWidth: true
         });
-    };
-    StoreImp.prototype.setTotalBarSpace = function (totalSpace) {
+    }
+    setYScrolling(yScrolling) {
+        this._yScrolling = yScrolling;
+    }
+    getYScrolling() {
+        return this._yScrolling;
+    }
+    setTotalBarSpace(totalSpace) {
         if (this._totalBarSpace !== totalSpace) {
             this._totalBarSpace = totalSpace;
             this._adjustVisibleRange();
             this.setCrosshair(this._crosshair, { notInvalidate: true });
         }
-    };
-    StoreImp.prototype.setOffsetRightDistance = function (distance, isUpdate) {
+    }
+    setOffsetRightDistance(distance, isUpdate) {
         this._offsetRightDistance = this._scrollLimitRole === 'distance' ? Math.min(this._maxOffsetDistance.right, distance) : distance;
         this._lastBarRightSideDiffBarCount = this._offsetRightDistance / this._barSpace;
-        if (isUpdate !== null && isUpdate !== void 0 ? isUpdate : false) {
+        if (isUpdate ?? false) {
             this._adjustVisibleRange();
             this.setCrosshair(this._crosshair, { notInvalidate: true });
             this._chart.layout({
@@ -6584,47 +7856,47 @@ var StoreImp = /** @class */ (function () {
             });
         }
         return this;
-    };
-    StoreImp.prototype.getInitialOffsetRightDistance = function () {
+    }
+    getInitialOffsetRightDistance() {
         return this._offsetRightDistance;
-    };
-    StoreImp.prototype.getOffsetRightDistance = function () {
+    }
+    getOffsetRightDistance() {
         return Math.max(0, this._lastBarRightSideDiffBarCount * this._barSpace);
-    };
-    StoreImp.prototype.getLastBarRightSideDiffBarCount = function () {
+    }
+    getLastBarRightSideDiffBarCount() {
         return this._lastBarRightSideDiffBarCount;
-    };
-    StoreImp.prototype.setLastBarRightSideDiffBarCount = function (barCount) {
+    }
+    setLastBarRightSideDiffBarCount(barCount) {
         this._lastBarRightSideDiffBarCount = barCount;
-    };
-    StoreImp.prototype.setMaxOffsetLeftDistance = function (distance) {
+    }
+    setMaxOffsetLeftDistance(distance) {
         this._scrollLimitRole = 'distance';
         this._maxOffsetDistance.left = distance;
-    };
-    StoreImp.prototype.setMaxOffsetRightDistance = function (distance) {
+    }
+    setMaxOffsetRightDistance(distance) {
         this._scrollLimitRole = 'distance';
         this._maxOffsetDistance.right = distance;
-    };
-    StoreImp.prototype.setLeftMinVisibleBarCount = function (barCount) {
+    }
+    setLeftMinVisibleBarCount(barCount) {
         this._scrollLimitRole = 'bar_count';
         this._minVisibleBarCount.left = barCount;
-    };
-    StoreImp.prototype.setRightMinVisibleBarCount = function (barCount) {
+    }
+    setRightMinVisibleBarCount(barCount) {
         this._scrollLimitRole = 'bar_count';
         this._minVisibleBarCount.right = barCount;
-    };
-    StoreImp.prototype.getVisibleRange = function () {
+    }
+    getVisibleRange() {
         return this._visibleRange;
-    };
-    StoreImp.prototype.startScroll = function () {
+    }
+    startScroll() {
         this._startLastBarRightSideDiffBarCount = this._lastBarRightSideDiffBarCount;
-    };
-    StoreImp.prototype.scroll = function (distance) {
+    }
+    scroll(distance) {
         if (!this._scrollEnabled) {
             return;
         }
-        var distanceBarCount = distance / this._barSpace;
-        var prevLastBarRightSideDistance = this._lastBarRightSideDiffBarCount * this._barSpace;
+        const distanceBarCount = distance / this._barSpace;
+        const prevLastBarRightSideDistance = this._lastBarRightSideDiffBarCount * this._barSpace;
         this._lastBarRightSideDiffBarCount = this._startLastBarRightSideDiffBarCount - distanceBarCount;
         this._adjustVisibleRange();
         this.setCrosshair(this._crosshair, { notInvalidate: true });
@@ -6634,34 +7906,33 @@ var StoreImp = /** @class */ (function () {
             buildYAxisTick: true,
             cacheYAxisWidth: true
         });
-        var realDistance = Math.round(prevLastBarRightSideDistance - this._lastBarRightSideDiffBarCount * this._barSpace);
+        const realDistance = Math.round(prevLastBarRightSideDistance - this._lastBarRightSideDiffBarCount * this._barSpace);
         if (realDistance !== 0) {
             this.executeAction('onScroll', { distance: realDistance });
         }
-    };
-    StoreImp.prototype.getDataByDataIndex = function (dataIndex) {
-        var _a;
-        return (_a = this._dataList[dataIndex]) !== null && _a !== void 0 ? _a : null;
-    };
-    StoreImp.prototype.coordinateToFloatIndex = function (x) {
-        var dataCount = this._dataList.length;
-        var deltaFromRight = (this._totalBarSpace - x) / this._barSpace;
-        var index = dataCount + this._lastBarRightSideDiffBarCount - deltaFromRight;
+    }
+    getDataByDataIndex(dataIndex) {
+        return this._dataList[dataIndex] ?? null;
+    }
+    coordinateToFloatIndex(x) {
+        const dataCount = this._dataList.length;
+        const deltaFromRight = (this._totalBarSpace - x) / this._barSpace;
+        const index = dataCount + this._lastBarRightSideDiffBarCount - deltaFromRight;
         return Math.round(index * 1000000) / 1000000;
-    };
-    StoreImp.prototype.dataIndexToTimestamp = function (dataIndex) {
-        var length = this._dataList.length;
+    }
+    dataIndexToTimestamp(dataIndex) {
+        const length = this._dataList.length;
         if (length === 0) {
             return null;
         }
-        var data = this.getDataByDataIndex(dataIndex);
+        const data = this.getDataByDataIndex(dataIndex);
         if (isValid(data)) {
             return data.timestamp;
         }
         if (isValid(this._period)) {
-            var lastIndex = length - 1;
-            var referenceTimestamp = null;
-            var diff = 0;
+            const lastIndex = length - 1;
+            let referenceTimestamp = null;
+            let diff = 0;
             if (dataIndex > lastIndex) {
                 referenceTimestamp = this._dataList[lastIndex].timestamp;
                 diff = dataIndex - lastIndex;
@@ -6671,7 +7942,7 @@ var StoreImp = /** @class */ (function () {
                 diff = dataIndex;
             }
             if (isNumber(referenceTimestamp)) {
-                var _a = this._period, type = _a.type, span = _a.span;
+                const { type, span } = this._period;
                 switch (type) {
                     case 'second': {
                         return referenceTimestamp + span * 1000 * diff;
@@ -6689,16 +7960,16 @@ var StoreImp = /** @class */ (function () {
                         return referenceTimestamp + span * 7 * 24 * 60 * 60 * 1000 * diff;
                     }
                     case 'month': {
-                        var date = new Date(referenceTimestamp);
-                        var referenceDay = date.getDate();
+                        const date = new Date(referenceTimestamp);
+                        const referenceDay = date.getDate();
                         date.setDate(1);
                         date.setMonth(date.getMonth() + span * diff);
-                        var lastDayOfTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+                        const lastDayOfTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
                         date.setDate(Math.min(referenceDay, lastDayOfTargetMonth));
                         return date.getTime();
                     }
                     case 'year': {
-                        var date = new Date(referenceTimestamp);
+                        const date = new Date(referenceTimestamp);
                         date.setFullYear(date.getFullYear() + span * diff);
                         return date.getTime();
                     }
@@ -6706,28 +7977,28 @@ var StoreImp = /** @class */ (function () {
             }
         }
         return null;
-    };
-    StoreImp.prototype.timestampToDataIndex = function (timestamp) {
-        var length = this._dataList.length;
+    }
+    timestampToDataIndex(timestamp) {
+        const length = this._dataList.length;
         if (length === 0) {
             return 0;
         }
         if (isValid(this._period)) {
-            var referenceTimestamp = null;
-            var baseDataIndex = 0;
-            var lastIndex = length - 1;
-            var lastTimestamp = this._dataList[lastIndex].timestamp;
+            let referenceTimestamp = null;
+            let baseDataIndex = 0;
+            const lastIndex = length - 1;
+            const lastTimestamp = this._dataList[lastIndex].timestamp;
             if (timestamp > lastTimestamp) {
                 referenceTimestamp = lastTimestamp;
                 baseDataIndex = lastIndex;
             }
-            var firstTimestamp = this._dataList[0].timestamp;
+            const firstTimestamp = this._dataList[0].timestamp;
             if (timestamp < firstTimestamp) {
                 referenceTimestamp = firstTimestamp;
                 baseDataIndex = 0;
             }
             if (isNumber(referenceTimestamp)) {
-                var _a = this._period, type = _a.type, span = _a.span;
+                const { type, span } = this._period;
                 switch (type) {
                     case 'second': {
                         return baseDataIndex + Math.floor((timestamp - referenceTimestamp) / (span * 1000));
@@ -6745,39 +8016,37 @@ var StoreImp = /** @class */ (function () {
                         return baseDataIndex + Math.floor((timestamp - referenceTimestamp) / (span * 7 * 24 * 60 * 60 * 1000));
                     }
                     case 'month': {
-                        var referenceDate = new Date(referenceTimestamp);
-                        var currentDate = new Date(timestamp);
-                        var referenceYear = referenceDate.getFullYear();
-                        var currentYear = currentDate.getFullYear();
-                        var referenceMonth = referenceDate.getMonth();
-                        var currentMonth = currentDate.getMonth();
+                        const referenceDate = new Date(referenceTimestamp);
+                        const currentDate = new Date(timestamp);
+                        const referenceYear = referenceDate.getFullYear();
+                        const currentYear = currentDate.getFullYear();
+                        const referenceMonth = referenceDate.getMonth();
+                        const currentMonth = currentDate.getMonth();
                         return baseDataIndex + Math.floor(((currentYear - referenceYear) * 12 + (currentMonth - referenceMonth)) / span);
                     }
                     case 'year': {
-                        var referenceYear = new Date(referenceTimestamp).getFullYear();
-                        var currentYear = new Date(timestamp).getFullYear();
+                        const referenceYear = new Date(referenceTimestamp).getFullYear();
+                        const currentYear = new Date(timestamp).getFullYear();
                         return baseDataIndex + Math.floor((currentYear - referenceYear) / span);
                     }
                 }
             }
         }
         return binarySearchNearest(this._dataList, 'timestamp', timestamp);
-    };
-    StoreImp.prototype.dataIndexToCoordinate = function (dataIndex) {
-        var dataCount = this._dataList.length;
-        var deltaFromRight = dataCount + this._lastBarRightSideDiffBarCount - dataIndex;
+    }
+    dataIndexToCoordinate(dataIndex) {
+        const dataCount = this._dataList.length;
+        const deltaFromRight = dataCount + this._lastBarRightSideDiffBarCount - dataIndex;
         return Math.floor(this._totalBarSpace - (deltaFromRight - 0.5) * this._barSpace + 0.5);
-    };
-    StoreImp.prototype.coordinateToDataIndex = function (x) {
+    }
+    coordinateToDataIndex(x) {
         return Math.ceil(this.coordinateToFloatIndex(x)) - 1;
-    };
-    StoreImp.prototype.zoom = function (scale, coordinate, position) {
-        var _this = this;
-        var _a;
+    }
+    zoom(scale, coordinate, position) {
         if (!this._zoomEnabled) {
             return;
         }
-        var zoomCoordinate = coordinate !== null && coordinate !== void 0 ? coordinate : { x: (_a = this._crosshair.x) !== null && _a !== void 0 ? _a : this._totalBarSpace / 2 };
+        const zoomCoordinate = coordinate ?? { x: this._crosshair.x ?? this._totalBarSpace / 2 };
         if (position === 'xAxis') {
             if (this._zoomAnchor.xAxis === 'last_bar') {
                 zoomCoordinate.x = this.dataIndexToCoordinate(this._dataList.length - 1);
@@ -6788,25 +8057,25 @@ var StoreImp = /** @class */ (function () {
                 zoomCoordinate.x = this.dataIndexToCoordinate(this._dataList.length - 1);
             }
         }
-        var x = zoomCoordinate.x;
-        var floatIndex = this.coordinateToFloatIndex(x);
-        var prevBarSpace = this._barSpace;
-        var barSpace = this._barSpace + scale * (this._barSpace / SCALE_MULTIPLIER);
-        this.setBarSpace(barSpace, function () {
-            _this._lastBarRightSideDiffBarCount += (floatIndex - _this.coordinateToFloatIndex(x));
+        const x = zoomCoordinate.x;
+        const floatIndex = this.coordinateToFloatIndex(x);
+        const prevBarSpace = this._barSpace;
+        const barSpace = this._barSpace + scale * (this._barSpace / SCALE_MULTIPLIER);
+        this.setBarSpace(barSpace, () => {
+            this._lastBarRightSideDiffBarCount += (floatIndex - this.coordinateToFloatIndex(x));
         });
-        var realScale = this._barSpace / prevBarSpace;
+        const realScale = this._barSpace / prevBarSpace;
         if (realScale !== 1) {
             this.executeAction('onZoom', { scale: realScale });
         }
-    };
-    StoreImp.prototype.setZoomEnabled = function (enabled) {
+    }
+    setZoomEnabled(enabled) {
         this._zoomEnabled = enabled;
-    };
-    StoreImp.prototype.isZoomEnabled = function () {
+    }
+    isZoomEnabled() {
         return this._zoomEnabled;
-    };
-    StoreImp.prototype.setZoomAnchor = function (anchor) {
+    }
+    setZoomAnchor(anchor) {
         if (isString(anchor)) {
             this._zoomAnchor.main = anchor;
             this._zoomAnchor.xAxis = anchor;
@@ -6819,22 +8088,21 @@ var StoreImp = /** @class */ (function () {
                 this._zoomAnchor.xAxis = anchor.xAxis;
             }
         }
-    };
-    StoreImp.prototype.getZoomAnchor = function () {
-        return __assign({}, this._zoomAnchor);
-    };
-    StoreImp.prototype.setScrollEnabled = function (enabled) {
+    }
+    getZoomAnchor() {
+        return { ...this._zoomAnchor };
+    }
+    setScrollEnabled(enabled) {
         this._scrollEnabled = enabled;
-    };
-    StoreImp.prototype.isScrollEnabled = function () {
+    }
+    isScrollEnabled() {
         return this._scrollEnabled;
-    };
-    StoreImp.prototype.setCrosshair = function (crosshair, options) {
-        var _a;
-        var _b = options !== null && options !== void 0 ? options : {}, notInvalidate = _b.notInvalidate, notExecuteAction = _b.notExecuteAction, forceInvalidate = _b.forceInvalidate;
-        var cr = crosshair !== null && crosshair !== void 0 ? crosshair : {};
-        var realDataIndex = 0;
-        var dataIndex = 0;
+    }
+    setCrosshair(crosshair, options) {
+        const { notInvalidate, notExecuteAction, forceInvalidate } = options ?? {};
+        const cr = crosshair ?? {};
+        let realDataIndex = 0;
+        let dataIndex = 0;
         if (isNumber(cr.x)) {
             realDataIndex = this.coordinateToDataIndex(cr.x);
             if (realDataIndex < 0) {
@@ -6851,86 +8119,82 @@ var StoreImp = /** @class */ (function () {
             realDataIndex = this._dataList.length - 1;
             dataIndex = realDataIndex;
         }
-        var kLineData = this._dataList[dataIndex];
-        var realX = this.dataIndexToCoordinate(realDataIndex);
-        var prevCrosshair = { x: this._crosshair.x, y: this._crosshair.y, paneId: this._crosshair.paneId };
-        this._crosshair = __assign(__assign({}, cr), { realX: realX, kLineData: kLineData, realDataIndex: realDataIndex, dataIndex: dataIndex, timestamp: (_a = this.dataIndexToTimestamp(realDataIndex)) !== null && _a !== void 0 ? _a : undefined });
+        const kLineData = this._dataList[dataIndex];
+        const realX = this.dataIndexToCoordinate(realDataIndex);
+        const prevCrosshair = { x: this._crosshair.x, y: this._crosshair.y, paneId: this._crosshair.paneId };
+        this._crosshair = { ...cr, realX, kLineData, realDataIndex, dataIndex, timestamp: this.dataIndexToTimestamp(realDataIndex) ?? undefined };
         if (prevCrosshair.x !== cr.x ||
             prevCrosshair.y !== cr.y ||
             prevCrosshair.paneId !== cr.paneId ||
-            (forceInvalidate !== null && forceInvalidate !== void 0 ? forceInvalidate : false)) {
-            if (isValid(kLineData) && !(notExecuteAction !== null && notExecuteAction !== void 0 ? notExecuteAction : false) && this.hasAction('onCrosshairChange') && isString(this._crosshair.paneId)) {
+            (forceInvalidate ?? false)) {
+            if (isValid(kLineData) && !(notExecuteAction ?? false) && this.hasAction('onCrosshairChange') && isString(this._crosshair.paneId)) {
                 this.executeAction('onCrosshairChange', crosshair);
             }
-            if (!(notInvalidate !== null && notInvalidate !== void 0 ? notInvalidate : false)) {
+            if (!(notInvalidate ?? false)) {
                 this._chart.updatePane(1 /* UpdateLevel.Overlay */);
             }
         }
-    };
-    StoreImp.prototype.getCrosshair = function () {
+    }
+    getCrosshair() {
         return this._crosshair;
-    };
-    StoreImp.prototype.executeAction = function (type, data) {
-        var _a;
-        (_a = this._actions.get(type)) === null || _a === void 0 ? void 0 : _a.execute(data);
-    };
-    StoreImp.prototype.subscribeAction = function (type, callback) {
-        var _a;
+    }
+    executeAction(type, data) {
+        this._actions.get(type)?.execute(data);
+    }
+    subscribeAction(type, callback) {
         if (!this._actions.has(type)) {
             this._actions.set(type, new Action());
         }
-        (_a = this._actions.get(type)) === null || _a === void 0 ? void 0 : _a.subscribe(callback);
-    };
-    StoreImp.prototype.unsubscribeAction = function (type, callback) {
-        var action = this._actions.get(type);
+        this._actions.get(type)?.subscribe(callback);
+    }
+    unsubscribeAction(type, callback) {
+        const action = this._actions.get(type);
         if (isValid(action)) {
             action.unsubscribe(callback);
             if (action.isEmpty()) {
                 this._actions.delete(type);
             }
         }
-    };
-    StoreImp.prototype.hasAction = function (type) {
-        var action = this._actions.get(type);
+    }
+    hasAction(type) {
+        const action = this._actions.get(type);
         return isValid(action) && !action.isEmpty();
-    };
-    StoreImp.prototype._sortIndicators = function (paneId) {
-        var _a;
+    }
+    _sortIndicators(paneId) {
         if (isString(paneId)) {
-            (_a = this._indicators.get(paneId)) === null || _a === void 0 ? void 0 : _a.sort(function (i1, i2) { return i1.zLevel - i2.zLevel; });
+            this._indicators.get(paneId)?.sort((i1, i2) => i1.zLevel - i2.zLevel);
         }
         else {
-            this._indicators.forEach(function (paneIndicators) {
-                paneIndicators.sort(function (i1, i2) { return i1.zLevel - i2.zLevel; });
+            this._indicators.forEach(paneIndicators => {
+                paneIndicators.sort((i1, i2) => i1.zLevel - i2.zLevel);
             });
         }
-    };
-    StoreImp.prototype._calcIndicator = function (data) {
-        var _this = this;
-        var indicators = [];
+    }
+    _calcIndicator(data) {
+        let indicators = [];
         indicators = indicators.concat(data);
         if (indicators.length > 0) {
-            var tasks_1 = {};
-            indicators.forEach(function (indicator) {
-                tasks_1[indicator.id] = indicator.calcImp(_this._dataList);
+            const tasks = {};
+            indicators.forEach(indicator => {
+                tasks[indicator.id] = indicator.calcImp(this._dataList);
             });
-            this._taskScheduler.add(tasks_1);
+            this._taskScheduler.add(tasks);
         }
-    };
-    StoreImp.prototype.addIndicator = function (create, paneId, isStack) {
-        var name = create.name;
-        var filterIndicators = this.getIndicatorsByFilter(create);
+    }
+    addIndicator(create, paneId, isStack) {
+        const { name } = create;
+        const filterIndicators = this.getIndicatorsByFilter(create);
         if (filterIndicators.length > 0) {
             return false;
         }
-        var paneIndicators = this.getIndicatorsByPaneId(paneId);
-        var IndicatorClazz = getIndicatorClass(name);
-        var indicator = new IndicatorClazz();
+        let paneIndicators = this.getIndicatorsByPaneId(paneId);
+        const IndicatorClazz = getIndicatorClass(name);
+        const indicator = new IndicatorClazz();
         this._synchronizeIndicatorSeriesPrecision(indicator);
         indicator.paneId = paneId;
         indicator.override(create);
         if (!isStack) {
-            this.removeIndicator({ paneId: paneId });
+            this.removeIndicator({ paneId });
             paneIndicators = [];
         }
         paneIndicators.push(indicator);
@@ -6938,90 +8202,87 @@ var StoreImp = /** @class */ (function () {
         this._sortIndicators(paneId);
         this._calcIndicator(indicator);
         return true;
-    };
-    StoreImp.prototype.getIndicatorsByPaneId = function (paneId) {
-        var _a;
-        return (_a = this._indicators.get(paneId)) !== null && _a !== void 0 ? _a : [];
-    };
-    StoreImp.prototype.getIndicatorsByFilter = function (filter) {
-        var paneId = filter.paneId, name = filter.name, id = filter.id;
-        var match = function (indicator) {
+    }
+    getIndicatorsByPaneId(paneId) {
+        return this._indicators.get(paneId) ?? [];
+    }
+    getIndicatorsByFilter(filter) {
+        const { paneId, name, id } = filter;
+        const match = indicator => {
             if (isValid(id)) {
                 return indicator.id === id;
             }
             return !isValid(name) || indicator.name === name;
         };
-        var indicators = [];
+        let indicators = [];
         if (isValid(paneId)) {
             indicators = indicators.concat(this.getIndicatorsByPaneId(paneId).filter(match));
         }
         else {
-            this._indicators.forEach(function (paneIndicators) {
+            this._indicators.forEach(paneIndicators => {
                 indicators = indicators.concat(paneIndicators.filter(match));
             });
         }
         return indicators;
-    };
-    StoreImp.prototype.removeIndicator = function (filter) {
-        var _this = this;
-        var removed = false;
-        var filterIndicators = this.getIndicatorsByFilter(filter);
-        filterIndicators.forEach(function (indicator) {
-            var paneIndicators = _this.getIndicatorsByPaneId(indicator.paneId);
-            var index = paneIndicators.findIndex(function (ins) { return ins.id === indicator.id; });
+    }
+    removeIndicator(filter) {
+        let removed = false;
+        const filterIndicators = this.getIndicatorsByFilter(filter);
+        filterIndicators.forEach(indicator => {
+            const paneIndicators = this.getIndicatorsByPaneId(indicator.paneId);
+            const index = paneIndicators.findIndex(ins => ins.id === indicator.id);
             if (index > -1) {
                 paneIndicators.splice(index, 1);
                 removed = true;
             }
             if (paneIndicators.length === 0) {
-                _this._indicators.delete(indicator.paneId);
+                this._indicators.delete(indicator.paneId);
             }
         });
         return removed;
-    };
-    StoreImp.prototype.hasIndicators = function (paneId) {
+    }
+    hasIndicators(paneId) {
         return this._indicators.has(paneId);
-    };
-    StoreImp.prototype._synchronizeIndicatorSeriesPrecision = function (indicator) {
+    }
+    _synchronizeIndicatorSeriesPrecision(indicator) {
         if (isValid(this._symbol)) {
-            var _a = this._symbol, _b = _a.pricePrecision, pricePrecision_1 = _b === void 0 ? SymbolDefaultPrecisionConstants.PRICE : _b, _c = _a.volumePrecision, volumePrecision_1 = _c === void 0 ? SymbolDefaultPrecisionConstants.VOLUME : _c;
-            var synchronize_1 = function (indicator) {
+            const { pricePrecision = SymbolDefaultPrecisionConstants.PRICE, volumePrecision = SymbolDefaultPrecisionConstants.VOLUME } = this._symbol;
+            const synchronize = indicator => {
                 switch (indicator.series) {
                     case 'price': {
-                        indicator.setSeriesPrecision(pricePrecision_1);
+                        indicator.setSeriesPrecision(pricePrecision);
                         break;
                     }
                     case 'volume': {
-                        indicator.setSeriesPrecision(volumePrecision_1);
+                        indicator.setSeriesPrecision(volumePrecision);
                         break;
                     }
                 }
             };
             if (isValid(indicator)) {
-                synchronize_1(indicator);
+                synchronize(indicator);
             }
             else {
-                this._indicators.forEach(function (paneIndicators) {
-                    paneIndicators.forEach(function (indicator) {
-                        synchronize_1(indicator);
+                this._indicators.forEach(paneIndicators => {
+                    paneIndicators.forEach(indicator => {
+                        synchronize(indicator);
                     });
                 });
             }
         }
-    };
-    StoreImp.prototype.overrideIndicator = function (override) {
-        var _this = this;
-        var updateFlag = false;
-        var sortFlag = false;
-        var filterIndicators = this.getIndicatorsByFilter(override);
-        filterIndicators.forEach(function (indicator) {
+    }
+    overrideIndicator(override) {
+        let updateFlag = false;
+        let sortFlag = false;
+        const filterIndicators = this.getIndicatorsByFilter(override);
+        filterIndicators.forEach(indicator => {
             indicator.override(override);
-            var _a = indicator.shouldUpdateImp(), calc = _a.calc, draw = _a.draw, sort = _a.sort;
+            const { calc, draw, sort } = indicator.shouldUpdateImp();
             if (sort) {
                 sortFlag = true;
             }
             if (calc) {
-                _this._calcIndicator(indicator);
+                this._calcIndicator(indicator);
             }
             else {
                 if (draw) {
@@ -7039,11 +8300,10 @@ var StoreImp = /** @class */ (function () {
             return true;
         }
         return false;
-    };
-    StoreImp.prototype.getOverlaysByFilter = function (filter) {
-        var _a;
-        var id = filter.id, groupId = filter.groupId, paneId = filter.paneId, name = filter.name;
-        var match = function (overlay) {
+    }
+    getOverlaysByFilter(filter) {
+        const { id, groupId, paneId, name } = filter;
+        const match = overlay => {
             if (isValid(id)) {
                 return overlay.id === id;
             }
@@ -7054,97 +8314,82 @@ var StoreImp = /** @class */ (function () {
             }
             return !isValid(name) || overlay.name === name;
         };
-        var overlays = [];
+        let overlays = [];
         if (isValid(paneId)) {
             overlays = overlays.concat(this.getOverlaysByPaneId(paneId).filter(match));
         }
         else {
-            this._overlays.forEach(function (paneOverlays) {
+            this._overlays.forEach(paneOverlays => {
                 overlays = overlays.concat(paneOverlays.filter(match));
             });
         }
-        var progressOverlay = (_a = this._progressOverlayInfo) === null || _a === void 0 ? void 0 : _a.overlay;
+        const progressOverlay = this._progressOverlayInfo?.overlay;
         if (isValid(progressOverlay) && match(progressOverlay)) {
             overlays.push(progressOverlay);
         }
         return overlays;
-    };
-    StoreImp.prototype.getOverlaysByPaneId = function (paneId) {
-        var _a;
+    }
+    getOverlaysByPaneId(paneId) {
         if (!isString(paneId)) {
-            var overlays_1 = [];
-            this._overlays.forEach(function (paneOverlays) {
-                overlays_1 = overlays_1.concat(paneOverlays);
+            let overlays = [];
+            this._overlays.forEach(paneOverlays => {
+                overlays = overlays.concat(paneOverlays);
             });
-            return overlays_1;
+            return overlays;
         }
-        return (_a = this._overlays.get(paneId)) !== null && _a !== void 0 ? _a : [];
-    };
-    StoreImp.prototype._sortOverlays = function (paneId) {
-        var _a;
+        return this._overlays.get(paneId) ?? [];
+    }
+    _sortOverlays(paneId) {
         if (isString(paneId)) {
-            (_a = this._overlays.get(paneId)) === null || _a === void 0 ? void 0 : _a.sort(function (o1, o2) { return o1.zLevel - o2.zLevel; });
+            this._overlays.get(paneId)?.sort((o1, o2) => o1.zLevel - o2.zLevel);
         }
         else {
-            this._overlays.forEach(function (paneOverlays) {
-                paneOverlays.sort(function (o1, o2) { return o1.zLevel - o2.zLevel; });
+            this._overlays.forEach(paneOverlays => {
+                paneOverlays.sort((o1, o2) => o1.zLevel - o2.zLevel);
             });
         }
-    };
-    StoreImp.prototype.addOverlays = function (os, appointPaneFlags) {
-        var _this = this;
-        var updatePaneIds = [];
-        var ids = os.map(function (create, index) {
-            var e_1, _a;
-            var _b, _c, _d, _e, _f, _g;
+    }
+    addOverlays(os, appointPaneFlags) {
+        const updatePaneIds = [];
+        const ids = os.map((create, index) => {
             if (isValid(create.id)) {
-                var findOverlay = null;
-                try {
-                    for (var _h = __values(_this._overlays), _j = _h.next(); !_j.done; _j = _h.next()) {
-                        var item = _j.value;
-                        var overlays = item[1];
-                        var overlay = overlays.find(function (o) { return o.id === create.id; });
-                        if (isValid(overlay)) {
-                            findOverlay = overlay;
-                            break;
-                        }
+                let findOverlay = null;
+                for (const item of this._overlays) {
+                    const overlays = item[1];
+                    const overlay = overlays.find(o => o.id === create.id);
+                    if (isValid(overlay)) {
+                        findOverlay = overlay;
+                        break;
                     }
-                }
-                catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                finally {
-                    try {
-                        if (_j && !_j.done && (_a = _h.return)) _a.call(_h);
-                    }
-                    finally { if (e_1) throw e_1.error; }
                 }
                 if (isValid(findOverlay)) {
                     return create.id;
                 }
             }
-            var OverlayClazz = getOverlayInnerClass(create.name);
+            const OverlayClazz = getOverlayInnerClass(create.name);
             if (isValid(OverlayClazz)) {
-                var id = (_b = create.id) !== null && _b !== void 0 ? _b : createId(OVERLAY_ID_PREFIX);
-                var overlay = new OverlayClazz();
-                var paneId = (_c = create.paneId) !== null && _c !== void 0 ? _c : PaneIdConstants.CANDLE;
+                const id = create.id ?? createId(OVERLAY_ID_PREFIX);
+                const overlay = new OverlayClazz();
+                const paneId = create.paneId ?? PaneIdConstants.CANDLE;
                 create.id = id;
-                (_d = create.groupId) !== null && _d !== void 0 ? _d : (create.groupId = id);
-                var zLevel = _this.getOverlaysByPaneId(paneId).length;
-                (_e = create.zLevel) !== null && _e !== void 0 ? _e : (create.zLevel = zLevel);
+                create.groupId ??= id;
+                const zLevel = this.getOverlaysByPaneId(paneId).length;
+                create.zLevel ??= zLevel;
                 overlay.override(create);
                 if (!updatePaneIds.includes(paneId)) {
                     updatePaneIds.push(paneId);
                 }
                 if (overlay.isDrawing()) {
-                    _this._progressOverlayInfo = { paneId: paneId, overlay: overlay, appointPaneFlag: appointPaneFlags[index] };
+                    this._progressOverlayInfo = { paneId, overlay, appointPaneFlag: appointPaneFlags[index] };
                 }
                 else {
-                    if (!_this._overlays.has(paneId)) {
-                        _this._overlays.set(paneId, []);
+                    if (!this._overlays.has(paneId)) {
+                        this._overlays.set(paneId, []);
                     }
-                    (_f = _this._overlays.get(paneId)) === null || _f === void 0 ? void 0 : _f.push(overlay);
+                    this._overlays.get(paneId)?.push(overlay);
                 }
                 if (overlay.isStart()) {
-                    (_g = overlay.onDrawStart) === null || _g === void 0 ? void 0 : _g.call(overlay, ({ overlay: overlay, chart: _this._chart }));
+                    overlay.onDrawStart?.(({ overlay, chart: this._chart }));
                 }
                 return id;
             }
@@ -7152,47 +8397,45 @@ var StoreImp = /** @class */ (function () {
         });
         if (updatePaneIds.length > 0) {
             this._sortOverlays();
-            updatePaneIds.forEach(function (paneId) {
-                _this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
+            updatePaneIds.forEach(paneId => {
+                this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
             });
             this._chart.updatePane(1 /* UpdateLevel.Overlay */, PaneIdConstants.X_AXIS);
         }
         return ids;
-    };
-    StoreImp.prototype.getProgressOverlayInfo = function () {
+    }
+    getProgressOverlayInfo() {
         return this._progressOverlayInfo;
-    };
-    StoreImp.prototype.progressOverlayComplete = function () {
-        var _a;
+    }
+    progressOverlayComplete() {
         if (this._progressOverlayInfo !== null) {
-            var _b = this._progressOverlayInfo, overlay = _b.overlay, paneId = _b.paneId;
+            const { overlay, paneId } = this._progressOverlayInfo;
             if (!overlay.isDrawing()) {
                 if (!this._overlays.has(paneId)) {
                     this._overlays.set(paneId, []);
                 }
-                (_a = this._overlays.get(paneId)) === null || _a === void 0 ? void 0 : _a.push(overlay);
+                this._overlays.get(paneId)?.push(overlay);
                 this._sortOverlays(paneId);
                 this._progressOverlayInfo = null;
             }
         }
-    };
-    StoreImp.prototype.updateProgressOverlayInfo = function (paneId, appointPaneFlag) {
+    }
+    updateProgressOverlayInfo(paneId, appointPaneFlag) {
         if (this._progressOverlayInfo !== null) {
             if (isBoolean(appointPaneFlag) && appointPaneFlag) {
                 this._progressOverlayInfo.appointPaneFlag = appointPaneFlag;
             }
             this._progressOverlayInfo.paneId = paneId;
-            this._progressOverlayInfo.overlay.override({ paneId: paneId });
+            this._progressOverlayInfo.overlay.override({ paneId });
         }
-    };
-    StoreImp.prototype.overrideOverlay = function (override) {
-        var _this = this;
-        var sortFlag = false;
-        var updatePaneIds = [];
-        var filterOverlays = this.getOverlaysByFilter(override);
-        filterOverlays.forEach(function (overlay) {
+    }
+    overrideOverlay(override) {
+        let sortFlag = false;
+        const updatePaneIds = [];
+        const filterOverlays = this.getOverlaysByFilter(override);
+        filterOverlays.forEach(overlay => {
             overlay.override(override);
-            var _a = overlay.shouldUpdate(), sort = _a.sort, draw = _a.draw;
+            const { sort, draw } = overlay.shouldUpdate();
             if (sort) {
                 sortFlag = true;
             }
@@ -7207,64 +8450,62 @@ var StoreImp = /** @class */ (function () {
             this._sortOverlays();
         }
         if (updatePaneIds.length > 0) {
-            updatePaneIds.forEach(function (paneId) {
-                _this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
+            updatePaneIds.forEach(paneId => {
+                this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
             });
             this._chart.updatePane(1 /* UpdateLevel.Overlay */, PaneIdConstants.X_AXIS);
             return true;
         }
         return false;
-    };
-    StoreImp.prototype.removeOverlay = function (filter) {
-        var _this = this;
-        var updatePaneIds = [];
-        var filterOverlays = this.getOverlaysByFilter(filter);
-        filterOverlays.forEach(function (overlay) {
-            var _a;
-            var paneId = overlay.paneId;
-            var paneOverlays = _this.getOverlaysByPaneId(overlay.paneId);
-            (_a = overlay.onRemoved) === null || _a === void 0 ? void 0 : _a.call(overlay, { overlay: overlay, chart: _this._chart });
+    }
+    removeOverlay(filter) {
+        const updatePaneIds = [];
+        const filterOverlays = this.getOverlaysByFilter(filter);
+        filterOverlays.forEach(overlay => {
+            const paneId = overlay.paneId;
+            const paneOverlays = this.getOverlaysByPaneId(overlay.paneId);
+            overlay.onRemoved?.({ overlay, chart: this._chart });
             if (!updatePaneIds.includes(paneId)) {
                 updatePaneIds.push(paneId);
             }
             if (overlay.isDrawing()) {
-                _this._progressOverlayInfo = null;
+                this._progressOverlayInfo = null;
             }
             else {
-                var index = paneOverlays.findIndex(function (o) { return o.id === overlay.id; });
+                const index = paneOverlays.findIndex(o => o.id === overlay.id);
                 if (index > -1) {
                     paneOverlays.splice(index, 1);
                 }
             }
             if (paneOverlays.length === 0) {
-                _this._overlays.delete(paneId);
+                this._overlays.delete(paneId);
             }
         });
         if (updatePaneIds.length > 0) {
-            updatePaneIds.forEach(function (paneId) {
-                _this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
+            updatePaneIds.forEach(paneId => {
+                this._chart.updatePane(1 /* UpdateLevel.Overlay */, paneId);
             });
             this._chart.updatePane(1 /* UpdateLevel.Overlay */, PaneIdConstants.X_AXIS);
             return true;
         }
         return false;
-    };
-    StoreImp.prototype.setPressedOverlayInfo = function (info) {
+    }
+    setPressedOverlayInfo(info) {
         this._pressedOverlayInfo = info;
-    };
-    StoreImp.prototype.getPressedOverlayInfo = function () {
+    }
+    getPressedOverlayInfo() {
         return this._pressedOverlayInfo;
-    };
-    StoreImp.prototype.setHoverOverlayInfo = function (info, processOnMouseEnterEvent, processOnMouseLeaveEvent) {
-        var _a = this._hoverOverlayInfo, overlay = _a.overlay, figureType = _a.figureType, figureIndex = _a.figureIndex, figure = _a.figure;
-        var infoOverlay = info.overlay;
-        if ((overlay === null || overlay === void 0 ? void 0 : overlay.id) !== (infoOverlay === null || infoOverlay === void 0 ? void 0 : infoOverlay.id) ||
+    }
+    setHoverOverlayInfo(info, processOnMouseEnterEvent, processOnMouseLeaveEvent) {
+        const { overlay, figureType, figureIndex, figure } = this._hoverOverlayInfo;
+        const infoOverlay = info.overlay;
+        if (overlay?.id !== infoOverlay?.id ||
             figureType !== info.figureType ||
             figureIndex !== info.figureIndex) {
             this._hoverOverlayInfo = info;
-            if ((overlay === null || overlay === void 0 ? void 0 : overlay.id) !== (infoOverlay === null || infoOverlay === void 0 ? void 0 : infoOverlay.id)) {
-                var ignoreUpdateFlag = false;
-                var sortFlag = false;
+            if (overlay?.id !== infoOverlay?.id) {
+                let ignoreUpdateFlag = false;
+                let sortFlag = false;
                 if (overlay !== null) {
                     overlay.override({ zLevel: overlay.getPrevZLevel() });
                     sortFlag = true;
@@ -7288,16 +8529,16 @@ var StoreImp = /** @class */ (function () {
                 }
             }
         }
-    };
-    StoreImp.prototype.getHoverOverlayInfo = function () {
+    }
+    getHoverOverlayInfo() {
         return this._hoverOverlayInfo;
-    };
-    StoreImp.prototype.setClickOverlayInfo = function (info, processOnSelectedEvent, processOnDeselectedEvent) {
-        var _a = this._clickOverlayInfo, paneId = _a.paneId, overlay = _a.overlay, figureType = _a.figureType, figure = _a.figure, figureIndex = _a.figureIndex;
-        var infoOverlay = info.overlay;
-        if ((overlay === null || overlay === void 0 ? void 0 : overlay.id) !== (infoOverlay === null || infoOverlay === void 0 ? void 0 : infoOverlay.id) || figureType !== info.figureType || figureIndex !== info.figureIndex) {
+    }
+    setClickOverlayInfo(info, processOnSelectedEvent, processOnDeselectedEvent) {
+        const { paneId, overlay, figureType, figure, figureIndex } = this._clickOverlayInfo;
+        const infoOverlay = info.overlay;
+        if (overlay?.id !== infoOverlay?.id || figureType !== info.figureType || figureIndex !== info.figureIndex) {
             this._clickOverlayInfo = info;
-            if ((overlay === null || overlay === void 0 ? void 0 : overlay.id) !== (infoOverlay === null || infoOverlay === void 0 ? void 0 : infoOverlay.id)) {
+            if (overlay?.id !== infoOverlay?.id) {
                 if (isValid(overlay)) {
                     processOnDeselectedEvent(overlay, figure);
                 }
@@ -7311,24 +8552,23 @@ var StoreImp = /** @class */ (function () {
                 this._chart.updatePane(1 /* UpdateLevel.Overlay */, PaneIdConstants.X_AXIS);
             }
         }
-    };
-    StoreImp.prototype.getClickOverlayInfo = function () {
+    }
+    getClickOverlayInfo() {
         return this._clickOverlayInfo;
-    };
-    StoreImp.prototype.isOverlayEmpty = function () {
+    }
+    isOverlayEmpty() {
         return this._overlays.size === 0 && this._progressOverlayInfo === null;
-    };
-    StoreImp.prototype.isOverlayDrawing = function () {
-        var _a, _b;
-        return (_b = (_a = this._progressOverlayInfo) === null || _a === void 0 ? void 0 : _a.overlay.isDrawing()) !== null && _b !== void 0 ? _b : false;
-    };
-    StoreImp.prototype._clearLastPriceMarkExtendTextUpdateTimer = function () {
-        this._lastPriceMarkExtendTextUpdateTimers.forEach(function (timer) {
+    }
+    isOverlayDrawing() {
+        return this._progressOverlayInfo?.overlay.isDrawing() ?? false;
+    }
+    _clearLastPriceMarkExtendTextUpdateTimer() {
+        this._lastPriceMarkExtendTextUpdateTimers.forEach(timer => {
             clearInterval(timer);
         });
         this._lastPriceMarkExtendTextUpdateTimers = [];
-    };
-    StoreImp.prototype._clearData = function () {
+    }
+    _clearData() {
         this._dataLoadMore.backward = false;
         this._dataLoadMore.forward = false;
         this._loading = false;
@@ -7340,20 +8580,28 @@ var StoreImp = /** @class */ (function () {
         ];
         this._visibleRange = getDefaultVisibleRange();
         this._crosshair = {};
-    };
-    StoreImp.prototype.getChart = function () {
+    }
+    getChart() {
         return this._chart;
-    };
-    StoreImp.prototype.destroy = function () {
+    }
+    destroy() {
         this._clearData();
         this._clearLastPriceMarkExtendTextUpdateTimer();
         this._taskScheduler.clear();
         this._overlays.clear();
         this._indicators.clear();
         this._actions.clear();
-    };
-    return StoreImp;
-}());
+    }
+    applyNewData(data, more) {
+        this._addData(data, 'init', more);
+    }
+    applyMoreData(data, more) {
+        this._addData(data, 'backward', more);
+    }
+    updateData(data) {
+        this._addData(data, 'forward');
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7368,13 +8616,13 @@ var StoreImp = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var WidgetNameConstants = {
+const WidgetNameConstants = {
     MAIN: 'main',
     X_AXIS: 'xAxis',
     Y_AXIS: 'yAxis',
     SEPARATOR: 'separator'
 };
-var REAL_SEPARATOR_HEIGHT = 7;
+const REAL_SEPARATOR_HEIGHT = 7;
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7389,98 +8637,93 @@ var REAL_SEPARATOR_HEIGHT = 7;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function isSupportedDevicePixelContentBox() {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, new Promise(function (resolve) {
-                        var ro = new ResizeObserver(function (entries) {
-                            resolve(entries.every(function (entry) { return 'devicePixelContentBoxSize' in entry; }));
-                            ro.disconnect();
-                        });
-                        ro.observe(document.body, { box: 'device-pixel-content-box' });
-                    }).catch(function () { return false; })];
-                case 1: return [2 /*return*/, _a.sent()];
-            }
+async function isSupportedDevicePixelContentBox() {
+    return await new Promise((resolve) => {
+        const ro = new ResizeObserver((entries) => {
+            resolve(entries.every(entry => 'devicePixelContentBoxSize' in entry));
+            ro.disconnect();
         });
-    });
+        ro.observe(document.body, { box: 'device-pixel-content-box' });
+    }).catch(() => false);
 }
-var Canvas = /** @class */ (function () {
-    function Canvas(style, listener) {
-        var _this = this;
-        this._supportedDevicePixelContentBox = false;
-        this._width = 0;
-        this._height = 0;
-        this._pixelWidth = 0;
-        this._pixelHeight = 0;
-        this._nextPixelWidth = 0;
-        this._nextPixelHeight = 0;
-        this._requestAnimationId = DEFAULT_REQUEST_ID;
-        this._mediaQueryListener = function () {
-            var pixelRatio = getPixelRatio(_this._element);
-            _this._nextPixelWidth = Math.round(_this._element.clientWidth * pixelRatio);
-            _this._nextPixelHeight = Math.round(_this._element.clientHeight * pixelRatio);
-            _this._resetPixelRatio();
-        };
+class Canvas {
+    _element;
+    _resizeObserver;
+    _mediaQueryList;
+    _ctx;
+    _listener;
+    _supportedDevicePixelContentBox = false;
+    _width = 0;
+    _height = 0;
+    _pixelWidth = 0;
+    _pixelHeight = 0;
+    _nextPixelWidth = 0;
+    _nextPixelHeight = 0;
+    _requestAnimationId = DEFAULT_REQUEST_ID;
+    _mediaQueryListener = () => {
+        const pixelRatio = getPixelRatio(this._element);
+        this._nextPixelWidth = Math.round(this._element.clientWidth * pixelRatio);
+        this._nextPixelHeight = Math.round(this._element.clientHeight * pixelRatio);
+        this._resetPixelRatio();
+    };
+    constructor(style, listener) {
         this._listener = listener;
         this._element = createDom('canvas', style);
         this._ctx = this._element.getContext('2d');
-        isSupportedDevicePixelContentBox().then(function (result) {
-            _this._supportedDevicePixelContentBox = result;
+        isSupportedDevicePixelContentBox().then(result => {
+            this._supportedDevicePixelContentBox = result;
             if (result) {
-                _this._resizeObserver = new ResizeObserver(function (entries) {
-                    var entry = entries.find(function (entry) { return entry.target === _this._element; });
-                    var size = entry === null || entry === void 0 ? void 0 : entry.devicePixelContentBoxSize[0];
+                this._resizeObserver = new ResizeObserver((entries) => {
+                    const entry = entries.find((entry) => entry.target === this._element);
+                    const size = entry?.devicePixelContentBoxSize[0];
                     if (isValid(size)) {
-                        _this._nextPixelWidth = size.inlineSize;
-                        _this._nextPixelHeight = size.blockSize;
-                        if (_this._pixelWidth !== _this._nextPixelWidth || _this._pixelHeight !== _this._nextPixelHeight) {
-                            _this._resetPixelRatio();
+                        this._nextPixelWidth = size.inlineSize;
+                        this._nextPixelHeight = size.blockSize;
+                        if (this._pixelWidth !== this._nextPixelWidth || this._pixelHeight !== this._nextPixelHeight) {
+                            this._resetPixelRatio();
                         }
                     }
                 });
-                _this._resizeObserver.observe(_this._element, { box: 'device-pixel-content-box' });
+                this._resizeObserver.observe(this._element, { box: 'device-pixel-content-box' });
             }
             else {
-                _this._mediaQueryList = window.matchMedia("(resolution: ".concat(getPixelRatio(_this._element), "dppx)"));
+                this._mediaQueryList = window.matchMedia(`(resolution: ${getPixelRatio(this._element)}dppx)`);
                 // eslint-disable-next-line @typescript-eslint/no-deprecated -- ignore
-                _this._mediaQueryList.addListener(_this._mediaQueryListener);
+                this._mediaQueryList.addListener(this._mediaQueryListener);
             }
-        }).catch(function (_) { return false; });
+        }).catch((_) => false);
     }
-    Canvas.prototype._resetPixelRatio = function () {
-        var _this = this;
-        this._executeListener(function () {
-            var width = _this._element.clientWidth;
-            var height = _this._element.clientHeight;
-            _this._width = width;
-            _this._height = height;
-            _this._pixelWidth = _this._nextPixelWidth;
-            _this._pixelHeight = _this._nextPixelHeight;
-            _this._element.width = _this._nextPixelWidth;
-            _this._element.height = _this._nextPixelHeight;
-            var horizontalPixelRatio = _this._nextPixelWidth / width;
-            var verticalPixelRatio = _this._nextPixelHeight / height;
-            _this._ctx.scale(horizontalPixelRatio, verticalPixelRatio);
+    _resetPixelRatio() {
+        this._executeListener(() => {
+            const width = this._element.clientWidth;
+            const height = this._element.clientHeight;
+            this._width = width;
+            this._height = height;
+            this._pixelWidth = this._nextPixelWidth;
+            this._pixelHeight = this._nextPixelHeight;
+            this._element.width = this._nextPixelWidth;
+            this._element.height = this._nextPixelHeight;
+            const horizontalPixelRatio = this._nextPixelWidth / width;
+            const verticalPixelRatio = this._nextPixelHeight / height;
+            this._ctx.scale(horizontalPixelRatio, verticalPixelRatio);
         });
-    };
-    Canvas.prototype._executeListener = function (fn) {
-        var _this = this;
+    }
+    _executeListener(fn) {
         if (this._requestAnimationId === DEFAULT_REQUEST_ID) {
-            this._requestAnimationId = requestAnimationFrame$1(function () {
-                _this._ctx.clearRect(0, 0, _this._width, _this._height);
-                fn === null || fn === void 0 ? void 0 : fn();
-                _this._listener();
-                _this._requestAnimationId = DEFAULT_REQUEST_ID;
+            this._requestAnimationId = requestAnimationFrame(() => {
+                this._ctx.clearRect(0, 0, this._width, this._height);
+                fn?.();
+                this._listener();
+                this._requestAnimationId = DEFAULT_REQUEST_ID;
             });
         }
-    };
-    Canvas.prototype.update = function (w, h) {
+    }
+    update(w, h) {
         if (this._width !== w || this._height !== h) {
-            this._element.style.width = "".concat(w, "px");
-            this._element.style.height = "".concat(h, "px");
+            this._element.style.width = `${w}px`;
+            this._element.style.height = `${h}px`;
             if (!this._supportedDevicePixelContentBox) {
-                var pixelRatio = getPixelRatio(this._element);
+                const pixelRatio = getPixelRatio(this._element);
                 this._nextPixelWidth = Math.round(w * pixelRatio);
                 this._nextPixelHeight = Math.round(h * pixelRatio);
                 this._resetPixelRatio();
@@ -7489,14 +8732,14 @@ var Canvas = /** @class */ (function () {
         else {
             this._executeListener();
         }
-    };
-    Canvas.prototype.getElement = function () {
+    }
+    getElement() {
         return this._element;
-    };
-    Canvas.prototype.getContext = function () {
+    }
+    getContext() {
         return this._ctx;
-    };
-    Canvas.prototype.destroy = function () {
+    }
+    destroy() {
         if (isValid(this._resizeObserver)) {
             this._resizeObserver.unobserve(this._element);
         }
@@ -7504,9 +8747,8 @@ var Canvas = /** @class */ (function () {
             // eslint-disable-next-line @typescript-eslint/no-deprecated -- ignore
             this._mediaQueryList.removeListener(this._mediaQueryListener);
         }
-    };
-    return Canvas;
-}());
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7521,59 +8763,67 @@ var Canvas = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Widget = /** @class */ (function (_super) {
-    __extends(Widget, _super);
-    function Widget(rootContainer, pane) {
-        var _this = _super.call(this) || this;
-        _this._bounding = createDefaultBounding();
-        _this._cursor = 'crosshair';
-        _this._forceCursor = null;
-        _this._pane = pane;
-        _this._rootContainer = rootContainer;
-        _this._container = _this.createContainer();
-        rootContainer.appendChild(_this._container);
-        return _this;
+class Widget extends Eventful {
+    /**
+     * root container
+     */
+    _rootContainer;
+    /**
+     * Parent pane
+     */
+    _pane;
+    /**
+     * wrapper container
+     */
+    _container;
+    _bounding = createDefaultBounding();
+    _cursor = 'crosshair';
+    _forceCursor = null;
+    constructor(rootContainer, pane) {
+        super();
+        this._pane = pane;
+        this._rootContainer = rootContainer;
+        this._container = this.createContainer();
+        rootContainer.appendChild(this._container);
     }
-    Widget.prototype.setBounding = function (bounding) {
+    setBounding(bounding) {
         merge(this._bounding, bounding);
         return this;
-    };
-    Widget.prototype.getContainer = function () { return this._container; };
-    Widget.prototype.getBounding = function () {
+    }
+    getContainer() { return this._container; }
+    getBounding() {
         return this._bounding;
-    };
-    Widget.prototype.getPane = function () {
+    }
+    getPane() {
         return this._pane;
-    };
-    Widget.prototype.checkEventOn = function (_) {
+    }
+    checkEventOn(_) {
         return true;
-    };
-    Widget.prototype.setCursor = function (cursor) {
+    }
+    setCursor(cursor) {
         if (!isString(this._forceCursor)) {
             if (cursor !== this._cursor) {
                 this._cursor = cursor;
                 this._container.style.cursor = this._cursor;
             }
         }
-    };
-    Widget.prototype.setForceCursor = function (cursor) {
-        var _a;
+    }
+    setForceCursor(cursor) {
         if (cursor !== this._forceCursor) {
             this._forceCursor = cursor;
-            this._container.style.cursor = (_a = this._forceCursor) !== null && _a !== void 0 ? _a : this._cursor;
+            this._container.style.cursor = this._forceCursor ?? this._cursor;
         }
-    };
-    Widget.prototype.getForceCursor = function () {
+    }
+    getForceCursor() {
         return this._forceCursor;
-    };
-    Widget.prototype.update = function (level) {
-        this.updateImp(this._container, this._bounding, level !== null && level !== void 0 ? level : 3 /* UpdateLevel.Drawer */);
-    };
-    Widget.prototype.destroy = function () {
+    }
+    update(level) {
+        this.updateImp(this._container, this._bounding, level ?? 3 /* UpdateLevel.Drawer */);
+    }
+    destroy() {
         this._rootContainer.removeChild(this._container);
-    };
-    return Widget;
-}(Eventful));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7588,34 +8838,34 @@ var Widget = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var DrawWidget = /** @class */ (function (_super) {
-    __extends(DrawWidget, _super);
-    function DrawWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._mainCanvas = new Canvas({
+class DrawWidget extends Widget {
+    _mainCanvas;
+    _overlayCanvas;
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
+        this._mainCanvas = new Canvas({
             position: 'absolute',
             top: '0',
             left: '0',
             zIndex: '2',
             boxSizing: 'border-box'
-        }, function () {
-            _this.updateMain(_this._mainCanvas.getContext());
+        }, () => {
+            this.updateMain(this._mainCanvas.getContext());
         });
-        _this._overlayCanvas = new Canvas({
+        this._overlayCanvas = new Canvas({
             position: 'absolute',
             top: '0',
             left: '0',
             zIndex: '2',
             boxSizing: 'border-box'
-        }, function () {
-            _this.updateOverlay(_this._overlayCanvas.getContext());
+        }, () => {
+            this.updateOverlay(this._overlayCanvas.getContext());
         });
-        var container = _this.getContainer();
-        container.appendChild(_this._mainCanvas.getElement());
-        container.appendChild(_this._overlayCanvas.getElement());
-        return _this;
+        const container = this.getContainer();
+        container.appendChild(this._mainCanvas.getElement());
+        container.appendChild(this._overlayCanvas.getElement());
     }
-    DrawWidget.prototype.createContainer = function () {
+    createContainer() {
         return createDom('div', {
             margin: '0',
             padding: '0',
@@ -7625,16 +8875,16 @@ var DrawWidget = /** @class */ (function (_super) {
             boxSizing: 'border-box',
             zIndex: '1'
         });
-    };
-    DrawWidget.prototype.updateImp = function (container, bounding, level) {
-        var width = bounding.width, height = bounding.height, left = bounding.left;
-        container.style.left = "".concat(left, "px");
-        var l = level;
-        var w = container.clientWidth;
-        var h = container.clientHeight;
+    }
+    updateImp(container, bounding, level) {
+        const { width, height, left } = bounding;
+        container.style.left = `${left}px`;
+        let l = level;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
         if (width !== w || height !== h) {
-            container.style.width = "".concat(width, "px");
-            container.style.height = "".concat(height, "px");
+            container.style.width = `${width}px`;
+            container.style.height = `${height}px`;
             l = 3 /* UpdateLevel.Drawer */;
         }
         switch (l) {
@@ -7653,20 +8903,20 @@ var DrawWidget = /** @class */ (function (_super) {
                 break;
             }
         }
-    };
-    DrawWidget.prototype.destroy = function () {
+    }
+    destroy() {
         this._mainCanvas.destroy();
         this._overlayCanvas.destroy();
-    };
-    DrawWidget.prototype.getImage = function (includeOverlay) {
-        var _a = this.getBounding(), width = _a.width, height = _a.height;
-        var canvas = createDom('canvas', {
-            width: "".concat(width, "px"),
-            height: "".concat(height, "px"),
+    }
+    getImage(includeOverlay) {
+        const { width, height } = this.getBounding();
+        const canvas = createDom('canvas', {
+            width: `${width}px`,
+            height: `${height}px`,
             boxSizing: 'border-box'
         });
-        var ctx = canvas.getContext('2d');
-        var pixelRatio = getPixelRatio(canvas);
+        const ctx = canvas.getContext('2d');
+        const pixelRatio = getPixelRatio(canvas);
         canvas.width = width * pixelRatio;
         canvas.height = height * pixelRatio;
         ctx.scale(pixelRatio, pixelRatio);
@@ -7675,402 +8925,7 @@ var DrawWidget = /** @class */ (function (_super) {
             ctx.drawImage(this._overlayCanvas.getElement(), 0, 0, width, height);
         }
         return canvas;
-    };
-    return DrawWidget;
-}(Widget));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function checkCoordinateOnCircle(coordinate, attrs) {
-    var e_1, _a;
-    var circles = [];
-    circles = circles.concat(attrs);
-    try {
-        for (var circles_1 = __values(circles), circles_1_1 = circles_1.next(); !circles_1_1.done; circles_1_1 = circles_1.next()) {
-            var circle_1 = circles_1_1.value;
-            var x = circle_1.x, y = circle_1.y, r = circle_1.r;
-            var difX = coordinate.x - x;
-            var difY = coordinate.y - y;
-            if (!(difX * difX + difY * difY > r * r)) {
-                return true;
-            }
-        }
     }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (circles_1_1 && !circles_1_1.done && (_a = circles_1.return)) _a.call(circles_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function drawCircle(ctx, attrs, styles) {
-    var circles = [];
-    circles = circles.concat(attrs);
-    var _a = styles.style, style = _a === void 0 ? 'fill' : _a, _b = styles.color, color = _b === void 0 ? 'currentColor' : _b, _c = styles.borderSize, borderSize = _c === void 0 ? 1 : _c, _d = styles.borderColor, borderColor = _d === void 0 ? 'currentColor' : _d, _e = styles.borderStyle, borderStyle = _e === void 0 ? 'solid' : _e, _f = styles.borderDashedValue, borderDashedValue = _f === void 0 ? [2, 2] : _f;
-    var solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color));
-    if (solid) {
-        ctx.fillStyle = color;
-        circles.forEach(function (_a) {
-            var x = _a.x, y = _a.y, r = _a.r;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.fill();
-        });
-    }
-    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = borderSize;
-        if (borderStyle === 'dashed') {
-            ctx.setLineDash(borderDashedValue);
-        }
-        else {
-            ctx.setLineDash([]);
-        }
-        circles.forEach(function (_a) {
-            var x = _a.x, y = _a.y, r = _a.r;
-            if (!solid || r > borderSize) {
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.closePath();
-                ctx.stroke();
-            }
-        });
-    }
-}
-var circle$1 = {
-    name: 'circle',
-    checkEventOn: checkCoordinateOnCircle,
-    draw: function (ctx, attrs, styles) {
-        drawCircle(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function checkCoordinateOnPolygon(coordinate, attrs) {
-    var e_1, _a;
-    var polygons = [];
-    polygons = polygons.concat(attrs);
-    try {
-        for (var polygons_1 = __values(polygons), polygons_1_1 = polygons_1.next(); !polygons_1_1.done; polygons_1_1 = polygons_1.next()) {
-            var polygon_1 = polygons_1_1.value;
-            var on = false;
-            var coordinates = polygon_1.coordinates;
-            for (var i = 0, j = coordinates.length - 1; i < coordinates.length; j = i++) {
-                if ((coordinates[i].y > coordinate.y) !== (coordinates[j].y > coordinate.y) &&
-                    (coordinate.x < (coordinates[j].x - coordinates[i].x) * (coordinate.y - coordinates[i].y) / (coordinates[j].y - coordinates[i].y) + coordinates[i].x)) {
-                    on = !on;
-                }
-            }
-            if (on) {
-                return true;
-            }
-        }
-    }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (polygons_1_1 && !polygons_1_1.done && (_a = polygons_1.return)) _a.call(polygons_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function drawPolygon(ctx, attrs, styles) {
-    var polygons = [];
-    polygons = polygons.concat(attrs);
-    var _a = styles.style, style = _a === void 0 ? 'fill' : _a, _b = styles.color, color = _b === void 0 ? 'currentColor' : _b, _c = styles.borderSize, borderSize = _c === void 0 ? 1 : _c, _d = styles.borderColor, borderColor = _d === void 0 ? 'currentColor' : _d, _e = styles.borderStyle, borderStyle = _e === void 0 ? 'solid' : _e, _f = styles.borderDashedValue, borderDashedValue = _f === void 0 ? [2, 2] : _f;
-    if ((style === 'fill' || styles.style === 'stroke_fill') &&
-        (!isString(color) || !isTransparent(color))) {
-        ctx.fillStyle = color;
-        polygons.forEach(function (_a) {
-            var coordinates = _a.coordinates;
-            ctx.beginPath();
-            ctx.moveTo(coordinates[0].x, coordinates[0].y);
-            for (var i = 1; i < coordinates.length; i++) {
-                ctx.lineTo(coordinates[i].x, coordinates[i].y);
-            }
-            ctx.closePath();
-            ctx.fill();
-        });
-    }
-    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = borderSize;
-        if (borderStyle === 'dashed') {
-            ctx.setLineDash(borderDashedValue);
-        }
-        else {
-            ctx.setLineDash([]);
-        }
-        polygons.forEach(function (_a) {
-            var coordinates = _a.coordinates;
-            ctx.beginPath();
-            ctx.moveTo(coordinates[0].x, coordinates[0].y);
-            for (var i = 1; i < coordinates.length; i++) {
-                ctx.lineTo(coordinates[i].x, coordinates[i].y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-        });
-    }
-}
-var polygon = {
-    name: 'polygon',
-    checkEventOn: checkCoordinateOnPolygon,
-    draw: function (ctx, attrs, styles) {
-        drawPolygon(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function checkCoordinateOnRect(coordinate, attrs) {
-    var e_1, _a;
-    var rects = [];
-    rects = rects.concat(attrs);
-    try {
-        for (var rects_1 = __values(rects), rects_1_1 = rects_1.next(); !rects_1_1.done; rects_1_1 = rects_1.next()) {
-            var rect_1 = rects_1_1.value;
-            var x = rect_1.x;
-            var width = rect_1.width;
-            if (width < DEVIATION * 2) {
-                x -= DEVIATION;
-                width = DEVIATION * 2;
-            }
-            var y = rect_1.y;
-            var height = rect_1.height;
-            if (height < DEVIATION * 2) {
-                y -= DEVIATION;
-                height = DEVIATION * 2;
-            }
-            if (coordinate.x >= x &&
-                coordinate.x <= x + width &&
-                coordinate.y >= y &&
-                coordinate.y <= y + height) {
-                return true;
-            }
-        }
-    }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (rects_1_1 && !rects_1_1.done && (_a = rects_1.return)) _a.call(rects_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function drawRect(ctx, attrs, styles) {
-    var _a;
-    var rects = [];
-    rects = rects.concat(attrs);
-    var _b = styles.style, style = _b === void 0 ? 'fill' : _b, _c = styles.color, color = _c === void 0 ? 'transparent' : _c, _d = styles.borderSize, borderSize = _d === void 0 ? 1 : _d, _e = styles.borderColor, borderColor = _e === void 0 ? 'transparent' : _e, _f = styles.borderStyle, borderStyle = _f === void 0 ? 'solid' : _f, _g = styles.borderRadius, r = _g === void 0 ? 0 : _g, _h = styles.borderDashedValue, borderDashedValue = _h === void 0 ? [2, 2] : _h;
-    // eslint-disable-next-line @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-condition -- ignore
-    var draw = (_a = ctx.roundRect) !== null && _a !== void 0 ? _a : ctx.rect;
-    var solid = (style === 'fill' || styles.style === 'stroke_fill') && (!isString(color) || !isTransparent(color));
-    if (solid) {
-        ctx.fillStyle = color;
-        rects.forEach(function (_a) {
-            var x = _a.x, y = _a.y, w = _a.width, h = _a.height;
-            ctx.beginPath();
-            draw.call(ctx, x, y, w, h, r);
-            ctx.closePath();
-            ctx.fill();
-        });
-    }
-    if ((style === 'stroke' || styles.style === 'stroke_fill') && borderSize > 0 && !isTransparent(borderColor)) {
-        ctx.strokeStyle = borderColor;
-        ctx.fillStyle = borderColor;
-        ctx.lineWidth = borderSize;
-        if (borderStyle === 'dashed') {
-            ctx.setLineDash(borderDashedValue);
-        }
-        else {
-            ctx.setLineDash([]);
-        }
-        var correction_1 = borderSize % 2 === 1 ? 0.5 : 0;
-        var doubleCorrection_1 = Math.round(correction_1 * 2);
-        rects.forEach(function (_a) {
-            var x = _a.x, y = _a.y, w = _a.width, h = _a.height;
-            if (w > borderSize * 2 && h > borderSize * 2) {
-                ctx.beginPath();
-                draw.call(ctx, x + correction_1, y + correction_1, w - doubleCorrection_1, h - doubleCorrection_1, r);
-                ctx.closePath();
-                ctx.stroke();
-            }
-            else {
-                if (!solid) {
-                    ctx.fillRect(x, y, w, h);
-                }
-            }
-        });
-    }
-}
-var rect$1 = {
-    name: 'rect',
-    checkEventOn: checkCoordinateOnRect,
-    draw: function (ctx, attrs, styles) {
-        drawRect(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function getTextRect(attrs, styles) {
-    var _a = styles.size, size = _a === void 0 ? 12 : _a, _b = styles.paddingLeft, paddingLeft = _b === void 0 ? 0 : _b, _c = styles.paddingTop, paddingTop = _c === void 0 ? 0 : _c, _d = styles.paddingRight, paddingRight = _d === void 0 ? 0 : _d, _e = styles.paddingBottom, paddingBottom = _e === void 0 ? 0 : _e, _f = styles.weight, weight = _f === void 0 ? 'normal' : _f, family = styles.family;
-    var x = attrs.x, y = attrs.y, text = attrs.text, _g = attrs.align, align = _g === void 0 ? 'left' : _g, _h = attrs.baseline, baseline = _h === void 0 ? 'top' : _h, w = attrs.width, h = attrs.height;
-    var width = w !== null && w !== void 0 ? w : (paddingLeft + calcTextWidth(text, size, weight, family) + paddingRight);
-    var height = h !== null && h !== void 0 ? h : (paddingTop + size + paddingBottom);
-    var startX = 0;
-    switch (align) {
-        case 'left':
-        case 'start': {
-            startX = x;
-            break;
-        }
-        case 'right':
-        case 'end': {
-            startX = x - width;
-            break;
-        }
-        default: {
-            startX = x - width / 2;
-            break;
-        }
-    }
-    var startY = 0;
-    switch (baseline) {
-        case 'top':
-        case 'hanging': {
-            startY = y;
-            break;
-        }
-        case 'bottom':
-        case 'ideographic':
-        case 'alphabetic': {
-            startY = y - height;
-            break;
-        }
-        default: {
-            startY = y - height / 2;
-            break;
-        }
-    }
-    return { x: startX, y: startY, width: width, height: height };
-}
-function checkCoordinateOnText(coordinate, attrs, styles) {
-    var e_1, _a;
-    var texts = [];
-    texts = texts.concat(attrs);
-    try {
-        for (var texts_1 = __values(texts), texts_1_1 = texts_1.next(); !texts_1_1.done; texts_1_1 = texts_1.next()) {
-            var text_1 = texts_1_1.value;
-            var _b = getTextRect(text_1, styles), x = _b.x, y = _b.y, width = _b.width, height = _b.height;
-            if (coordinate.x >= x &&
-                coordinate.x <= x + width &&
-                coordinate.y >= y &&
-                coordinate.y <= y + height) {
-                return true;
-            }
-        }
-    }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (texts_1_1 && !texts_1_1.done && (_a = texts_1.return)) _a.call(texts_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function drawText(ctx, attrs, styles) {
-    var texts = [];
-    texts = texts.concat(attrs);
-    var _a = styles.color, color = _a === void 0 ? 'currentColor' : _a, _b = styles.size, size = _b === void 0 ? 12 : _b, family = styles.family, weight = styles.weight, _c = styles.paddingLeft, paddingLeft = _c === void 0 ? 0 : _c, _d = styles.paddingTop, paddingTop = _d === void 0 ? 0 : _d, _e = styles.paddingRight, paddingRight = _e === void 0 ? 0 : _e;
-    var rects = texts.map(function (text) { return getTextRect(text, styles); });
-    drawRect(ctx, rects, __assign(__assign({}, styles), { color: styles.backgroundColor }));
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = createFont(size, weight, family);
-    ctx.fillStyle = color;
-    texts.forEach(function (text, index) {
-        var rect = rects[index];
-        ctx.fillText(text.text, rect.x + paddingLeft, rect.y + paddingTop, rect.width - paddingLeft - paddingRight);
-    });
-}
-var text = {
-    name: 'text',
-    checkEventOn: checkCoordinateOnText,
-    draw: function (ctx, attrs, styles) {
-        drawText(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function getDistance$1(coordinate1, coordinate2) {
-    var xDif = coordinate1.x - coordinate2.x;
-    var yDif = coordinate1.y - coordinate2.y;
-    return Math.sqrt(xDif * xDif + yDif * yDif);
 }
 
 /**
@@ -8086,354 +8941,22 @@ function getDistance$1(coordinate1, coordinate2) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function checkCoordinateOnArc(coordinate, attrs) {
-    var e_1, _a;
-    var arcs = [];
-    arcs = arcs.concat(attrs);
-    try {
-        for (var arcs_1 = __values(arcs), arcs_1_1 = arcs_1.next(); !arcs_1_1.done; arcs_1_1 = arcs_1.next()) {
-            var arc_1 = arcs_1_1.value;
-            if (Math.abs(getDistance$1(coordinate, arc_1) - arc_1.r) < DEVIATION) {
-                var r = arc_1.r, startAngle = arc_1.startAngle, endAngle = arc_1.endAngle;
-                var startCoordinateX = r * Math.cos(startAngle) + arc_1.x;
-                var startCoordinateY = r * Math.sin(startAngle) + arc_1.y;
-                var endCoordinateX = r * Math.cos(endAngle) + arc_1.x;
-                var endCoordinateY = r * Math.sin(endAngle) + arc_1.y;
-                if (coordinate.x <= Math.max(startCoordinateX, endCoordinateX) + DEVIATION &&
-                    coordinate.x >= Math.min(startCoordinateX, endCoordinateX) - DEVIATION &&
-                    coordinate.y <= Math.max(startCoordinateY, endCoordinateY) + DEVIATION &&
-                    coordinate.y >= Math.min(startCoordinateY, endCoordinateY) - DEVIATION) {
-                    return true;
-                }
-            }
-        }
+class View extends Eventful {
+    /**
+     * Parent widget
+     */
+    _widget;
+    constructor(widget) {
+        super();
+        this._widget = widget;
     }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (arcs_1_1 && !arcs_1_1.done && (_a = arcs_1.return)) _a.call(arcs_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return false;
-}
-function drawArc(ctx, attrs, styles) {
-    var arcs = [];
-    arcs = arcs.concat(attrs);
-    var _a = styles.style, style = _a === void 0 ? 'solid' : _a, _b = styles.size, size = _b === void 0 ? 1 : _b, _c = styles.color, color = _c === void 0 ? 'currentColor' : _c, _d = styles.dashedValue, dashedValue = _d === void 0 ? [2, 2] : _d;
-    ctx.lineWidth = size;
-    ctx.strokeStyle = color;
-    if (style === 'dashed') {
-        ctx.setLineDash(dashedValue);
-    }
-    else {
-        ctx.setLineDash([]);
-    }
-    arcs.forEach(function (_a) {
-        var x = _a.x, y = _a.y, r = _a.r, startAngle = _a.startAngle, endAngle = _a.endAngle;
-        ctx.beginPath();
-        ctx.arc(x, y, r, startAngle, endAngle);
-        ctx.stroke();
-        ctx.closePath();
-    });
-}
-var arc = {
-    name: 'arc',
-    checkEventOn: checkCoordinateOnArc,
-    draw: function (ctx, attrs, styles) {
-        drawArc(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function drawEllipticalArc(ctx, x1, y1, args, offsetX, offsetY, isRelative) {
-    var _a = __read(args, 7), rx = _a[0], ry = _a[1], rotation = _a[2], largeArcFlag = _a[3], sweepFlag = _a[4], x2 = _a[5], y2 = _a[6];
-    var targetX = isRelative ? x1 + x2 : x2 + offsetX;
-    var targetY = isRelative ? y1 + y2 : y2 + offsetY;
-    var segments = ellipticalArcToBeziers(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, targetX, targetY);
-    segments.forEach(function (segment) {
-        ctx.bezierCurveTo(segment[0], segment[1], segment[2], segment[3], segment[4], segment[5]);
-    });
-}
-function ellipticalArcToBeziers(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2) {
-    var _a = computeEllipticalArcParameters(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2), cx = _a.cx, cy = _a.cy, startAngle = _a.startAngle, deltaAngle = _a.deltaAngle;
-    var segments = [];
-    var numSegments = Math.ceil(Math.abs(deltaAngle) / (Math.PI / 2));
-    for (var i = 0; i < numSegments; i++) {
-        var start = startAngle + (i * deltaAngle) / numSegments;
-        var end = startAngle + ((i + 1) * deltaAngle) / numSegments;
-        var bezier = ellipticalArcToBezier(cx, cy, rx, ry, rotation, start, end);
-        segments.push(bezier);
-    }
-    return segments;
-}
-function computeEllipticalArcParameters(x1, y1, rx, ry, rotation, largeArcFlag, sweepFlag, x2, y2) {
-    var phi = (rotation * Math.PI) / 180;
-    var dx = (x1 - x2) / 2;
-    var dy = (y1 - y2) / 2;
-    var x1p = Math.cos(phi) * dx + Math.sin(phi) * dy;
-    var y1p = -Math.sin(phi) * dx + Math.cos(phi) * dy;
-    var lambda = (Math.pow(x1p, 2)) / (Math.pow(rx, 2)) + (Math.pow(y1p, 2)) / (Math.pow(ry, 2));
-    if (lambda > 1) {
-        rx *= Math.sqrt(lambda);
-        ry *= Math.sqrt(lambda);
-    }
-    var sign = largeArcFlag === sweepFlag ? -1 : 1;
-    var numerator = (Math.pow(rx, 2)) * (Math.pow(ry, 2)) - (Math.pow(rx, 2)) * (Math.pow(y1p, 2)) - (Math.pow(ry, 2)) * (Math.pow(x1p, 2));
-    var denominator = (Math.pow(rx, 2)) * (Math.pow(y1p, 2)) + (Math.pow(ry, 2)) * (Math.pow(x1p, 2));
-    var cxp = sign * Math.sqrt(Math.abs(numerator / denominator)) * (rx * y1p / ry);
-    var cyp = sign * Math.sqrt(Math.abs(numerator / denominator)) * (-ry * x1p / rx);
-    var cx = Math.cos(phi) * cxp - Math.sin(phi) * cyp + (x1 + x2) / 2;
-    var cy = Math.sin(phi) * cxp + Math.cos(phi) * cyp + (y1 + y2) / 2;
-    var startAngle = Math.atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
-    var deltaAngle = Math.atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx) - startAngle;
-    if (deltaAngle < 0 && sweepFlag === 1) {
-        deltaAngle += 2 * Math.PI;
-    }
-    else if (deltaAngle > 0 && sweepFlag === 0) {
-        deltaAngle -= 2 * Math.PI;
-    }
-    return { cx: cx, cy: cy, startAngle: startAngle, deltaAngle: deltaAngle };
-}
-/**
- * Ellipse arc segment to Bezier curve
- * @param cx
- * @param cy
- * @param rx
- * @param ry
- * @param rotation
- * @param startAngle
- * @param endAngle
- * @returns
- */
-function ellipticalArcToBezier(cx, cy, rx, ry, rotation, startAngle, endAngle) {
-    // 计算控制点
-    var alpha = Math.sin(endAngle - startAngle) * (Math.sqrt(4 + 3 * Math.pow(Math.tan((endAngle - startAngle) / 2), 2)) - 1) / 3;
-    var cosPhi = Math.cos(rotation);
-    var sinPhi = Math.sin(rotation);
-    var x1 = cx + rx * Math.cos(startAngle) * cosPhi - ry * Math.sin(startAngle) * sinPhi;
-    var y1 = cy + rx * Math.cos(startAngle) * sinPhi + ry * Math.sin(startAngle) * cosPhi;
-    var x2 = cx + rx * Math.cos(endAngle) * cosPhi - ry * Math.sin(endAngle) * sinPhi;
-    var y2 = cy + rx * Math.cos(endAngle) * sinPhi + ry * Math.sin(endAngle) * cosPhi;
-    var cp1x = x1 + alpha * (-rx * Math.sin(startAngle) * cosPhi - ry * Math.cos(startAngle) * sinPhi);
-    var cp1y = y1 + alpha * (-rx * Math.sin(startAngle) * sinPhi + ry * Math.cos(startAngle) * cosPhi);
-    var cp2x = x2 - alpha * (-rx * Math.sin(endAngle) * cosPhi - ry * Math.cos(endAngle) * sinPhi);
-    var cp2y = y2 - alpha * (-rx * Math.sin(endAngle) * sinPhi + ry * Math.cos(endAngle) * cosPhi);
-    return [cp1x, cp1y, cp2x, cp2y, x2, y2];
-}
-function drawPath(ctx, attrs, styles) {
-    var paths = [];
-    paths = paths.concat(attrs);
-    var _a = styles.lineWidth, lineWidth = _a === void 0 ? 1 : _a, _b = styles.color, color = _b === void 0 ? 'currentColor' : _b;
-    ctx.lineWidth = lineWidth;
-    ctx.strokeStyle = color;
-    ctx.setLineDash([]);
-    paths.forEach(function (_a) {
-        var x = _a.x, y = _a.y, path = _a.path;
-        var commands = path.match(/[MLHVCSQTAZ][^MLHVCSQTAZ]*/gi);
-        if (isValid(commands)) {
-            var offsetX_1 = x;
-            var offsetY_1 = y;
-            ctx.beginPath();
-            commands.forEach(function (command) {
-                var currentX = 0;
-                var currentY = 0;
-                var startX = 0;
-                var startY = 0;
-                var type = command[0];
-                var args = command.slice(1).trim().split(/[\s,]+/).map(Number);
-                switch (type) {
-                    case 'M':
-                        currentX = args[0] + offsetX_1;
-                        currentY = args[1] + offsetY_1;
-                        ctx.moveTo(currentX, currentY);
-                        startX = currentX;
-                        startY = currentY;
-                        break;
-                    case 'm':
-                        currentX += args[0];
-                        currentY += args[1];
-                        ctx.moveTo(currentX, currentY);
-                        startX = currentX;
-                        startY = currentY;
-                        break;
-                    case 'L':
-                        currentX = args[0] + offsetX_1;
-                        currentY = args[1] + offsetY_1;
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'l':
-                        currentX += args[0];
-                        currentY += args[1];
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'H':
-                        currentX = args[0] + offsetX_1;
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'h':
-                        currentX += args[0];
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'V':
-                        currentY = args[0] + offsetY_1;
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'v':
-                        currentY += args[0];
-                        ctx.lineTo(currentX, currentY);
-                        break;
-                    case 'C':
-                        ctx.bezierCurveTo(args[0] + offsetX_1, args[1] + offsetY_1, args[2] + offsetX_1, args[3] + offsetY_1, args[4] + offsetX_1, args[5] + offsetY_1);
-                        currentX = args[4] + offsetX_1;
-                        currentY = args[5] + offsetY_1;
-                        break;
-                    case 'c':
-                        ctx.bezierCurveTo(currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3], currentX + args[4], currentY + args[5]);
-                        currentX += args[4];
-                        currentY += args[5];
-                        break;
-                    case 'S':
-                        ctx.bezierCurveTo(currentX, currentY, args[0] + offsetX_1, args[1] + offsetY_1, args[2] + offsetX_1, args[3] + offsetY_1);
-                        currentX = args[2] + offsetX_1;
-                        currentY = args[3] + offsetY_1;
-                        break;
-                    case 's':
-                        ctx.bezierCurveTo(currentX, currentY, currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3]);
-                        currentX += args[2];
-                        currentY += args[3];
-                        break;
-                    case 'Q':
-                        ctx.quadraticCurveTo(args[0] + offsetX_1, args[1] + offsetY_1, args[2] + offsetX_1, args[3] + offsetY_1);
-                        currentX = args[2] + offsetX_1;
-                        currentY = args[3] + offsetY_1;
-                        break;
-                    case 'q':
-                        ctx.quadraticCurveTo(currentX + args[0], currentY + args[1], currentX + args[2], currentY + args[3]);
-                        currentX += args[2];
-                        currentY += args[3];
-                        break;
-                    case 'T':
-                        ctx.quadraticCurveTo(currentX, currentY, args[0] + offsetX_1, args[1] + offsetY_1);
-                        currentX = args[0] + offsetX_1;
-                        currentY = args[1] + offsetY_1;
-                        break;
-                    case 't':
-                        ctx.quadraticCurveTo(currentX, currentY, currentX + args[0], currentY + args[1]);
-                        currentX += args[0];
-                        currentY += args[1];
-                        break;
-                    case 'A':
-                        // arc
-                        // reference https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-                        drawEllipticalArc(ctx, currentX, currentY, args, offsetX_1, offsetY_1, false);
-                        currentX = args[5] + offsetX_1;
-                        currentY = args[6] + offsetY_1;
-                        break;
-                    case 'a':
-                        // arc
-                        // reference https://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
-                        drawEllipticalArc(ctx, currentX, currentY, args, offsetX_1, offsetY_1, true);
-                        currentX += args[5];
-                        currentY += args[6];
-                        break;
-                    case 'Z':
-                    case 'z':
-                        ctx.closePath();
-                        currentX = startX;
-                        currentY = startY;
-                        break;
-                }
-            });
-            if (styles.style === 'fill') {
-                ctx.fill();
-            }
-            else {
-                ctx.stroke();
-            }
-        }
-    });
-}
-var path = {
-    name: 'path',
-    checkEventOn: checkCoordinateOnRect,
-    draw: function (ctx, attrs, styles) {
-        drawPath(ctx, attrs, styles);
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var figures = {};
-var extensions = [circle$1, line, polygon, rect$1, text, arc, path];
-extensions.forEach(function (figure) {
-    figures[figure.name] = FigureImp.extend(figure);
-});
-function getSupportedFigures() {
-    return Object.keys(figures);
-}
-function registerFigure(figure) {
-    figures[figure.name] = FigureImp.extend(figure);
-}
-function getInnerFigureClass(name) {
-    var _a;
-    return (_a = figures[name]) !== null && _a !== void 0 ? _a : null;
-}
-function getFigureClass(name) {
-    var _a;
-    return (_a = figures[name]) !== null && _a !== void 0 ? _a : null;
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var View = /** @class */ (function (_super) {
-    __extends(View, _super);
-    function View(widget) {
-        var _this = _super.call(this) || this;
-        _this._widget = widget;
-        return _this;
-    }
-    View.prototype.getWidget = function () { return this._widget; };
-    View.prototype.createFigure = function (create, eventHandler) {
-        var FigureClazz = getInnerFigureClass(create.name);
+    getWidget() { return this._widget; }
+    createFigure(create, eventHandler) {
+        const FigureClazz = getInnerFigureClass(create.name);
         if (FigureClazz !== null) {
-            var figure = new FigureClazz(create);
+            const figure = new FigureClazz(create);
             if (isValid(eventHandler)) {
-                for (var key in eventHandler) {
+                for (const key in eventHandler) {
                     // eslint-disable-next-line no-prototype-builtins -- ignore
                     if (eventHandler.hasOwnProperty(key)) {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
@@ -8445,20 +8968,15 @@ var View = /** @class */ (function (_super) {
             return figure;
         }
         return null;
-    };
-    View.prototype.draw = function (ctx) {
-        var extend = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            extend[_i - 1] = arguments[_i];
-        }
+    }
+    draw(ctx, ...extend) {
         this.clear();
         this.drawImp(ctx, extend);
-    };
-    View.prototype.checkEventOn = function (_) {
+    }
+    checkEventOn(_) {
         return true;
-    };
-    return View;
-}(Eventful));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8473,59 +8991,53 @@ var View = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var GridView = /** @class */ (function (_super) {
-    __extends(GridView, _super);
-    function GridView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    GridView.prototype.drawImp = function (ctx) {
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = this.getWidget().getPane();
-        var chart = pane.getChart();
-        var bounding = widget.getBounding();
-        var styles = chart.getStyles().grid;
-        var show = styles.show;
+class GridView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = this.getWidget().getPane();
+        const chart = pane.getChart();
+        const bounding = widget.getBounding();
+        const styles = chart.getStyles().grid;
+        const show = styles.show;
         if (show) {
             ctx.save();
             ctx.globalCompositeOperation = 'destination-over';
-            var horizontalStyles = styles.horizontal;
-            var horizontalShow = horizontalStyles.show;
+            const horizontalStyles = styles.horizontal;
+            const horizontalShow = horizontalStyles.show;
             if (horizontalShow) {
-                var yAxis = pane.getAxisComponent();
-                var attrs = yAxis.getTicks().map(function (tick) { return ({
+                const yAxis = pane.getAxisComponent();
+                const attrs = yAxis.getTicks().map(tick => ({
                     coordinates: [
                         { x: 0, y: tick.coord },
                         { x: bounding.width, y: tick.coord }
                     ]
-                }); });
-                (_a = this.createFigure({
+                }));
+                this.createFigure({
                     name: 'line',
-                    attrs: attrs,
+                    attrs,
                     styles: horizontalStyles
-                })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                })?.draw(ctx);
             }
-            var verticalStyles = styles.vertical;
-            var verticalShow = verticalStyles.show;
+            const verticalStyles = styles.vertical;
+            const verticalShow = verticalStyles.show;
             if (verticalShow) {
-                var xAxis = chart.getXAxisPane().getAxisComponent();
-                var attrs = xAxis.getTicks().map(function (tick) { return ({
+                const xAxis = chart.getXAxisPane().getAxisComponent();
+                const attrs = xAxis.getTicks().map(tick => ({
                     coordinates: [
                         { x: tick.coord, y: 0 },
                         { x: tick.coord, y: bounding.height }
                     ]
-                }); });
-                (_b = this.createFigure({
+                }));
+                this.createFigure({
                     name: 'line',
-                    attrs: attrs,
+                    attrs,
                     styles: verticalStyles
-                })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
+                })?.draw(ctx);
             }
             ctx.restore();
         }
-    };
-    return GridView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8540,25 +9052,20 @@ var GridView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var ChildrenView = /** @class */ (function (_super) {
-    __extends(ChildrenView, _super);
-    function ChildrenView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    ChildrenView.prototype.eachChildren = function (childCallback) {
-        var pane = this.getWidget().getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var visibleRangeDataList = chartStore.getVisibleRangeDataList();
-        var barSpace = chartStore.getBarSpace();
-        var dataLength = visibleRangeDataList.length;
-        var index = 0;
+class ChildrenView extends View {
+    eachChildren(childCallback) {
+        const pane = this.getWidget().getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const visibleRangeDataList = chartStore.getVisibleRangeDataList();
+        const barSpace = chartStore.getBarSpace();
+        const dataLength = visibleRangeDataList.length;
+        let index = 0;
         while (index < dataLength) {
             childCallback(visibleRangeDataList[index], barSpace, index);
             ++index;
         }
-    };
-    return ChildrenView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8573,91 +9080,84 @@ var ChildrenView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleBarView = /** @class */ (function (_super) {
-    __extends(CandleBarView, _super);
-    function CandleBarView() {
-        var _this = _super.apply(this, __spreadArray([], __read(arguments), false)) || this;
-        _this._boundCandleBarClickEvent = function (data) { return function () {
-            _this.getWidget().getPane().getChart().getChartStore().executeAction('onCandleBarClick', data);
-            return false;
-        }; };
-        return _this;
-    }
-    CandleBarView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        var pane = this.getWidget().getPane();
-        var isMain = pane.getId() === PaneIdConstants.CANDLE;
-        var chartStore = pane.getChart().getChartStore();
-        var candleBarOptions = this.getCandleBarOptions();
+class CandleBarView extends ChildrenView {
+    _boundCandleBarClickEvent = (data) => () => {
+        this.getWidget().getPane().getChart().getChartStore().executeAction('onCandleBarClick', data);
+        return false;
+    };
+    drawImp(ctx) {
+        const pane = this.getWidget().getPane();
+        const isMain = pane.getId() === PaneIdConstants.CANDLE;
+        const chartStore = pane.getChart().getChartStore();
+        const candleBarOptions = this.getCandleBarOptions();
         if (candleBarOptions !== null) {
-            var type_1 = candleBarOptions.type, styles_1 = candleBarOptions.styles;
-            var ohlcSize_1 = 0;
-            var halfOhlcSize_1 = 0;
+            const { type, styles } = candleBarOptions;
+            let ohlcSize = 0;
+            let halfOhlcSize = 0;
             if (candleBarOptions.type === 'ohlc') {
-                var gapBar = chartStore.getBarSpace().gapBar;
-                ohlcSize_1 = Math.min(Math.max(Math.round(gapBar * 0.2), 1), 8);
-                if (ohlcSize_1 > 2 && ohlcSize_1 % 2 === 1) {
-                    ohlcSize_1--;
+                const { gapBar } = chartStore.getBarSpace();
+                ohlcSize = Math.min(Math.max(Math.round(gapBar * 0.2), 1), 8);
+                if (ohlcSize > 2 && ohlcSize % 2 === 1) {
+                    ohlcSize--;
                 }
-                halfOhlcSize_1 = Math.floor(ohlcSize_1 / 2);
+                halfOhlcSize = Math.floor(ohlcSize / 2);
             }
-            var yAxis_1 = pane.getAxisComponent();
-            this.eachChildren(function (visibleData, barSpace) {
-                var _a;
-                var x = visibleData.x, _b = visibleData.data, current = _b.current, prev = _b.prev;
+            const yAxis = pane.getAxisComponent();
+            this.eachChildren((visibleData, barSpace) => {
+                const { x, data: { current, prev } } = visibleData;
                 if (isValid(current)) {
-                    var open_1 = current.open, high = current.high, low = current.low, close_1 = current.close;
-                    var comparePrice = styles_1.compareRule === 'current_open' ? open_1 : ((_a = prev === null || prev === void 0 ? void 0 : prev.close) !== null && _a !== void 0 ? _a : close_1);
-                    var colors = [];
-                    if (close_1 > comparePrice) {
-                        colors[0] = styles_1.upColor;
-                        colors[1] = styles_1.upBorderColor;
-                        colors[2] = styles_1.upWickColor;
+                    const { open, high, low, close } = current;
+                    const comparePrice = styles.compareRule === 'current_open' ? open : (prev?.close ?? close);
+                    const colors = [];
+                    if (close > comparePrice) {
+                        colors[0] = styles.upColor;
+                        colors[1] = styles.upBorderColor;
+                        colors[2] = styles.upWickColor;
                     }
-                    else if (close_1 < comparePrice) {
-                        colors[0] = styles_1.downColor;
-                        colors[1] = styles_1.downBorderColor;
-                        colors[2] = styles_1.downWickColor;
+                    else if (close < comparePrice) {
+                        colors[0] = styles.downColor;
+                        colors[1] = styles.downBorderColor;
+                        colors[2] = styles.downWickColor;
                     }
                     else {
-                        colors[0] = styles_1.noChangeColor;
-                        colors[1] = styles_1.noChangeBorderColor;
-                        colors[2] = styles_1.noChangeWickColor;
+                        colors[0] = styles.noChangeColor;
+                        colors[1] = styles.noChangeBorderColor;
+                        colors[2] = styles.noChangeWickColor;
                     }
-                    var openY = yAxis_1.convertToPixel(open_1);
-                    var closeY = yAxis_1.convertToPixel(close_1);
-                    var priceY = [
+                    const openY = yAxis.convertToPixel(open);
+                    const closeY = yAxis.convertToPixel(close);
+                    const priceY = [
                         openY, closeY,
-                        yAxis_1.convertToPixel(high),
-                        yAxis_1.convertToPixel(low)
+                        yAxis.convertToPixel(high),
+                        yAxis.convertToPixel(low)
                     ];
-                    priceY.sort(function (a, b) { return a - b; });
-                    var correction = barSpace.gapBar % 2 === 0 ? 1 : 0;
-                    var rects = [];
-                    switch (type_1) {
+                    priceY.sort((a, b) => a - b);
+                    const correction = barSpace.gapBar % 2 === 0 ? 1 : 0;
+                    let rects = [];
+                    switch (type) {
                         case 'candle_solid': {
-                            rects = _this._createSolidBar(x, priceY, barSpace, colors, correction);
+                            rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
                             break;
                         }
                         case 'candle_stroke': {
-                            rects = _this._createStrokeBar(x, priceY, barSpace, colors, correction);
+                            rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
                             break;
                         }
                         case 'candle_up_stroke': {
-                            if (close_1 > open_1) {
-                                rects = _this._createStrokeBar(x, priceY, barSpace, colors, correction);
+                            if (close > open) {
+                                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
                             }
                             else {
-                                rects = _this._createSolidBar(x, priceY, barSpace, colors, correction);
+                                rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
                             }
                             break;
                         }
                         case 'candle_down_stroke': {
-                            if (open_1 > close_1) {
-                                rects = _this._createStrokeBar(x, priceY, barSpace, colors, correction);
+                            if (open > close) {
+                                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
                             }
                             else {
-                                rects = _this._createSolidBar(x, priceY, barSpace, colors, correction);
+                                rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
                             }
                             break;
                         }
@@ -8667,22 +9167,22 @@ var CandleBarView = /** @class */ (function (_super) {
                                     name: 'rect',
                                     attrs: [
                                         {
-                                            x: x - halfOhlcSize_1,
+                                            x: x - halfOhlcSize,
                                             y: priceY[0],
-                                            width: ohlcSize_1,
+                                            width: ohlcSize,
                                             height: priceY[3] - priceY[0]
                                         },
                                         {
                                             x: x - barSpace.halfGapBar,
-                                            y: openY + ohlcSize_1 > priceY[3] ? priceY[3] - ohlcSize_1 : openY,
-                                            width: barSpace.halfGapBar - halfOhlcSize_1,
-                                            height: ohlcSize_1
+                                            y: openY + ohlcSize > priceY[3] ? priceY[3] - ohlcSize : openY,
+                                            width: barSpace.halfGapBar - halfOhlcSize,
+                                            height: ohlcSize
                                         },
                                         {
-                                            x: x + halfOhlcSize_1,
-                                            y: closeY + ohlcSize_1 > priceY[3] ? priceY[3] - ohlcSize_1 : closeY,
-                                            width: barSpace.halfGapBar - halfOhlcSize_1,
-                                            height: ohlcSize_1
+                                            x: x + halfOhlcSize,
+                                            y: closeY + ohlcSize > priceY[3] ? priceY[3] - ohlcSize : closeY,
+                                            width: barSpace.halfGapBar - halfOhlcSize,
+                                            height: ohlcSize
                                         }
                                     ],
                                     styles: { color: colors[0] }
@@ -8691,33 +9191,32 @@ var CandleBarView = /** @class */ (function (_super) {
                             break;
                         }
                     }
-                    rects.forEach(function (rect) {
-                        var _a;
-                        var handler = null;
+                    rects.forEach(rect => {
+                        let handler = null;
                         if (isMain) {
                             handler = {
-                                mouseClickEvent: _this._boundCandleBarClickEvent(visibleData)
+                                mouseClickEvent: this._boundCandleBarClickEvent(visibleData)
                             };
                         }
-                        (_a = _this.createFigure(rect, handler !== null && handler !== void 0 ? handler : undefined)) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                        this.createFigure(rect, handler ?? undefined)?.draw(ctx);
                     });
                 }
             });
         }
-    };
-    CandleBarView.prototype.getCandleBarOptions = function () {
-        var candleStyles = this.getWidget().getPane().getChart().getStyles().candle;
+    }
+    getCandleBarOptions() {
+        const candleStyles = this.getWidget().getPane().getChart().getStyles().candle;
         return {
             type: candleStyles.type,
             styles: candleStyles.bar
         };
-    };
-    CandleBarView.prototype._createSolidBar = function (x, priceY, barSpace, colors, correction) {
+    }
+    _createSolidBar(x, priceY, barSpace, colors, correction) {
         return [
             {
                 name: 'rect',
                 attrs: {
-                    x: x,
+                    x,
                     y: priceY[0],
                     width: 1,
                     height: priceY[3] - priceY[0]
@@ -8739,20 +9238,20 @@ var CandleBarView = /** @class */ (function (_super) {
                 }
             }
         ];
-    };
-    CandleBarView.prototype._createStrokeBar = function (x, priceY, barSpace, colors, correction) {
+    }
+    _createStrokeBar(x, priceY, barSpace, colors, correction) {
         return [
             {
                 name: 'rect',
                 attrs: [
                     {
-                        x: x,
+                        x,
                         y: priceY[0],
                         width: 1,
                         height: priceY[1] - priceY[0]
                     },
                     {
-                        x: x,
+                        x,
                         y: priceY[2],
                         width: 1,
                         height: priceY[3] - priceY[2]
@@ -8774,9 +9273,8 @@ var CandleBarView = /** @class */ (function (_super) {
                 }
             }
         ];
-    };
-    return CandleBarView;
-}(ChildrenView));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -8791,70 +9289,54 @@ var CandleBarView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var IndicatorView = /** @class */ (function (_super) {
-    __extends(IndicatorView, _super);
-    function IndicatorView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    IndicatorView.prototype.getCandleBarOptions = function () {
-        var e_1, _a;
-        var pane = this.getWidget().getPane();
-        var yAxis = pane.getAxisComponent();
+class IndicatorView extends CandleBarView {
+    getCandleBarOptions() {
+        const pane = this.getWidget().getPane();
+        const yAxis = pane.getAxisComponent();
         if (!yAxis.isInCandle()) {
-            var chartStore = pane.getChart().getChartStore();
-            var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-            try {
-                for (var indicators_1 = __values(indicators), indicators_1_1 = indicators_1.next(); !indicators_1_1.done; indicators_1_1 = indicators_1.next()) {
-                    var indicator = indicators_1_1.value;
-                    if (indicator.shouldOhlc && indicator.visible) {
-                        var indicatorStyles = indicator.styles;
-                        var defaultStyles = chartStore.getStyles().indicator;
-                        var compareRule = formatValue(indicatorStyles, 'ohlc.compareRule', defaultStyles.ohlc.compareRule);
-                        var upColor = formatValue(indicatorStyles, 'ohlc.upColor', defaultStyles.ohlc.upColor);
-                        var downColor = formatValue(indicatorStyles, 'ohlc.downColor', defaultStyles.ohlc.downColor);
-                        var noChangeColor = formatValue(indicatorStyles, 'ohlc.noChangeColor', defaultStyles.ohlc.noChangeColor);
-                        return {
-                            type: 'ohlc',
-                            styles: {
-                                compareRule: compareRule,
-                                upColor: upColor,
-                                downColor: downColor,
-                                noChangeColor: noChangeColor,
-                                upBorderColor: upColor,
-                                downBorderColor: downColor,
-                                noChangeBorderColor: noChangeColor,
-                                upWickColor: upColor,
-                                downWickColor: downColor,
-                                noChangeWickColor: noChangeColor
-                            }
-                        };
-                    }
+            const chartStore = pane.getChart().getChartStore();
+            const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+            for (const indicator of indicators) {
+                if (indicator.shouldOhlc && indicator.visible) {
+                    const indicatorStyles = indicator.styles;
+                    const defaultStyles = chartStore.getStyles().indicator;
+                    const compareRule = formatValue(indicatorStyles, 'ohlc.compareRule', defaultStyles.ohlc.compareRule);
+                    const upColor = formatValue(indicatorStyles, 'ohlc.upColor', defaultStyles.ohlc.upColor);
+                    const downColor = formatValue(indicatorStyles, 'ohlc.downColor', defaultStyles.ohlc.downColor);
+                    const noChangeColor = formatValue(indicatorStyles, 'ohlc.noChangeColor', defaultStyles.ohlc.noChangeColor);
+                    return {
+                        type: 'ohlc',
+                        styles: {
+                            compareRule,
+                            upColor,
+                            downColor,
+                            noChangeColor,
+                            upBorderColor: upColor,
+                            downBorderColor: downColor,
+                            noChangeBorderColor: noChangeColor,
+                            upWickColor: upColor,
+                            downWickColor: downColor,
+                            noChangeWickColor: noChangeColor
+                        }
+                    };
                 }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (indicators_1_1 && !indicators_1_1.done && (_a = indicators_1.return)) _a.call(indicators_1);
-                }
-                finally { if (e_1) throw e_1.error; }
             }
         }
         return null;
-    };
-    IndicatorView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        _super.prototype.drawImp.call(this, ctx);
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chart = pane.getChart();
-        var bounding = widget.getBounding();
-        var xAxis = chart.getXAxisPane().getAxisComponent();
-        var yAxis = pane.getAxisComponent();
-        var chartStore = chart.getChartStore();
-        var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-        var defaultStyles = chartStore.getStyles().indicator;
+    }
+    drawImp(ctx) {
+        super.drawImp(ctx);
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chart = pane.getChart();
+        const bounding = widget.getBounding();
+        const xAxis = chart.getXAxisPane().getAxisComponent();
+        const yAxis = pane.getAxisComponent();
+        const chartStore = chart.getChartStore();
+        const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+        const defaultStyles = chartStore.getStyles().indicator;
         ctx.save();
-        indicators.forEach(function (indicator) {
+        indicators.forEach(indicator => {
             if (indicator.visible) {
                 if (indicator.zLevel < 0) {
                     ctx.globalCompositeOperation = 'destination-over';
@@ -8862,81 +9344,78 @@ var IndicatorView = /** @class */ (function (_super) {
                 else {
                     ctx.globalCompositeOperation = 'source-over';
                 }
-                var isCover = false;
+                let isCover = false;
                 if (indicator.draw !== null) {
                     ctx.save();
                     isCover = indicator.draw({
-                        ctx: ctx,
-                        chart: chart,
-                        indicator: indicator,
-                        bounding: bounding,
-                        xAxis: xAxis,
-                        yAxis: yAxis
+                        ctx,
+                        chart,
+                        indicator,
+                        bounding,
+                        xAxis,
+                        yAxis
                     });
                     ctx.restore();
                 }
                 if (!isCover) {
-                    var result_1 = indicator.result;
-                    var lines_1 = [];
-                    _this.eachChildren(function (data, barSpace) {
-                        var _a, _b, _c;
-                        var halfGapBar = barSpace.halfGapBar;
-                        var dataIndex = data.dataIndex, x = data.x;
-                        var prevX = xAxis.convertToPixel(dataIndex - 1);
-                        var nextX = xAxis.convertToPixel(dataIndex + 1);
-                        var prevData = (_a = result_1[dataIndex - 1]) !== null && _a !== void 0 ? _a : null;
-                        var currentData = (_b = result_1[dataIndex]) !== null && _b !== void 0 ? _b : null;
-                        var nextData = (_c = result_1[dataIndex + 1]) !== null && _c !== void 0 ? _c : null;
-                        var prevCoordinate = { x: prevX };
-                        var currentCoordinate = { x: x };
-                        var nextCoordinate = { x: nextX };
-                        indicator.figures.forEach(function (_a) {
-                            var key = _a.key;
+                    const result = indicator.result;
+                    const lines = [];
+                    this.eachChildren((data, barSpace) => {
+                        const { halfGapBar } = barSpace;
+                        const { dataIndex, x } = data;
+                        const prevX = xAxis.convertToPixel(dataIndex - 1);
+                        const nextX = xAxis.convertToPixel(dataIndex + 1);
+                        const prevData = result[dataIndex - 1] ?? null;
+                        const currentData = result[dataIndex] ?? null;
+                        const nextData = result[dataIndex + 1] ?? null;
+                        const prevCoordinate = { x: prevX };
+                        const currentCoordinate = { x };
+                        const nextCoordinate = { x: nextX };
+                        indicator.figures.forEach(({ key }) => {
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                            var prevValue = prevData === null || prevData === void 0 ? void 0 : prevData[key];
+                            const prevValue = prevData?.[key];
                             if (isNumber(prevValue)) {
                                 prevCoordinate[key] = yAxis.convertToPixel(prevValue);
                             }
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                            var currentValue = currentData === null || currentData === void 0 ? void 0 : currentData[key];
+                            const currentValue = currentData?.[key];
                             if (isNumber(currentValue)) {
                                 currentCoordinate[key] = yAxis.convertToPixel(currentValue);
                             }
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                            var nextValue = nextData === null || nextData === void 0 ? void 0 : nextData[key];
+                            const nextValue = nextData?.[key];
                             if (isNumber(nextValue)) {
                                 nextCoordinate[key] = yAxis.convertToPixel(nextValue);
                             }
                         });
-                        eachFigures(indicator, dataIndex, defaultStyles, function (figure, figureStyles, figureIndex) {
-                            var _a, _b, _c;
-                            if (isValid(currentData === null || currentData === void 0 ? void 0 : currentData[figure.key])) {
+                        eachFigures(indicator, dataIndex, defaultStyles, (figure, figureStyles, figureIndex) => {
+                            if (isValid(currentData?.[figure.key])) {
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                                var valueY = currentCoordinate[figure.key];
-                                var attrs = (_a = figure.attrs) === null || _a === void 0 ? void 0 : _a.call(figure, {
+                                const valueY = currentCoordinate[figure.key];
+                                let attrs = figure.attrs?.({
                                     data: { prev: prevData, current: currentData, next: nextData },
                                     coordinate: { prev: prevCoordinate, current: currentCoordinate, next: nextCoordinate },
-                                    bounding: bounding,
-                                    barSpace: barSpace,
-                                    xAxis: xAxis,
-                                    yAxis: yAxis
+                                    bounding,
+                                    barSpace,
+                                    xAxis,
+                                    yAxis
                                 });
                                 if (!isValid(attrs)) {
                                     switch (figure.type) {
                                         case 'circle': {
                                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                                            attrs = { x: x, y: valueY, r: Math.max(1, halfGapBar) };
+                                            attrs = { x, y: valueY, r: Math.max(1, halfGapBar) };
                                             break;
                                         }
                                         case 'rect':
                                         case 'bar': {
-                                            var baseValue = (_b = figure.baseValue) !== null && _b !== void 0 ? _b : yAxis.getRange().from;
-                                            var baseValueY = yAxis.convertToPixel(baseValue);
-                                            var height = Math.abs(baseValueY - valueY);
-                                            if (baseValue !== (currentData === null || currentData === void 0 ? void 0 : currentData[figure.key])) {
+                                            const baseValue = figure.baseValue ?? yAxis.getRange().from;
+                                            const baseValueY = yAxis.convertToPixel(baseValue);
+                                            let height = Math.abs(baseValueY - valueY);
+                                            if (baseValue !== currentData?.[figure.key]) {
                                                 height = Math.max(1, height);
                                             }
-                                            var y = 0;
+                                            let y = 0;
                                             if (valueY > baseValueY) {
                                                 y = baseValueY;
                                             }
@@ -8946,18 +9425,18 @@ var IndicatorView = /** @class */ (function (_super) {
                                             }
                                             attrs = {
                                                 x: x - halfGapBar,
-                                                y: y,
+                                                y,
                                                 width: Math.max(1, halfGapBar * 2),
-                                                height: height
+                                                height
                                             };
                                             break;
                                         }
                                         case 'line': {
-                                            if (!isValid(lines_1[figureIndex])) {
-                                                lines_1[figureIndex] = [];
+                                            if (!isValid(lines[figureIndex])) {
+                                                lines[figureIndex] = [];
                                             }
                                             if (isNumber(currentCoordinate[figure.key]) && isNumber(nextCoordinate[figure.key])) {
-                                                lines_1[figureIndex].push({
+                                                lines[figureIndex].push({
                                                     coordinates: [
                                                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
                                                         { x: currentCoordinate.x, y: currentCoordinate[figure.key] },
@@ -8971,39 +9450,38 @@ var IndicatorView = /** @class */ (function (_super) {
                                         }
                                     }
                                 }
-                                var type = figure.type;
+                                const type = figure.type;
                                 if (isValid(attrs) && type !== 'line') {
-                                    (_c = _this.createFigure({
+                                    this.createFigure({
                                         name: type === 'bar' ? 'rect' : type,
-                                        attrs: attrs,
+                                        attrs,
                                         styles: figureStyles
-                                    })) === null || _c === void 0 ? void 0 : _c.draw(ctx);
+                                    })?.draw(ctx);
                                 }
                             }
                         });
                     });
                     // merge line and render
-                    lines_1.forEach(function (items) {
-                        var _a, _b, _c, _d;
+                    lines.forEach(items => {
                         if (items.length > 1) {
-                            var mergeLines = [
+                            const mergeLines = [
                                 {
                                     coordinates: [items[0].coordinates[0], items[0].coordinates[1]],
                                     styles: items[0].styles
                                 }
                             ];
-                            for (var i = 1; i < items.length; i++) {
-                                var lastMergeLine = mergeLines[mergeLines.length - 1];
-                                var current = items[i];
-                                var lastMergeLineLastCoordinate = lastMergeLine.coordinates[lastMergeLine.coordinates.length - 1];
+                            for (let i = 1; i < items.length; i++) {
+                                const lastMergeLine = mergeLines[mergeLines.length - 1];
+                                const current = items[i];
+                                const lastMergeLineLastCoordinate = lastMergeLine.coordinates[lastMergeLine.coordinates.length - 1];
                                 if (lastMergeLineLastCoordinate.x === current.coordinates[0].x &&
                                     lastMergeLineLastCoordinate.y === current.coordinates[0].y &&
                                     lastMergeLine.styles.style === current.styles.style &&
                                     lastMergeLine.styles.color === current.styles.color &&
                                     lastMergeLine.styles.size === current.styles.size &&
                                     lastMergeLine.styles.smooth === current.styles.smooth &&
-                                    ((_a = lastMergeLine.styles.dashedValue) === null || _a === void 0 ? void 0 : _a[0]) === ((_b = current.styles.dashedValue) === null || _b === void 0 ? void 0 : _b[0]) &&
-                                    ((_c = lastMergeLine.styles.dashedValue) === null || _c === void 0 ? void 0 : _c[1]) === ((_d = current.styles.dashedValue) === null || _d === void 0 ? void 0 : _d[1])) {
+                                    lastMergeLine.styles.dashedValue?.[0] === current.styles.dashedValue?.[0] &&
+                                    lastMergeLine.styles.dashedValue?.[1] === current.styles.dashedValue?.[1]) {
                                     lastMergeLine.coordinates.push(current.coordinates[1]);
                                 }
                                 else {
@@ -9013,14 +9491,12 @@ var IndicatorView = /** @class */ (function (_super) {
                                     });
                                 }
                             }
-                            mergeLines.forEach(function (_a) {
-                                var _b;
-                                var coordinates = _a.coordinates, styles = _a.styles;
-                                (_b = _this.createFigure({
+                            mergeLines.forEach(({ coordinates, styles }) => {
+                                this.createFigure({
                                     name: 'line',
-                                    attrs: { coordinates: coordinates },
-                                    styles: styles
-                                })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
+                                    attrs: { coordinates },
+                                    styles
+                                })?.draw(ctx);
                             });
                         }
                     });
@@ -9028,9 +9504,8 @@ var IndicatorView = /** @class */ (function (_super) {
             }
         });
         ctx.restore();
-    };
-    return IndicatorView;
-}(CandleBarView));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9045,48 +9520,42 @@ var IndicatorView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CrosshairLineView = /** @class */ (function (_super) {
-    __extends(CrosshairLineView, _super);
-    function CrosshairLineView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CrosshairLineView.prototype.drawImp = function (ctx) {
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var bounding = widget.getBounding();
-        var chartStore = widget.getPane().getChart().getChartStore();
-        var crosshair = chartStore.getCrosshair();
-        var styles = chartStore.getStyles().crosshair;
+class CrosshairLineView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const chartStore = widget.getPane().getChart().getChartStore();
+        const crosshair = chartStore.getCrosshair();
+        const styles = chartStore.getStyles().crosshair;
         if (isString(crosshair.paneId) && styles.show) {
             if (crosshair.paneId === pane.getId()) {
-                var y = crosshair.y;
+                const y = crosshair.y;
                 this._drawLine(ctx, [
-                    { x: 0, y: y },
-                    { x: bounding.width, y: y }
+                    { x: 0, y },
+                    { x: bounding.width, y }
                 ], styles.horizontal);
             }
-            var x = crosshair.realX;
+            const x = crosshair.realX;
             this._drawLine(ctx, [
-                { x: x, y: 0 },
-                { x: x, y: bounding.height }
+                { x, y: 0 },
+                { x, y: bounding.height }
             ], styles.vertical);
         }
-    };
-    CrosshairLineView.prototype._drawLine = function (ctx, coordinates, styles) {
-        var _a;
+    }
+    _drawLine(ctx, coordinates, styles) {
         if (styles.show) {
-            var lineStyles = styles.line;
+            const lineStyles = styles.line;
             if (lineStyles.show) {
-                (_a = this.createFigure({
+                this.createFigure({
                     name: 'line',
-                    attrs: { coordinates: coordinates },
+                    attrs: { coordinates },
                     styles: lineStyles
-                })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                })?.draw(ctx);
             }
         }
-    };
-    return CrosshairLineView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9101,170 +9570,164 @@ var CrosshairLineView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var IndicatorTooltipView = /** @class */ (function (_super) {
-    __extends(IndicatorTooltipView, _super);
-    function IndicatorTooltipView(widget) {
-        var _this = _super.call(this, widget) || this;
-        _this._activeFeatureInfo = null;
-        _this._featureClickEvent = function (type, featureInfo) { return function () {
-            var pane = _this.getWidget().getPane();
-            pane.getChart().getChartStore().executeAction(type, featureInfo);
-            return true;
-        }; };
-        _this._featureMouseMoveEvent = function (featureInfo) { return function () {
-            _this._activeFeatureInfo = featureInfo;
-            return true;
-        }; };
-        _this.registerEvent('mouseMoveEvent', function (_) {
-            _this._activeFeatureInfo = null;
+class IndicatorTooltipView extends View {
+    _activeFeatureInfo = null;
+    _featureClickEvent = (type, featureInfo) => () => {
+        const pane = this.getWidget().getPane();
+        pane.getChart().getChartStore().executeAction(type, featureInfo);
+        return true;
+    };
+    _featureMouseMoveEvent = (featureInfo) => () => {
+        this._activeFeatureInfo = featureInfo;
+        return true;
+    };
+    constructor(widget) {
+        super(widget);
+        this.registerEvent('mouseMoveEvent', _ => {
+            this._activeFeatureInfo = null;
             return false;
         });
-        return _this;
     }
-    IndicatorTooltipView.prototype.drawImp = function (ctx) {
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var crosshair = chartStore.getCrosshair();
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const crosshair = chartStore.getCrosshair();
         if (isValid(crosshair.kLineData)) {
-            var bounding = widget.getBounding();
-            var _a = chartStore.getStyles().indicator.tooltip, offsetLeft = _a.offsetLeft, offsetTop = _a.offsetTop, offsetRight = _a.offsetRight;
+            const bounding = widget.getBounding();
+            const { offsetLeft, offsetTop, offsetRight } = chartStore.getStyles().indicator.tooltip;
             this.drawIndicatorTooltip(ctx, offsetLeft, offsetTop, bounding.width - offsetRight);
         }
-    };
-    IndicatorTooltipView.prototype.drawIndicatorTooltip = function (ctx, left, top, maxWidth) {
-        var _this = this;
-        var pane = this.getWidget().getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var styles = chartStore.getStyles().indicator;
-        var tooltipStyles = styles.tooltip;
+    }
+    drawIndicatorTooltip(ctx, left, top, maxWidth) {
+        const pane = this.getWidget().getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const styles = chartStore.getStyles().indicator;
+        const tooltipStyles = styles.tooltip;
         if (this.isDrawTooltip(chartStore.getCrosshair(), tooltipStyles)) {
-            var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-            var tooltipTitleStyles_1 = tooltipStyles.title;
-            var tooltipLegendStyles_1 = tooltipStyles.legend;
-            indicators.forEach(function (indicator) {
-                var prevRowHeight = 0;
-                var coordinate = { x: left, y: top };
-                var _a = _this.getIndicatorTooltipData(indicator), name = _a.name, calcParamsText = _a.calcParamsText, legends = _a.legends, featuresStyles = _a.features;
-                var nameValid = name.length > 0;
-                var legendValid = legends.length > 0;
+            const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+            const tooltipTitleStyles = tooltipStyles.title;
+            const tooltipLegendStyles = tooltipStyles.legend;
+            indicators.forEach(indicator => {
+                let prevRowHeight = 0;
+                const coordinate = { x: left, y: top };
+                const { name, calcParamsText, legends, features: featuresStyles } = this.getIndicatorTooltipData(indicator);
+                const nameValid = name.length > 0;
+                const legendValid = legends.length > 0;
                 if (nameValid || legendValid) {
-                    var features = _this.classifyTooltipFeatures(featuresStyles);
-                    prevRowHeight = _this.drawStandardTooltipFeatures(ctx, features[0], coordinate, indicator, left, prevRowHeight, maxWidth);
+                    const features = this.classifyTooltipFeatures(featuresStyles);
+                    prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[0], coordinate, indicator, left, prevRowHeight, maxWidth);
                     if (nameValid) {
-                        var text = name;
+                        let text = name;
                         if (calcParamsText.length > 0) {
-                            text = "".concat(text).concat(calcParamsText);
+                            text = `${text}${calcParamsText}`;
                         }
-                        var color = tooltipTitleStyles_1.color;
-                        prevRowHeight = _this.drawStandardTooltipLegends(ctx, [
+                        const color = tooltipTitleStyles.color;
+                        prevRowHeight = this.drawStandardTooltipLegends(ctx, [
                             {
-                                title: { text: '', color: color },
-                                value: { text: text, color: color }
+                                title: { text: '', color },
+                                value: { text, color }
                             }
-                        ], coordinate, left, prevRowHeight, maxWidth, tooltipTitleStyles_1);
+                        ], coordinate, left, prevRowHeight, maxWidth, tooltipTitleStyles);
                     }
-                    prevRowHeight = _this.drawStandardTooltipFeatures(ctx, features[1], coordinate, indicator, left, prevRowHeight, maxWidth);
+                    prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[1], coordinate, indicator, left, prevRowHeight, maxWidth);
                     if (legendValid) {
-                        prevRowHeight = _this.drawStandardTooltipLegends(ctx, legends, coordinate, left, prevRowHeight, maxWidth, tooltipLegendStyles_1);
+                        prevRowHeight = this.drawStandardTooltipLegends(ctx, legends, coordinate, left, prevRowHeight, maxWidth, tooltipLegendStyles);
                     }
                     // draw right features
-                    prevRowHeight = _this.drawStandardTooltipFeatures(ctx, features[2], coordinate, indicator, left, prevRowHeight, maxWidth);
+                    prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[2], coordinate, indicator, left, prevRowHeight, maxWidth);
                     top = coordinate.y + prevRowHeight;
                 }
             });
         }
         return top;
-    };
-    IndicatorTooltipView.prototype.drawStandardTooltipFeatures = function (ctx, features, coordinate, indicator, left, prevRowHeight, maxWidth) {
-        var _this = this;
+    }
+    drawStandardTooltipFeatures(ctx, features, coordinate, indicator, left, prevRowHeight, maxWidth) {
         if (features.length > 0) {
-            var width_1 = 0;
-            var height_1 = 0;
-            features.forEach(function (feature) {
-                var _a = feature.marginLeft, marginLeft = _a === void 0 ? 0 : _a, _b = feature.marginTop, marginTop = _b === void 0 ? 0 : _b, _c = feature.marginRight, marginRight = _c === void 0 ? 0 : _c, _d = feature.marginBottom, marginBottom = _d === void 0 ? 0 : _d, _e = feature.paddingLeft, paddingLeft = _e === void 0 ? 0 : _e, _f = feature.paddingTop, paddingTop = _f === void 0 ? 0 : _f, _g = feature.paddingRight, paddingRight = _g === void 0 ? 0 : _g, _h = feature.paddingBottom, paddingBottom = _h === void 0 ? 0 : _h, _j = feature.size, size = _j === void 0 ? 0 : _j, type = feature.type, content = feature.content;
-                var contentWidth = 0;
+            let width = 0;
+            let height = 0;
+            features.forEach(feature => {
+                const { marginLeft = 0, marginTop = 0, marginRight = 0, marginBottom = 0, paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0, size = 0, type, content } = feature;
+                let contentWidth = 0;
                 if (type === 'icon_font') {
-                    var iconFont = content;
+                    const iconFont = content;
                     ctx.font = createFont(size, 'normal', iconFont.family);
                     contentWidth = ctx.measureText(iconFont.code).width;
                 }
                 else {
                     contentWidth = size;
                 }
-                width_1 += (marginLeft + paddingLeft + contentWidth + paddingRight + marginRight);
-                height_1 = Math.max(height_1, marginTop + paddingTop + size + paddingBottom + marginBottom);
+                width += (marginLeft + paddingLeft + contentWidth + paddingRight + marginRight);
+                height = Math.max(height, marginTop + paddingTop + size + paddingBottom + marginBottom);
             });
-            if (coordinate.x + width_1 > maxWidth) {
+            if (coordinate.x + width > maxWidth) {
                 coordinate.x = left;
                 coordinate.y += prevRowHeight;
-                prevRowHeight = height_1;
+                prevRowHeight = height;
             }
             else {
-                prevRowHeight = Math.max(prevRowHeight, height_1);
+                prevRowHeight = Math.max(prevRowHeight, height);
             }
-            var pane = this.getWidget().getPane();
-            var paneId_1 = pane.getId();
-            features.forEach(function (feature) {
-                var _a, _b, _c, _d, _e;
-                var _f = feature.marginLeft, marginLeft = _f === void 0 ? 0 : _f, _g = feature.marginTop, marginTop = _g === void 0 ? 0 : _g, _h = feature.marginRight, marginRight = _h === void 0 ? 0 : _h, _j = feature.paddingLeft, paddingLeft = _j === void 0 ? 0 : _j, _k = feature.paddingTop, paddingTop = _k === void 0 ? 0 : _k, _l = feature.paddingRight, paddingRight = _l === void 0 ? 0 : _l, _m = feature.paddingBottom, paddingBottom = _m === void 0 ? 0 : _m, backgroundColor = feature.backgroundColor, activeBackgroundColor = feature.activeBackgroundColor, borderRadius = feature.borderRadius, _o = feature.size, size = _o === void 0 ? 0 : _o, color = feature.color, activeColor = feature.activeColor, type = feature.type, content = feature.content;
-                var finalColor = color;
-                var finalBackgroundColor = backgroundColor;
-                if (((_a = _this._activeFeatureInfo) === null || _a === void 0 ? void 0 : _a.paneId) === paneId_1 &&
-                    ((_b = _this._activeFeatureInfo.indicator) === null || _b === void 0 ? void 0 : _b.id) === (indicator === null || indicator === void 0 ? void 0 : indicator.id) &&
-                    _this._activeFeatureInfo.feature.id === feature.id) {
+            const pane = this.getWidget().getPane();
+            const paneId = pane.getId();
+            features.forEach(feature => {
+                const { marginLeft = 0, marginTop = 0, marginRight = 0, paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0, backgroundColor, activeBackgroundColor, borderRadius, size = 0, color, activeColor, type, content } = feature;
+                let finalColor = color;
+                let finalBackgroundColor = backgroundColor;
+                if (this._activeFeatureInfo?.paneId === paneId &&
+                    this._activeFeatureInfo.indicator?.id === indicator?.id &&
+                    this._activeFeatureInfo.feature.id === feature.id) {
                     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                    finalColor = activeColor !== null && activeColor !== void 0 ? activeColor : color;
+                    finalColor = activeColor ?? color;
                     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                    finalBackgroundColor = activeBackgroundColor !== null && activeBackgroundColor !== void 0 ? activeBackgroundColor : backgroundColor;
+                    finalBackgroundColor = activeBackgroundColor ?? backgroundColor;
                 }
-                var actionType = 'onCandleTooltipFeatureClick';
-                var featureInfo = {
-                    paneId: paneId_1,
-                    feature: feature
+                let actionType = 'onCandleTooltipFeatureClick';
+                const featureInfo = {
+                    paneId, feature
                 };
                 if (isValid(indicator)) {
                     actionType = 'onIndicatorTooltipFeatureClick';
                     featureInfo.indicator = indicator;
                 }
-                var eventHandler = {
-                    mouseDownEvent: _this._featureClickEvent(actionType, featureInfo),
-                    mouseMoveEvent: _this._featureMouseMoveEvent(featureInfo)
+                const eventHandler = {
+                    mouseDownEvent: this._featureClickEvent(actionType, featureInfo),
+                    mouseMoveEvent: this._featureMouseMoveEvent(featureInfo)
                 };
-                var contentWidth = 0;
+                let contentWidth = 0;
                 if (type === 'icon_font') {
-                    var iconFont = content;
-                    (_c = _this.createFigure({
+                    const iconFont = content;
+                    this.createFigure({
                         name: 'text',
                         attrs: { text: iconFont.code, x: coordinate.x + marginLeft, y: coordinate.y + marginTop },
                         styles: {
-                            paddingLeft: paddingLeft,
-                            paddingTop: paddingTop,
-                            paddingRight: paddingRight,
-                            paddingBottom: paddingBottom,
-                            borderRadius: borderRadius,
-                            size: size,
+                            paddingLeft,
+                            paddingTop,
+                            paddingRight,
+                            paddingBottom,
+                            borderRadius,
+                            size,
                             family: iconFont.family,
                             color: finalColor,
                             backgroundColor: finalBackgroundColor
                         }
-                    }, eventHandler)) === null || _c === void 0 ? void 0 : _c.draw(ctx);
+                    }, eventHandler)?.draw(ctx);
                     contentWidth = ctx.measureText(iconFont.code).width;
                 }
                 else {
-                    (_d = _this.createFigure({
+                    this.createFigure({
                         name: 'rect',
                         attrs: { x: coordinate.x + marginLeft, y: coordinate.y + marginTop, width: size, height: size },
                         styles: {
-                            paddingLeft: paddingLeft,
-                            paddingTop: paddingTop,
-                            paddingRight: paddingRight,
-                            paddingBottom: paddingBottom,
+                            paddingLeft,
+                            paddingTop,
+                            paddingRight,
+                            paddingBottom,
                             color: finalBackgroundColor
                         }
-                    }, eventHandler)) === null || _d === void 0 ? void 0 : _d.draw(ctx);
-                    var path = content;
-                    (_e = _this.createFigure({
+                    }, eventHandler)?.draw(ctx);
+                    const path = content;
+                    this.createFigure({
                         name: 'path',
                         attrs: { path: path.path, x: coordinate.x + marginLeft + paddingLeft, y: coordinate.y + marginTop + paddingTop, width: size, height: size },
                         styles: {
@@ -9272,28 +9735,26 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
                             lineWidth: path.lineWidth,
                             color: finalColor
                         }
-                    })) === null || _e === void 0 ? void 0 : _e.draw(ctx);
+                    })?.draw(ctx);
                     contentWidth = size;
                 }
                 coordinate.x += (marginLeft + paddingLeft + contentWidth + paddingRight + marginRight);
             });
         }
         return prevRowHeight;
-    };
-    IndicatorTooltipView.prototype.drawStandardTooltipLegends = function (ctx, legends, coordinate, left, prevRowHeight, maxWidth, styles) {
-        var _this = this;
+    }
+    drawStandardTooltipLegends(ctx, legends, coordinate, left, prevRowHeight, maxWidth, styles) {
         if (legends.length > 0) {
-            var marginLeft_1 = styles.marginLeft, marginTop_1 = styles.marginTop, marginRight_1 = styles.marginRight, marginBottom_1 = styles.marginBottom, size_1 = styles.size, family_1 = styles.family, weight_1 = styles.weight;
-            ctx.font = createFont(size_1, weight_1, family_1);
-            legends.forEach(function (data) {
-                var _a, _b;
-                var title = data.title;
-                var value = data.value;
-                var titleTextWidth = ctx.measureText(title.text).width;
-                var valueTextWidth = ctx.measureText(value.text).width;
-                var totalTextWidth = titleTextWidth + valueTextWidth;
-                var h = marginTop_1 + size_1 + marginBottom_1;
-                if (coordinate.x + marginLeft_1 + totalTextWidth + marginRight_1 > maxWidth) {
+            const { marginLeft, marginTop, marginRight, marginBottom, size, family, weight } = styles;
+            ctx.font = createFont(size, weight, family);
+            legends.forEach(data => {
+                const title = data.title;
+                const value = data.value;
+                const titleTextWidth = ctx.measureText(title.text).width;
+                const valueTextWidth = ctx.measureText(value.text).width;
+                const totalTextWidth = titleTextWidth + valueTextWidth;
+                const h = marginTop + size + marginBottom;
+                if (coordinate.x + marginLeft + totalTextWidth + marginRight > maxWidth) {
                     coordinate.x = left;
                     coordinate.y += prevRowHeight;
                     prevRowHeight = h;
@@ -9302,61 +9763,60 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
                     prevRowHeight = Math.max(prevRowHeight, h);
                 }
                 if (title.text.length > 0) {
-                    (_a = _this.createFigure({
+                    this.createFigure({
                         name: 'text',
-                        attrs: { x: coordinate.x + marginLeft_1, y: coordinate.y + marginTop_1, text: title.text },
-                        styles: { color: title.color, size: size_1, family: family_1, weight: weight_1 }
-                    })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                        attrs: { x: coordinate.x + marginLeft, y: coordinate.y + marginTop, text: title.text },
+                        styles: { color: title.color, size, family, weight }
+                    })?.draw(ctx);
                 }
-                (_b = _this.createFigure({
+                this.createFigure({
                     name: 'text',
-                    attrs: { x: coordinate.x + marginLeft_1 + titleTextWidth, y: coordinate.y + marginTop_1, text: value.text },
-                    styles: { color: value.color, size: size_1, family: family_1, weight: weight_1 }
-                })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-                coordinate.x += (marginLeft_1 + totalTextWidth + marginRight_1);
+                    attrs: { x: coordinate.x + marginLeft + titleTextWidth, y: coordinate.y + marginTop, text: value.text },
+                    styles: { color: value.color, size, family, weight }
+                })?.draw(ctx);
+                coordinate.x += (marginLeft + totalTextWidth + marginRight);
             });
         }
         return prevRowHeight;
-    };
-    IndicatorTooltipView.prototype.isDrawTooltip = function (crosshair, styles) {
-        var showRule = styles.showRule;
+    }
+    isDrawTooltip(crosshair, styles) {
+        const showRule = styles.showRule;
         return showRule === 'always' ||
             (showRule === 'follow_cross' && isString(crosshair.paneId));
-    };
-    IndicatorTooltipView.prototype.getIndicatorTooltipData = function (indicator) {
-        var _a;
-        var chartStore = this.getWidget().getPane().getChart().getChartStore();
-        var styles = chartStore.getStyles().indicator;
-        var tooltipStyles = styles.tooltip;
-        var tooltipTitleStyles = tooltipStyles.title;
-        var name = '';
-        var calcParamsText = '';
+    }
+    getIndicatorTooltipData(indicator) {
+        const chartStore = this.getWidget().getPane().getChart().getChartStore();
+        const styles = chartStore.getStyles().indicator;
+        const tooltipStyles = styles.tooltip;
+        const tooltipTitleStyles = tooltipStyles.title;
+        let name = '';
+        let calcParamsText = '';
         if (tooltipTitleStyles.show) {
             if (tooltipTitleStyles.showName) {
                 name = indicator.shortName;
             }
             if (tooltipTitleStyles.showParams) {
-                var calcParams = indicator.calcParams;
+                const calcParams = indicator.calcParams;
                 if (calcParams.length > 0) {
-                    calcParamsText = "(".concat(calcParams.join(','), ")");
+                    calcParamsText = `(${calcParams.join(',')})`;
                 }
             }
         }
-        var tooltipData = { name: name, calcParamsText: calcParamsText, legends: [], features: tooltipStyles.features };
-        var dataIndex = chartStore.getCrosshair().dataIndex;
-        var result = indicator.result;
-        var formatter = chartStore.getInnerFormatter();
-        var decimalFold = chartStore.getDecimalFold();
-        var thousandsSeparator = chartStore.getThousandsSeparator();
-        var legends = [];
+        const tooltipData = { name, calcParamsText, legends: [], features: tooltipStyles.features };
+        const dataIndex = chartStore.getCrosshair().dataIndex;
+        const result = indicator.result;
+        const formatter = chartStore.getInnerFormatter();
+        const decimalFold = chartStore.getDecimalFold();
+        const thousandsSeparator = chartStore.getThousandsSeparator();
+        const legends = [];
         if (indicator.visible) {
-            var data_1 = (_a = result[dataIndex]) !== null && _a !== void 0 ? _a : {};
-            var defaultValue_1 = tooltipStyles.legend.defaultValue;
-            eachFigures(indicator, dataIndex, styles, function (figure, figureStyles) {
+            const data = result[dataIndex] ?? {};
+            const defaultValue = tooltipStyles.legend.defaultValue;
+            eachFigures(indicator, dataIndex, styles, (figure, figureStyles) => {
                 if (isString(figure.title)) {
-                    var color = figureStyles.color;
+                    const color = figureStyles.color;
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment  -- ignore
-                    var value = data_1[figure.key];
+                    let value = data[figure.key];
                     if (isNumber(value)) {
                         value = formatPrecision(value, indicator.precision);
                         if (indicator.shouldFormatBigNumber) {
@@ -9364,23 +9824,23 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
                         }
                         value = decimalFold.format(thousandsSeparator.format(value));
                     }
-                    legends.push({ title: { text: figure.title, color: color }, value: { text: (value !== null && value !== void 0 ? value : defaultValue_1), color: color } });
+                    legends.push({ title: { text: figure.title, color }, value: { text: (value ?? defaultValue), color } });
                 }
             });
             tooltipData.legends = legends;
         }
         if (isFunction(indicator.createTooltipDataSource)) {
-            var widget = this.getWidget();
-            var pane = widget.getPane();
-            var chart = pane.getChart();
-            var _b = indicator.createTooltipDataSource({
-                chart: chart,
-                indicator: indicator,
+            const widget = this.getWidget();
+            const pane = widget.getPane();
+            const chart = pane.getChart();
+            const { name: customName, calcParamsText: customCalcParamsText, legends: customLegends, features: customFeatures } = indicator.createTooltipDataSource({
+                chart,
+                indicator,
                 crosshair: chartStore.getCrosshair(),
                 bounding: widget.getBounding(),
                 xAxis: pane.getChart().getXAxisPane().getAxisComponent(),
                 yAxis: pane.getAxisComponent()
-            }), customName = _b.name, customCalcParamsText = _b.calcParamsText, customLegends = _b.legends, customFeatures = _b.features;
+            });
             if (tooltipTitleStyles.show) {
                 if (isString(customName) && tooltipTitleStyles.showName) {
                     tooltipData.name = customName;
@@ -9393,17 +9853,17 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
                 tooltipData.features = customFeatures;
             }
             if (isValid(customLegends) && indicator.visible) {
-                var optimizedLegends_1 = [];
-                var color_1 = styles.tooltip.legend.color;
-                customLegends.forEach(function (data) {
-                    var title = { text: '', color: color_1 };
+                const optimizedLegends = [];
+                const color = styles.tooltip.legend.color;
+                customLegends.forEach(data => {
+                    let title = { text: '', color };
                     if (isObject(data.title)) {
                         title = data.title;
                     }
                     else {
                         title.text = data.title;
                     }
-                    var value = { text: '', color: color_1 };
+                    let value = { text: '', color };
                     if (isObject(data.value)) {
                         value = data.value;
                     }
@@ -9413,18 +9873,18 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
                     if (isNumber(Number(value.text))) {
                         value.text = decimalFold.format(thousandsSeparator.format(value.text));
                     }
-                    optimizedLegends_1.push({ title: title, value: value });
+                    optimizedLegends.push({ title, value });
                 });
-                tooltipData.legends = optimizedLegends_1;
+                tooltipData.legends = optimizedLegends;
             }
         }
         return tooltipData;
-    };
-    IndicatorTooltipView.prototype.classifyTooltipFeatures = function (features) {
-        var leftFeatures = [];
-        var middleFeatures = [];
-        var rightFeatures = [];
-        features.forEach(function (feature) {
+    }
+    classifyTooltipFeatures(features) {
+        const leftFeatures = [];
+        const middleFeatures = [];
+        const rightFeatures = [];
+        features.forEach(feature => {
             switch (feature.position) {
                 case 'left': {
                     leftFeatures.push(feature);
@@ -9441,9 +9901,8 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
             }
         });
         return [leftFeatures, middleFeatures, rightFeatures];
-    };
-    return IndicatorTooltipView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9458,162 +9917,154 @@ var IndicatorTooltipView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var OverlayView = /** @class */ (function (_super) {
-    __extends(OverlayView, _super);
-    function OverlayView(widget) {
-        var _this = _super.call(this, widget) || this;
-        _this._initEvent();
-        return _this;
+class OverlayView extends View {
+    constructor(widget) {
+        super(widget);
+        this._initEvent();
     }
-    OverlayView.prototype._initEvent = function () {
-        var _this = this;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var paneId = pane.getId();
-        var chart = pane.getChart();
-        var chartStore = chart.getChartStore();
-        this.registerEvent('mouseMoveEvent', function (event) {
-            var _a;
-            var progressOverlayInfo = chartStore.getProgressOverlayInfo();
+    _initEvent() {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const paneId = pane.getId();
+        const chart = pane.getChart();
+        const chartStore = chart.getChartStore();
+        this.registerEvent('mouseMoveEvent', event => {
+            const progressOverlayInfo = chartStore.getProgressOverlayInfo();
             if (progressOverlayInfo !== null) {
-                var overlay = progressOverlayInfo.overlay;
-                var progressOverlayPaneId = progressOverlayInfo.paneId;
+                const overlay = progressOverlayInfo.overlay;
+                let progressOverlayPaneId = progressOverlayInfo.paneId;
                 if (overlay.isStart()) {
                     chartStore.updateProgressOverlayInfo(paneId);
                     progressOverlayPaneId = paneId;
                 }
-                var index = overlay.points.length - 1;
+                const index = overlay.points.length - 1;
                 if (overlay.isDrawing() && progressOverlayPaneId === paneId) {
-                    overlay.eventMoveForDrawing(_this._coordinateToPoint(overlay, event));
-                    (_a = overlay.onDrawing) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: chart, overlay: overlay }, event));
+                    overlay.eventMoveForDrawing(this._coordinateToPoint(overlay, event));
+                    overlay.onDrawing?.({ chart, overlay, ...event });
                 }
-                return _this._figureMouseMoveEvent(overlay, 'point', index, { key: "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index), type: 'circle', attrs: {} })(event);
+                return this._figureMouseMoveEvent(overlay, 'point', index, { key: `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`, type: 'circle', attrs: {} })(event);
             }
             chartStore.setHoverOverlayInfo({
-                paneId: paneId,
+                paneId,
                 overlay: null,
                 figureType: 'none',
                 figureIndex: -1,
                 figure: null
-            }, function (o, f) { return _this._processOverlayMouseEnterEvent(o, f, event); }, function (o, f) { return _this._processOverlayMouseLeaveEvent(o, f, event); });
+            }, (o, f) => this._processOverlayMouseEnterEvent(o, f, event), (o, f) => this._processOverlayMouseLeaveEvent(o, f, event));
             widget.setForceCursor(null);
             return false;
-        }).registerEvent('mouseClickEvent', function (event) {
-            var _a, _b;
-            var progressOverlayInfo = chartStore.getProgressOverlayInfo();
+        }).registerEvent('mouseClickEvent', event => {
+            const progressOverlayInfo = chartStore.getProgressOverlayInfo();
             if (progressOverlayInfo !== null) {
-                var overlay = progressOverlayInfo.overlay;
-                var progressOverlayPaneId = progressOverlayInfo.paneId;
+                const overlay = progressOverlayInfo.overlay;
+                let progressOverlayPaneId = progressOverlayInfo.paneId;
                 if (overlay.isStart()) {
                     chartStore.updateProgressOverlayInfo(paneId, true);
                     progressOverlayPaneId = paneId;
                 }
-                var index = overlay.points.length - 1;
+                const index = overlay.points.length - 1;
                 if (overlay.isDrawing() && progressOverlayPaneId === paneId) {
-                    overlay.eventMoveForDrawing(_this._coordinateToPoint(overlay, event));
-                    (_a = overlay.onDrawing) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: chart, overlay: overlay }, event));
+                    overlay.eventMoveForDrawing(this._coordinateToPoint(overlay, event));
+                    overlay.onDrawing?.({ chart, overlay, ...event });
                     overlay.nextStep();
                     if (!overlay.isDrawing()) {
                         chartStore.progressOverlayComplete();
-                        (_b = overlay.onDrawEnd) === null || _b === void 0 ? void 0 : _b.call(overlay, __assign({ chart: chart, overlay: overlay }, event));
+                        overlay.onDrawEnd?.({ chart, overlay, ...event });
                     }
                 }
-                return _this._figureMouseClickEvent(overlay, 'point', index, {
-                    key: "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index),
+                return this._figureMouseClickEvent(overlay, 'point', index, {
+                    key: `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`,
                     type: 'circle',
                     attrs: {}
                 })(event);
             }
             chartStore.setClickOverlayInfo({
-                paneId: paneId,
+                paneId,
                 overlay: null,
                 figureType: 'none',
                 figureIndex: -1,
                 figure: null
-            }, function (o, f) { return _this._processOverlaySelectedEvent(o, f, event); }, function (o, f) { return _this._processOverlayDeselectedEvent(o, f, event); });
+            }, (o, f) => this._processOverlaySelectedEvent(o, f, event), (o, f) => this._processOverlayDeselectedEvent(o, f, event));
             return false;
-        }).registerEvent('mouseDoubleClickEvent', function (event) {
-            var _a;
-            var progressOverlayInfo = chartStore.getProgressOverlayInfo();
+        }).registerEvent('mouseDoubleClickEvent', event => {
+            const progressOverlayInfo = chartStore.getProgressOverlayInfo();
             if (progressOverlayInfo !== null) {
-                var overlay = progressOverlayInfo.overlay;
-                var progressOverlayPaneId = progressOverlayInfo.paneId;
+                const overlay = progressOverlayInfo.overlay;
+                const progressOverlayPaneId = progressOverlayInfo.paneId;
                 if (overlay.isDrawing() && progressOverlayPaneId === paneId) {
                     overlay.forceComplete();
                     if (!overlay.isDrawing()) {
                         chartStore.progressOverlayComplete();
-                        (_a = overlay.onDrawEnd) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: chart, overlay: overlay }, event));
+                        overlay.onDrawEnd?.({ chart, overlay, ...event });
                     }
                 }
-                var index = overlay.points.length - 1;
-                return _this._figureMouseClickEvent(overlay, 'point', index, {
-                    key: "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index),
+                const index = overlay.points.length - 1;
+                return this._figureMouseClickEvent(overlay, 'point', index, {
+                    key: `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`,
                     type: 'circle',
                     attrs: {}
                 })(event);
             }
             return false;
-        }).registerEvent('mouseRightClickEvent', function (event) {
-            var progressOverlayInfo = chartStore.getProgressOverlayInfo();
+        }).registerEvent('mouseRightClickEvent', event => {
+            const progressOverlayInfo = chartStore.getProgressOverlayInfo();
             if (progressOverlayInfo !== null) {
-                var overlay = progressOverlayInfo.overlay;
+                const overlay = progressOverlayInfo.overlay;
                 if (overlay.isDrawing()) {
-                    var index = overlay.points.length - 1;
-                    return _this._figureMouseRightClickEvent(overlay, 'point', index, {
-                        key: "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index),
+                    const index = overlay.points.length - 1;
+                    return this._figureMouseRightClickEvent(overlay, 'point', index, {
+                        key: `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`,
                         type: 'circle',
                         attrs: {}
                     })(event);
                 }
             }
             return false;
-        }).registerEvent('mouseUpEvent', function (event) {
-            var _a;
-            var _b = chartStore.getPressedOverlayInfo(), overlay = _b.overlay, figure = _b.figure;
+        }).registerEvent('mouseUpEvent', event => {
+            const { overlay, figure } = chartStore.getPressedOverlayInfo();
             if (overlay !== null) {
                 if (checkOverlayFigureEvent('onPressedMoveEnd', figure)) {
-                    (_a = overlay.onPressedMoveEnd) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: chart, overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event));
+                    overlay.onPressedMoveEnd?.({ chart, overlay, figure: figure ?? undefined, ...event });
                 }
             }
             chartStore.setPressedOverlayInfo({
-                paneId: paneId,
+                paneId,
                 overlay: null,
                 figureType: 'none',
                 figureIndex: -1,
                 figure: null
             });
             return false;
-        }).registerEvent('pressedMouseMoveEvent', function (event) {
-            var _a;
-            var _b = chartStore.getPressedOverlayInfo(), overlay = _b.overlay, figureType = _b.figureType, figureIndex = _b.figureIndex, figure = _b.figure;
+        }).registerEvent('pressedMouseMoveEvent', event => {
+            const { overlay, figureType, figureIndex, figure } = chartStore.getPressedOverlayInfo();
             if (overlay !== null) {
                 if (checkOverlayFigureEvent('onPressedMoving', figure)) {
                     if (!overlay.lock) {
-                        var point = _this._coordinateToPoint(overlay, event);
+                        const point = this._coordinateToPoint(overlay, event);
                         if (figureType === 'point') {
                             overlay.eventPressedPointMove(point, figureIndex);
                         }
                         else {
-                            overlay.eventPressedOtherMove(point, _this.getWidget().getPane().getChart().getChartStore());
+                            overlay.eventPressedOtherMove(point, this.getWidget().getPane().getChart().getChartStore());
                         }
-                        var prevented_1 = false;
-                        (_a = overlay.onPressedMoving) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign(__assign({ chart: chart, overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event), { preventDefault: function () { prevented_1 = true; } }));
+                        let prevented = false;
+                        overlay.onPressedMoving?.({ chart, overlay, figure: figure ?? undefined, ...event, preventDefault: () => { prevented = true; } });
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                        if (prevented_1) {
-                            _this.getWidget().setForceCursor(null);
+                        if (prevented) {
+                            this.getWidget().setForceCursor(null);
                         }
                         else {
-                            _this.getWidget().setForceCursor('pointer');
+                            this.getWidget().setForceCursor('pointer');
                         }
                     }
                     return true;
                 }
             }
-            _this.getWidget().setForceCursor(null);
+            this.getWidget().setForceCursor(null);
             return false;
         });
-    };
-    OverlayView.prototype._createFigureEvents = function (overlay, figureType, figureIndex, figure) {
+    }
+    _createFigureEvents(overlay, figureType, figureIndex, figure) {
         if (overlay.isDrawing()) {
             return null;
         }
@@ -9624,139 +10075,126 @@ var OverlayView = /** @class */ (function (_super) {
             mouseRightClickEvent: this._figureMouseRightClickEvent(overlay, figureType, figureIndex, figure),
             mouseDoubleClickEvent: this._figureMouseDoubleClickEvent(overlay, figureType, figureIndex, figure)
         };
-    };
-    OverlayView.prototype._processOverlayMouseEnterEvent = function (overlay, figure, event) {
+    }
+    _processOverlayMouseEnterEvent(overlay, figure, event) {
         if (isFunction(overlay.onMouseEnter) && checkOverlayFigureEvent('onMouseEnter', figure)) {
-            overlay.onMouseEnter(__assign({ chart: this.getWidget().getPane().getChart(), overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event));
+            overlay.onMouseEnter({ chart: this.getWidget().getPane().getChart(), overlay, figure: figure ?? undefined, ...event });
             return true;
         }
         return false;
-    };
-    OverlayView.prototype._processOverlayMouseLeaveEvent = function (overlay, figure, event) {
+    }
+    _processOverlayMouseLeaveEvent(overlay, figure, event) {
         if (isFunction(overlay.onMouseLeave) && checkOverlayFigureEvent('onMouseLeave', figure)) {
-            overlay.onMouseLeave(__assign({ chart: this.getWidget().getPane().getChart(), overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event));
+            overlay.onMouseLeave({ chart: this.getWidget().getPane().getChart(), overlay, figure: figure ?? undefined, ...event });
             return true;
         }
         return false;
-    };
-    OverlayView.prototype._processOverlaySelectedEvent = function (overlay, figure, event) {
-        var _a;
+    }
+    _processOverlaySelectedEvent(overlay, figure, event) {
         if (checkOverlayFigureEvent('onSelected', figure)) {
-            (_a = overlay.onSelected) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: this.getWidget().getPane().getChart(), overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event));
+            overlay.onSelected?.({ chart: this.getWidget().getPane().getChart(), overlay, figure: figure ?? undefined, ...event });
             return true;
         }
         return false;
-    };
-    OverlayView.prototype._processOverlayDeselectedEvent = function (overlay, figure, event) {
-        var _a;
+    }
+    _processOverlayDeselectedEvent(overlay, figure, event) {
         if (checkOverlayFigureEvent('onDeselected', figure)) {
-            (_a = overlay.onDeselected) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: this.getWidget().getPane().getChart(), overlay: overlay, figure: figure !== null && figure !== void 0 ? figure : undefined }, event));
+            overlay.onDeselected?.({ chart: this.getWidget().getPane().getChart(), overlay, figure: figure ?? undefined, ...event });
             return true;
         }
         return false;
-    };
-    OverlayView.prototype._figureMouseMoveEvent = function (overlay, figureType, figureIndex, figure) {
-        var _this = this;
-        return function (event) {
-            var _a;
-            var pane = _this.getWidget().getPane();
-            var check = !overlay.isDrawing() && checkOverlayFigureEvent('onMouseMove', figure);
+    }
+    _figureMouseMoveEvent(overlay, figureType, figureIndex, figure) {
+        return (event) => {
+            const pane = this.getWidget().getPane();
+            const check = !overlay.isDrawing() && checkOverlayFigureEvent('onMouseMove', figure);
             if (check) {
-                var prevented_2 = false;
-                (_a = overlay.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign(__assign({ chart: pane.getChart(), overlay: overlay, figure: figure }, event), { preventDefault: function () { prevented_2 = true; } }));
+                let prevented = false;
+                overlay.onMouseMove?.({ chart: pane.getChart(), overlay, figure, ...event, preventDefault: () => { prevented = true; } });
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                if (prevented_2) {
-                    _this.getWidget().setForceCursor(null);
+                if (prevented) {
+                    this.getWidget().setForceCursor(null);
                 }
                 else {
-                    _this.getWidget().setForceCursor('pointer');
+                    this.getWidget().setForceCursor('pointer');
                 }
             }
-            pane.getChart().getChartStore().setHoverOverlayInfo({ paneId: pane.getId(), overlay: overlay, figureType: figureType, figure: figure, figureIndex: figureIndex }, function (o, f) { return _this._processOverlayMouseEnterEvent(o, f, event); }, function (o, f) { return _this._processOverlayMouseLeaveEvent(o, f, event); });
+            pane.getChart().getChartStore().setHoverOverlayInfo({ paneId: pane.getId(), overlay, figureType, figure, figureIndex }, (o, f) => this._processOverlayMouseEnterEvent(o, f, event), (o, f) => this._processOverlayMouseLeaveEvent(o, f, event));
             return check;
         };
-    };
-    OverlayView.prototype._figureMouseDownEvent = function (overlay, figureType, figureIndex, figure) {
-        var _this = this;
-        return function (event) {
-            var _a;
-            var pane = _this.getWidget().getPane();
-            var paneId = pane.getId();
-            overlay.startPressedMove(_this._coordinateToPoint(overlay, event));
+    }
+    _figureMouseDownEvent(overlay, figureType, figureIndex, figure) {
+        return (event) => {
+            const pane = this.getWidget().getPane();
+            const paneId = pane.getId();
+            overlay.startPressedMove(this._coordinateToPoint(overlay, event));
             if (checkOverlayFigureEvent('onPressedMoveStart', figure)) {
-                (_a = overlay.onPressedMoveStart) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: pane.getChart(), overlay: overlay, figure: figure }, event));
-                pane.getChart().getChartStore().setPressedOverlayInfo({ paneId: paneId, overlay: overlay, figureType: figureType, figureIndex: figureIndex, figure: figure });
+                overlay.onPressedMoveStart?.({ chart: pane.getChart(), overlay, figure, ...event });
+                pane.getChart().getChartStore().setPressedOverlayInfo({ paneId, overlay, figureType, figureIndex, figure });
                 return !overlay.isDrawing();
             }
             return false;
         };
-    };
-    OverlayView.prototype._figureMouseClickEvent = function (overlay, figureType, figureIndex, figure) {
-        var _this = this;
-        return function (event) {
-            var _a;
-            var pane = _this.getWidget().getPane();
-            var paneId = pane.getId();
-            var check = !overlay.isDrawing() && checkOverlayFigureEvent('onClick', figure);
+    }
+    _figureMouseClickEvent(overlay, figureType, figureIndex, figure) {
+        return (event) => {
+            const pane = this.getWidget().getPane();
+            const paneId = pane.getId();
+            const check = !overlay.isDrawing() && checkOverlayFigureEvent('onClick', figure);
             if (check) {
-                (_a = overlay.onClick) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign({ chart: _this.getWidget().getPane().getChart(), overlay: overlay, figure: figure }, event));
+                overlay.onClick?.({ chart: this.getWidget().getPane().getChart(), overlay, figure, ...event });
             }
-            pane.getChart().getChartStore().setClickOverlayInfo({ paneId: paneId, overlay: overlay, figureType: figureType, figureIndex: figureIndex, figure: figure }, function (o, f) { return _this._processOverlaySelectedEvent(o, f, event); }, function (o, f) { return _this._processOverlayDeselectedEvent(o, f, event); });
+            pane.getChart().getChartStore().setClickOverlayInfo({ paneId, overlay, figureType, figureIndex, figure }, (o, f) => this._processOverlaySelectedEvent(o, f, event), (o, f) => this._processOverlayDeselectedEvent(o, f, event));
             return check;
         };
-    };
-    OverlayView.prototype._figureMouseDoubleClickEvent = function (overlay, _figureType, _figureIndex, figure) {
-        var _this = this;
-        return function (event) {
-            var _a;
+    }
+    _figureMouseDoubleClickEvent(overlay, _figureType, _figureIndex, figure) {
+        return (event) => {
             if (checkOverlayFigureEvent('onDoubleClick', figure)) {
-                (_a = overlay.onDoubleClick) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign(__assign({}, event), { chart: _this.getWidget().getPane().getChart(), figure: figure, overlay: overlay }));
+                overlay.onDoubleClick?.({ ...event, chart: this.getWidget().getPane().getChart(), figure, overlay });
                 return !overlay.isDrawing();
             }
             return false;
         };
-    };
-    OverlayView.prototype._figureMouseRightClickEvent = function (overlay, _figureType, _figureIndex, figure) {
-        var _this = this;
-        return function (event) {
-            var _a;
+    }
+    _figureMouseRightClickEvent(overlay, _figureType, _figureIndex, figure) {
+        return (event) => {
             if (checkOverlayFigureEvent('onRightClick', figure)) {
-                var prevented_3 = false;
-                (_a = overlay.onRightClick) === null || _a === void 0 ? void 0 : _a.call(overlay, __assign(__assign({ chart: _this.getWidget().getPane().getChart(), overlay: overlay, figure: figure }, event), { preventDefault: function () { prevented_3 = true; } }));
+                let prevented = false;
+                overlay.onRightClick?.({ chart: this.getWidget().getPane().getChart(), overlay, figure, ...event, preventDefault: () => { prevented = true; } });
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                if (!prevented_3) {
-                    _this.getWidget().getPane().getChart().getChartStore().removeOverlay(overlay);
+                if (!prevented) {
+                    this.getWidget().getPane().getChart().getChartStore().removeOverlay(overlay);
                 }
                 return !overlay.isDrawing();
             }
             return false;
         };
-    };
-    OverlayView.prototype._coordinateToPoint = function (o, coordinate) {
-        var _a;
-        var point = {};
-        var pane = this.getWidget().getPane();
-        var chart = pane.getChart();
-        var paneId = pane.getId();
-        var chartStore = chart.getChartStore();
+    }
+    _coordinateToPoint(o, coordinate) {
+        const point = {};
+        const pane = this.getWidget().getPane();
+        const chart = pane.getChart();
+        const paneId = pane.getId();
+        const chartStore = chart.getChartStore();
         if (this.coordinateToPointTimestampDataIndexFlag()) {
-            var xAxis = chart.getXAxisPane().getAxisComponent();
-            var dataIndex = xAxis.convertFromPixel(coordinate.x);
-            var timestamp = (_a = chartStore.dataIndexToTimestamp(dataIndex)) !== null && _a !== void 0 ? _a : undefined;
+            const xAxis = chart.getXAxisPane().getAxisComponent();
+            const dataIndex = xAxis.convertFromPixel(coordinate.x);
+            const timestamp = chartStore.dataIndexToTimestamp(dataIndex) ?? undefined;
             point.timestamp = timestamp;
             point.dataIndex = dataIndex;
         }
         if (this.coordinateToPointValueFlag()) {
-            var yAxis = pane.getAxisComponent();
-            var value = yAxis.convertFromPixel(coordinate.y);
+            const yAxis = pane.getAxisComponent();
+            let value = yAxis.convertFromPixel(coordinate.y);
             if (o.mode !== 'normal' && paneId === PaneIdConstants.CANDLE && isNumber(point.dataIndex)) {
-                var kLineData = chartStore.getDataByDataIndex(point.dataIndex);
+                const kLineData = chartStore.getDataByDataIndex(point.dataIndex);
                 if (kLineData !== null) {
-                    var modeSensitivity = o.modeSensitivity;
+                    const modeSensitivity = o.modeSensitivity;
                     if (value > kLineData.high) {
                         if (o.mode === 'weak_magnet') {
-                            var highY = yAxis.convertToPixel(kLineData.high);
-                            var buffValue = yAxis.convertFromPixel(highY - modeSensitivity);
+                            const highY = yAxis.convertToPixel(kLineData.high);
+                            const buffValue = yAxis.convertFromPixel(highY - modeSensitivity);
                             if (value < buffValue) {
                                 value = kLineData.high;
                             }
@@ -9767,8 +10205,8 @@ var OverlayView = /** @class */ (function (_super) {
                     }
                     else if (value < kLineData.low) {
                         if (o.mode === 'weak_magnet') {
-                            var lowY = yAxis.convertToPixel(kLineData.low);
-                            var buffValue = yAxis.convertFromPixel(lowY - modeSensitivity);
+                            const lowY = yAxis.convertToPixel(kLineData.low);
+                            const buffValue = yAxis.convertFromPixel(lowY - modeSensitivity);
                             if (value > buffValue) {
                                 value = kLineData.low;
                             }
@@ -9778,8 +10216,8 @@ var OverlayView = /** @class */ (function (_super) {
                         }
                     }
                     else {
-                        var max = Math.max(kLineData.open, kLineData.close);
-                        var min = Math.min(kLineData.open, kLineData.close);
+                        const max = Math.max(kLineData.open, kLineData.close);
+                        const min = Math.min(kLineData.open, kLineData.close);
                         if (value > max) {
                             if (value - max < kLineData.high - value) {
                                 value = max;
@@ -9808,153 +10246,143 @@ var OverlayView = /** @class */ (function (_super) {
             point.value = value;
         }
         return point;
-    };
-    OverlayView.prototype.coordinateToPointValueFlag = function () {
+    }
+    coordinateToPointValueFlag() {
         return true;
-    };
-    OverlayView.prototype.coordinateToPointTimestampDataIndexFlag = function () {
+    }
+    coordinateToPointTimestampDataIndexFlag() {
         return true;
-    };
-    OverlayView.prototype.dispatchEvent = function (name, event) {
+    }
+    dispatchEvent(name, event) {
         if (this.getWidget().getPane().getChart().getChartStore().isOverlayDrawing()) {
             return this.onEvent(name, event);
         }
-        return _super.prototype.dispatchEvent.call(this, name, event);
-    };
-    OverlayView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        var overlays = this.getCompleteOverlays();
-        overlays.forEach(function (overlay) {
+        return super.dispatchEvent(name, event);
+    }
+    drawImp(ctx) {
+        const overlays = this.getCompleteOverlays();
+        overlays.forEach(overlay => {
             if (overlay.visible) {
-                _this._drawOverlay(ctx, overlay);
+                this._drawOverlay(ctx, overlay);
             }
         });
-        var progressOverlay = this.getProgressOverlay();
+        const progressOverlay = this.getProgressOverlay();
         if (isValid(progressOverlay) && progressOverlay.visible) {
             this._drawOverlay(ctx, progressOverlay);
         }
-    };
-    OverlayView.prototype._drawOverlay = function (ctx, overlay) {
-        var points = overlay.points;
-        var pane = this.getWidget().getPane();
-        var chart = pane.getChart();
-        var chartStore = chart.getChartStore();
-        var yAxis = pane.getAxisComponent();
-        var xAxis = chart.getXAxisPane().getAxisComponent();
-        var coordinates = points.map(function (point) {
-            var _a;
-            var dataIndex = null;
+    }
+    _drawOverlay(ctx, overlay) {
+        const { points } = overlay;
+        const pane = this.getWidget().getPane();
+        const chart = pane.getChart();
+        const chartStore = chart.getChartStore();
+        const yAxis = pane.getAxisComponent();
+        const xAxis = chart.getXAxisPane().getAxisComponent();
+        const coordinates = points.map(point => {
+            let dataIndex = null;
             if (isNumber(point.timestamp)) {
                 dataIndex = chartStore.timestampToDataIndex(point.timestamp);
             }
-            var coordinate = { x: 0, y: 0 };
+            const coordinate = { x: 0, y: 0 };
             if (isNumber(dataIndex)) {
                 coordinate.x = xAxis.convertToPixel(dataIndex);
             }
             if (isNumber(point.value)) {
-                coordinate.y = (_a = yAxis === null || yAxis === void 0 ? void 0 : yAxis.convertToPixel(point.value)) !== null && _a !== void 0 ? _a : 0;
+                coordinate.y = yAxis?.convertToPixel(point.value) ?? 0;
             }
             return coordinate;
         });
         if (coordinates.length > 0) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
             // @ts-expect-error
-            var figures = [].concat(this.getFigures(overlay, coordinates));
+            const figures = [].concat(this.getFigures(overlay, coordinates));
             this.drawFigures(ctx, overlay, figures);
         }
         this.drawDefaultFigures(ctx, overlay, coordinates);
-    };
-    OverlayView.prototype.drawFigures = function (ctx, overlay, figures) {
-        var _this = this;
-        var defaultStyles = this.getWidget().getPane().getChart().getStyles().overlay;
-        figures.forEach(function (figure, figureIndex) {
-            var type = figure.type, styles = figure.styles, attrs = figure.attrs;
+    }
+    drawFigures(ctx, overlay, figures) {
+        const defaultStyles = this.getWidget().getPane().getChart().getStyles().overlay;
+        figures.forEach((figure, figureIndex) => {
+            const { type, styles, attrs } = figure;
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
             // @ts-expect-error
-            var attrsArray = [].concat(attrs);
-            attrsArray.forEach(function (ats) {
-                var _a, _b;
-                var events = _this._createFigureEvents(overlay, 'other', figureIndex, figure);
+            const attrsArray = [].concat(attrs);
+            attrsArray.forEach((ats) => {
+                const events = this._createFigureEvents(overlay, 'other', figureIndex, figure);
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
                 // @ts-expect-error
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                var ss = __assign(__assign(__assign({}, defaultStyles[type]), (_a = overlay.styles) === null || _a === void 0 ? void 0 : _a[type]), styles);
-                (_b = _this.createFigure({
+                const ss = { ...defaultStyles[type], ...overlay.styles?.[type], ...styles };
+                this.createFigure({
                     name: type, attrs: ats, styles: ss
-                }, events !== null && events !== void 0 ? events : undefined)) === null || _b === void 0 ? void 0 : _b.draw(ctx);
+                }, events ?? undefined)?.draw(ctx);
             });
         });
-    };
-    OverlayView.prototype.getCompleteOverlays = function () {
-        var pane = this.getWidget().getPane();
+    }
+    getCompleteOverlays() {
+        const pane = this.getWidget().getPane();
         return pane.getChart().getChartStore().getOverlaysByPaneId(pane.getId());
-    };
-    OverlayView.prototype.getProgressOverlay = function () {
-        var pane = this.getWidget().getPane();
-        var info = pane.getChart().getChartStore().getProgressOverlayInfo();
+    }
+    getProgressOverlay() {
+        const pane = this.getWidget().getPane();
+        const info = pane.getChart().getChartStore().getProgressOverlayInfo();
         if (isValid(info) && info.paneId === pane.getId()) {
             return info.overlay;
         }
         return null;
-    };
-    OverlayView.prototype.getFigures = function (o, coordinates) {
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chart = pane.getChart();
-        var yAxis = pane.getAxisComponent();
-        var xAxis = chart.getXAxisPane().getAxisComponent();
-        var bounding = widget.getBounding();
-        return (_b = (_a = o.createPointFigures) === null || _a === void 0 ? void 0 : _a.call(o, { chart: chart, overlay: o, coordinates: coordinates, bounding: bounding, xAxis: xAxis, yAxis: yAxis })) !== null && _b !== void 0 ? _b : [];
-    };
-    OverlayView.prototype.drawDefaultFigures = function (ctx, overlay, coordinates) {
-        var _this = this;
-        var _a, _b;
+    }
+    getFigures(o, coordinates) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chart = pane.getChart();
+        const yAxis = pane.getAxisComponent();
+        const xAxis = chart.getXAxisPane().getAxisComponent();
+        const bounding = widget.getBounding();
+        return o.createPointFigures?.({ chart, overlay: o, coordinates, bounding, xAxis, yAxis }) ?? [];
+    }
+    drawDefaultFigures(ctx, overlay, coordinates) {
         if (overlay.needDefaultPointFigure) {
-            var chartStore = this.getWidget().getPane().getChart().getChartStore();
-            var hoverOverlayInfo_1 = chartStore.getHoverOverlayInfo();
-            var clickOverlayInfo = chartStore.getClickOverlayInfo();
-            if ((((_a = hoverOverlayInfo_1.overlay) === null || _a === void 0 ? void 0 : _a.id) === overlay.id && hoverOverlayInfo_1.figureType !== 'none') ||
-                (((_b = clickOverlayInfo.overlay) === null || _b === void 0 ? void 0 : _b.id) === overlay.id && clickOverlayInfo.figureType !== 'none')) {
-                var defaultStyles = chartStore.getStyles().overlay;
-                var styles = overlay.styles;
-                var pointStyles_1 = __assign(__assign({}, defaultStyles.point), styles === null || styles === void 0 ? void 0 : styles.point);
-                coordinates.forEach(function (_a, index) {
-                    var _b, _c, _d, _e, _f;
-                    var x = _a.x, y = _a.y;
-                    var radius = pointStyles_1.radius;
-                    var color = pointStyles_1.color;
-                    var borderColor = pointStyles_1.borderColor;
-                    var borderSize = pointStyles_1.borderSize;
-                    if (((_b = hoverOverlayInfo_1.overlay) === null || _b === void 0 ? void 0 : _b.id) === overlay.id &&
-                        hoverOverlayInfo_1.figureType === 'point' &&
-                        ((_c = hoverOverlayInfo_1.figure) === null || _c === void 0 ? void 0 : _c.key) === "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index)) {
-                        radius = pointStyles_1.activeRadius;
-                        color = pointStyles_1.activeColor;
-                        borderColor = pointStyles_1.activeBorderColor;
-                        borderSize = pointStyles_1.activeBorderSize;
+            const chartStore = this.getWidget().getPane().getChart().getChartStore();
+            const hoverOverlayInfo = chartStore.getHoverOverlayInfo();
+            const clickOverlayInfo = chartStore.getClickOverlayInfo();
+            if ((hoverOverlayInfo.overlay?.id === overlay.id && hoverOverlayInfo.figureType !== 'none') ||
+                (clickOverlayInfo.overlay?.id === overlay.id && clickOverlayInfo.figureType !== 'none')) {
+                const defaultStyles = chartStore.getStyles().overlay;
+                const styles = overlay.styles;
+                const pointStyles = { ...defaultStyles.point, ...styles?.point };
+                coordinates.forEach(({ x, y }, index) => {
+                    let radius = pointStyles.radius;
+                    let color = pointStyles.color;
+                    let borderColor = pointStyles.borderColor;
+                    let borderSize = pointStyles.borderSize;
+                    if (hoverOverlayInfo.overlay?.id === overlay.id &&
+                        hoverOverlayInfo.figureType === 'point' &&
+                        hoverOverlayInfo.figure?.key === `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`) {
+                        radius = pointStyles.activeRadius;
+                        color = pointStyles.activeColor;
+                        borderColor = pointStyles.activeBorderColor;
+                        borderSize = pointStyles.activeBorderSize;
                     }
-                    (_e = _this.createFigure({
+                    this.createFigure({
                         name: 'circle',
-                        attrs: { x: x, y: y, r: radius + borderSize },
+                        attrs: { x, y, r: radius + borderSize },
                         styles: { color: borderColor }
-                    }, (_d = _this._createFigureEvents(overlay, 'point', index, {
-                        key: "".concat(OVERLAY_FIGURE_KEY_PREFIX, "point_").concat(index),
+                    }, this._createFigureEvents(overlay, 'point', index, {
+                        key: `${OVERLAY_FIGURE_KEY_PREFIX}point_${index}`,
                         type: 'circle',
-                        attrs: { x: x, y: y, r: radius + borderSize },
+                        attrs: { x, y, r: radius + borderSize },
                         styles: { color: borderColor }
-                    })) !== null && _d !== void 0 ? _d : undefined)) === null || _e === void 0 ? void 0 : _e.draw(ctx);
-                    (_f = _this.createFigure({
+                    }) ?? undefined)?.draw(ctx);
+                    this.createFigure({
                         name: 'circle',
-                        attrs: { x: x, y: y, r: radius },
-                        styles: { color: color }
-                    })) === null || _f === void 0 ? void 0 : _f.draw(ctx);
+                        attrs: { x, y, r: radius },
+                        styles: { color }
+                    })?.draw(ctx);
                 });
             }
         }
-    };
-    return OverlayView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -9969,48 +10397,45 @@ var OverlayView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var IndicatorWidget = /** @class */ (function (_super) {
-    __extends(IndicatorWidget, _super);
-    function IndicatorWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._gridView = new GridView(_this);
-        _this._indicatorView = new IndicatorView(_this);
-        _this._crosshairLineView = new CrosshairLineView(_this);
-        _this._tooltipView = _this.createTooltipView();
-        _this._overlayView = new OverlayView(_this);
-        _this.addChild(_this._tooltipView);
-        _this.addChild(_this._overlayView);
-        return _this;
+class IndicatorWidget extends DrawWidget {
+    _gridView = new GridView(this);
+    _indicatorView = new IndicatorView(this);
+    _crosshairLineView = new CrosshairLineView(this);
+    _tooltipView = this.createTooltipView();
+    _overlayView = new OverlayView(this);
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
+        this.addChild(this._tooltipView);
+        this.addChild(this._overlayView);
     }
-    IndicatorWidget.prototype.getName = function () {
+    getName() {
         return WidgetNameConstants.MAIN;
-    };
-    IndicatorWidget.prototype.updateMain = function (ctx) {
+    }
+    updateMain(ctx) {
         if (this.getPane().getOptions().state !== 'minimize') {
             this.updateMainContent(ctx);
             this._indicatorView.draw(ctx);
             this._gridView.draw(ctx);
         }
-    };
-    IndicatorWidget.prototype.createTooltipView = function () {
+    }
+    createTooltipView() {
         return new IndicatorTooltipView(this);
-    };
-    IndicatorWidget.prototype.updateMainContent = function (_ctx) {
+    }
+    updateMainContent(_ctx) {
         // to do it
-    };
-    IndicatorWidget.prototype.updateOverlayContent = function (_ctx) {
+    }
+    updateOverlayContent(_ctx) {
         // to do it
-    };
-    IndicatorWidget.prototype.updateOverlay = function (ctx) {
+    }
+    updateOverlay(ctx) {
         if (this.getPane().getOptions().state !== 'minimize') {
             this._overlayView.draw(ctx);
             this._crosshairLineView.draw(ctx);
             this.updateOverlayContent(ctx);
         }
         this._tooltipView.draw(ctx);
-    };
-    return IndicatorWidget;
-}(DrawWidget));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10025,83 +10450,76 @@ var IndicatorWidget = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleAreaView = /** @class */ (function (_super) {
-    __extends(CandleAreaView, _super);
-    function CandleAreaView() {
-        var _this = _super.apply(this, __spreadArray([], __read(arguments), false)) || this;
-        _this._ripplePoint = _this.createFigure({
-            name: 'circle',
-            attrs: {
-                x: 0,
-                y: 0,
-                r: 0
-            },
-            styles: {
-                style: 'fill'
-            }
-        });
-        _this._animationFrameTime = 0;
-        _this._animation = new Animation({ iterationCount: Infinity }).doFrame(function (time) {
-            _this._animationFrameTime = time;
-            var pane = _this.getWidget().getPane();
-            pane.getChart().updatePane(0 /* UpdateLevel.Main */, pane.getId());
-        });
-        return _this;
-    }
-    CandleAreaView.prototype.drawImp = function (ctx) {
-        var _a, _b, _c;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chart = pane.getChart();
-        var dataList = chart.getDataList();
-        var lastDataIndex = dataList.length - 1;
-        var bounding = widget.getBounding();
-        var yAxis = pane.getAxisComponent();
-        var styles = chart.getStyles().candle.area;
-        var coordinates = [];
-        var minY = Number.MAX_SAFE_INTEGER;
-        var areaStartX = Number.MIN_SAFE_INTEGER;
-        var ripplePointCoordinate = null;
-        this.eachChildren(function (data) {
-            var x = data.x;
-            var kLineData = data.data.current;
-            var value = kLineData === null || kLineData === void 0 ? void 0 : kLineData[styles.value];
+class CandleAreaView extends ChildrenView {
+    _ripplePoint = this.createFigure({
+        name: 'circle',
+        attrs: {
+            x: 0,
+            y: 0,
+            r: 0
+        },
+        styles: {
+            style: 'fill'
+        }
+    });
+    _animationFrameTime = 0;
+    _animation = new Animation({ iterationCount: Infinity }).doFrame((time) => {
+        this._animationFrameTime = time;
+        const pane = this.getWidget().getPane();
+        pane.getChart().updatePane(0 /* UpdateLevel.Main */, pane.getId());
+    });
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chart = pane.getChart();
+        const dataList = chart.getDataList();
+        const lastDataIndex = dataList.length - 1;
+        const bounding = widget.getBounding();
+        const yAxis = pane.getAxisComponent();
+        const styles = chart.getStyles().candle.area;
+        const coordinates = [];
+        let minY = Number.MAX_SAFE_INTEGER;
+        let areaStartX = Number.MIN_SAFE_INTEGER;
+        let ripplePointCoordinate = null;
+        this.eachChildren((data) => {
+            const x = data.x;
+            const { current: kLineData } = data.data;
+            const value = kLineData?.[styles.value];
             if (isNumber(value)) {
-                var y = yAxis.convertToPixel(value);
+                const y = yAxis.convertToPixel(value);
                 if (areaStartX === Number.MIN_SAFE_INTEGER) {
                     areaStartX = x;
                 }
-                coordinates.push({ x: x, y: y });
+                coordinates.push({ x, y });
                 minY = Math.min(minY, y);
                 if (data.dataIndex === lastDataIndex) {
-                    ripplePointCoordinate = { x: x, y: y };
+                    ripplePointCoordinate = { x, y };
                 }
             }
         });
         if (coordinates.length > 0) {
-            (_a = this.createFigure({
+            this.createFigure({
                 name: 'line',
-                attrs: { coordinates: coordinates },
+                attrs: { coordinates },
                 styles: {
                     color: styles.lineColor,
                     size: styles.lineSize,
                     smooth: styles.smooth
                 }
-            })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+            })?.draw(ctx);
             // render area
-            var backgroundColor = styles.backgroundColor;
-            var color = '';
+            const backgroundColor = styles.backgroundColor;
+            let color = '';
             if (isArray(backgroundColor)) {
-                var gradient_1 = ctx.createLinearGradient(0, bounding.height, 0, minY);
+                const gradient = ctx.createLinearGradient(0, bounding.height, 0, minY);
                 try {
-                    backgroundColor.forEach(function (_a) {
-                        var offset = _a.offset, color = _a.color;
-                        gradient_1.addColorStop(offset, color);
+                    backgroundColor.forEach(({ offset, color }) => {
+                        gradient.addColorStop(offset, color);
                     });
                 }
                 catch (e) {
                 }
-                color = gradient_1;
+                color = gradient;
             }
             else {
                 color = backgroundColor;
@@ -10115,9 +10533,9 @@ var CandleAreaView = /** @class */ (function (_super) {
             ctx.closePath();
             ctx.fill();
         }
-        var pointStyles = styles.point;
+        const pointStyles = styles.point;
         if (pointStyles.show && isValid(ripplePointCoordinate)) {
-            (_b = this.createFigure({
+            this.createFigure({
                 name: 'circle',
                 attrs: {
                     x: ripplePointCoordinate.x,
@@ -10128,27 +10546,28 @@ var CandleAreaView = /** @class */ (function (_super) {
                     style: 'fill',
                     color: pointStyles.color
                 }
-            })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-            var rippleRadius = pointStyles.rippleRadius;
+            })?.draw(ctx);
+            let rippleRadius = pointStyles.rippleRadius;
             if (pointStyles.animation) {
                 rippleRadius = pointStyles.radius + this._animationFrameTime / pointStyles.animationDuration * (pointStyles.rippleRadius - pointStyles.radius);
                 this._animation.setDuration(pointStyles.animationDuration).start();
             }
-            (_c = this._ripplePoint) === null || _c === void 0 ? void 0 : _c.setAttrs({
+            this._ripplePoint
+                ?.setAttrs({
                 x: ripplePointCoordinate.x,
                 y: ripplePointCoordinate.y,
                 r: rippleRadius
-            }).setStyles({ style: 'fill', color: pointStyles.rippleColor }).draw(ctx);
+            })
+                .setStyles({ style: 'fill', color: pointStyles.rippleColor }).draw(ctx);
         }
         else {
             this.stopAnimation();
         }
-    };
-    CandleAreaView.prototype.stopAnimation = function () {
+    }
+    stopAnimation() {
         this._animation.stop();
-    };
-    return CandleAreaView;
-}(ChildrenView));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10163,29 +10582,24 @@ var CandleAreaView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleHighLowPriceView = /** @class */ (function (_super) {
-    __extends(CandleHighLowPriceView, _super);
-    function CandleHighLowPriceView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CandleHighLowPriceView.prototype.drawImp = function (ctx) {
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var priceMarkStyles = chartStore.getStyles().candle.priceMark;
-        var highPriceMarkStyles = priceMarkStyles.high;
-        var lowPriceMarkStyles = priceMarkStyles.low;
+class CandleHighLowPriceView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const priceMarkStyles = chartStore.getStyles().candle.priceMark;
+        const highPriceMarkStyles = priceMarkStyles.high;
+        const lowPriceMarkStyles = priceMarkStyles.low;
         if (priceMarkStyles.show && (highPriceMarkStyles.show || lowPriceMarkStyles.show)) {
-            var highestLowestPrice = chartStore.getVisibleRangeHighLowPrice();
-            var precision = (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE;
-            var yAxis = pane.getAxisComponent();
-            var _c = highestLowestPrice[0], high = _c.price, highX = _c.x;
-            var _d = highestLowestPrice[1], low = _d.price, lowX = _d.x;
-            var highY = yAxis.convertToPixel(high);
-            var lowY = yAxis.convertToPixel(low);
-            var decimalFold = chartStore.getDecimalFold();
-            var thousandsSeparator = chartStore.getThousandsSeparator();
+            const highestLowestPrice = chartStore.getVisibleRangeHighLowPrice();
+            const precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
+            const yAxis = pane.getAxisComponent();
+            const { price: high, x: highX } = highestLowestPrice[0];
+            const { price: low, x: lowX } = highestLowestPrice[1];
+            const highY = yAxis.convertToPixel(high);
+            const lowY = yAxis.convertToPixel(low);
+            const decimalFold = chartStore.getDecimalFold();
+            const thousandsSeparator = chartStore.getThousandsSeparator();
             if (highPriceMarkStyles.show && high !== Number.MIN_SAFE_INTEGER) {
                 this._drawMark(ctx, decimalFold.format(thousandsSeparator.format(formatPrecision(high, precision))), { x: highX, y: highY }, highY < lowY ? [-2, -5] : [2, 5], highPriceMarkStyles);
             }
@@ -10193,12 +10607,11 @@ var CandleHighLowPriceView = /** @class */ (function (_super) {
                 this._drawMark(ctx, decimalFold.format(thousandsSeparator.format(formatPrecision(low, precision))), { x: lowX, y: lowY }, highY < lowY ? [2, 5] : [-2, -5], lowPriceMarkStyles);
             }
         }
-    };
-    CandleHighLowPriceView.prototype._drawMark = function (ctx, text, coordinate, offsets, styles) {
-        var _a, _b, _c;
-        var startX = coordinate.x;
-        var startY = coordinate.y + offsets[0];
-        (_a = this.createFigure({
+    }
+    _drawMark(ctx, text, coordinate, offsets, styles) {
+        const startX = coordinate.x;
+        const startY = coordinate.y + offsets[0];
+        this.createFigure({
             name: 'line',
             attrs: {
                 coordinates: [
@@ -10208,11 +10621,11 @@ var CandleHighLowPriceView = /** @class */ (function (_super) {
                 ]
             },
             styles: { color: styles.color }
-        })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
-        var lineEndX = 0;
-        var textStartX = 0;
-        var textAlign = 'left';
-        var width = this.getWidget().getBounding().width;
+        })?.draw(ctx);
+        let lineEndX = 0;
+        let textStartX = 0;
+        let textAlign = 'left';
+        const { width } = this.getWidget().getBounding();
         if (startX > width / 2) {
             lineEndX = startX - 5;
             textStartX = lineEndX - styles.textOffset;
@@ -10223,24 +10636,24 @@ var CandleHighLowPriceView = /** @class */ (function (_super) {
             textAlign = 'left';
             textStartX = lineEndX + styles.textOffset;
         }
-        var y = startY + offsets[1];
-        (_b = this.createFigure({
+        const y = startY + offsets[1];
+        this.createFigure({
             name: 'line',
             attrs: {
                 coordinates: [
                     { x: startX, y: startY },
-                    { x: startX, y: y },
-                    { x: lineEndX, y: y }
+                    { x: startX, y },
+                    { x: lineEndX, y }
                 ]
             },
             styles: { color: styles.color }
-        })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-        (_c = this.createFigure({
+        })?.draw(ctx);
+        this.createFigure({
             name: 'text',
             attrs: {
                 x: textStartX,
-                y: y,
-                text: text,
+                y,
+                text,
                 align: textAlign,
                 baseline: 'middle'
             },
@@ -10250,10 +10663,9 @@ var CandleHighLowPriceView = /** @class */ (function (_super) {
                 family: styles.textFamily,
                 weight: styles.textWeight
             }
-        })) === null || _c === void 0 ? void 0 : _c.draw(ctx);
-    };
-    return CandleHighLowPriceView;
-}(View));
+        })?.draw(ctx);
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10268,39 +10680,34 @@ var CandleHighLowPriceView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleLastPriceView = /** @class */ (function (_super) {
-    __extends(CandleLastPriceView, _super);
-    function CandleLastPriceView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CandleLastPriceView.prototype.drawImp = function (ctx) {
-        var _a, _b, _c;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var bounding = widget.getBounding();
-        var chartStore = pane.getChart().getChartStore();
-        var priceMarkStyles = chartStore.getStyles().candle.priceMark;
-        var lastPriceMarkStyles = priceMarkStyles.last;
-        var lastPriceMarkLineStyles = lastPriceMarkStyles.line;
+class CandleLastPriceView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const chartStore = pane.getChart().getChartStore();
+        const priceMarkStyles = chartStore.getStyles().candle.priceMark;
+        const lastPriceMarkStyles = priceMarkStyles.last;
+        const lastPriceMarkLineStyles = lastPriceMarkStyles.line;
         if (priceMarkStyles.show && lastPriceMarkStyles.show && lastPriceMarkLineStyles.show) {
-            var yAxis = pane.getAxisComponent();
-            var dataList = chartStore.getDataList();
-            var data = dataList[dataList.length - 1];
+            const yAxis = pane.getAxisComponent();
+            const dataList = chartStore.getDataList();
+            const data = dataList[dataList.length - 1];
             if (isValid(data)) {
-                var close_1 = data.close, open_1 = data.open;
-                var comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open_1 : ((_b = (_a = dataList[dataList.length - 2]) === null || _a === void 0 ? void 0 : _a.close) !== null && _b !== void 0 ? _b : close_1);
-                var priceY = yAxis.convertToNicePixel(close_1);
-                var color = '';
-                if (close_1 > comparePrice) {
+                const { close, open } = data;
+                const comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open : (dataList[dataList.length - 2]?.close ?? close);
+                const priceY = yAxis.convertToNicePixel(close);
+                let color = '';
+                if (close > comparePrice) {
                     color = lastPriceMarkStyles.upColor;
                 }
-                else if (close_1 < comparePrice) {
+                else if (close < comparePrice) {
                     color = lastPriceMarkStyles.downColor;
                 }
                 else {
                     color = lastPriceMarkStyles.noChangeColor;
                 }
-                (_c = this.createFigure({
+                this.createFigure({
                     name: 'line',
                     attrs: {
                         coordinates: [
@@ -10310,221 +10717,93 @@ var CandleLastPriceView = /** @class */ (function (_super) {
                     },
                     styles: {
                         style: lastPriceMarkLineStyles.style,
-                        color: color,
+                        color,
                         size: lastPriceMarkLineStyles.size,
                         dashedValue: lastPriceMarkLineStyles.dashedValue
                     }
-                })) === null || _c === void 0 ? void 0 : _c.draw(ctx);
+                })?.draw(ctx);
             }
         }
-    };
-    return CandleLastPriceView;
-}(View));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var PeriodTypeXAxisFormat = {
-    second: 'HH:mm:ss',
-    minute: 'HH:mm',
-    hour: 'MM-DD HH:mm',
-    day: 'YYYY-MM-DD',
-    week: 'YYYY-MM-DD',
-    month: 'YYYY-MM',
-    year: 'YYYY'
-};
-var PeriodTypeCrosshairTooltipFormat = {
-    second: 'HH:mm:ss',
-    minute: 'YYYY-MM-DD HH:mm',
-    hour: 'YYYY-MM-DD HH:mm',
-    day: 'YYYY-MM-DD',
-    week: 'YYYY-MM-DD',
-    month: 'YYYY-MM',
-    year: 'YYYY'
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var zhCN = {
-    time: '时间：',
-    open: '开：',
-    high: '高：',
-    low: '低：',
-    close: '收：',
-    volume: '成交量：',
-    turnover: '成交额：',
-    change: '涨幅：',
-    second: '秒',
-    minute: '',
-    hour: '小时',
-    day: '天',
-    week: '周',
-    month: '月',
-    year: '年'
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var enUS = {
-    time: 'Time: ',
-    open: 'Open: ',
-    high: 'High: ',
-    low: 'Low: ',
-    close: 'Close: ',
-    volume: 'Volume: ',
-    turnover: 'Turnover: ',
-    change: 'Change: ',
-    second: 'S',
-    minute: '',
-    hour: 'H',
-    day: 'D',
-    week: 'W',
-    month: 'M',
-    year: 'Y'
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var locales = {
-    'zh-CN': zhCN,
-    'en-US': enUS
-};
-function registerLocale(locale, ls) {
-    locales[locale] = __assign(__assign({}, locales[locale]), ls);
-}
-function getSupportedLocales() {
-    return Object.keys(locales);
-}
-function i18n(key, locale) {
-    var _a;
-    return (_a = locales[locale][key]) !== null && _a !== void 0 ? _a : key;
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var CandleTooltipView = /** @class */ (function (_super) {
-    __extends(CandleTooltipView, _super);
-    function CandleTooltipView() {
-        return _super !== null && _super.apply(this, arguments) || this;
     }
-    CandleTooltipView.prototype.drawImp = function (ctx) {
-        var widget = this.getWidget();
-        var chartStore = widget.getPane().getChart().getChartStore();
-        var crosshair = chartStore.getCrosshair();
+}
+
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+class CandleTooltipView extends IndicatorTooltipView {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const chartStore = widget.getPane().getChart().getChartStore();
+        const crosshair = chartStore.getCrosshair();
         if (isValid(crosshair.kLineData)) {
-            var bounding = widget.getBounding();
-            var styles = chartStore.getStyles();
-            var candleStyles = styles.candle;
-            var indicatorStyles = styles.indicator;
+            const bounding = widget.getBounding();
+            const styles = chartStore.getStyles();
+            const candleStyles = styles.candle;
+            const indicatorStyles = styles.indicator;
             if (candleStyles.tooltip.showType === 'rect' &&
                 indicatorStyles.tooltip.showType === 'rect') {
-                var isDrawCandleTooltip = this.isDrawTooltip(crosshair, candleStyles.tooltip);
-                var isDrawIndicatorTooltip = this.isDrawTooltip(crosshair, indicatorStyles.tooltip);
+                const isDrawCandleTooltip = this.isDrawTooltip(crosshair, candleStyles.tooltip);
+                const isDrawIndicatorTooltip = this.isDrawTooltip(crosshair, indicatorStyles.tooltip);
                 this._drawRectTooltip(ctx, isDrawCandleTooltip, isDrawIndicatorTooltip, candleStyles.tooltip.offsetTop);
             }
             else if (candleStyles.tooltip.showType === 'standard' &&
                 indicatorStyles.tooltip.showType === 'standard') {
-                var _a = candleStyles.tooltip, offsetLeft = _a.offsetLeft, offsetTop = _a.offsetTop, offsetRight = _a.offsetRight;
-                var maxWidth = bounding.width - offsetRight;
-                var top_1 = this._drawCandleStandardTooltip(ctx, offsetLeft, offsetTop, maxWidth);
-                this.drawIndicatorTooltip(ctx, offsetLeft, top_1, maxWidth);
+                const { offsetLeft, offsetTop, offsetRight } = candleStyles.tooltip;
+                const maxWidth = bounding.width - offsetRight;
+                const top = this._drawCandleStandardTooltip(ctx, offsetLeft, offsetTop, maxWidth);
+                this.drawIndicatorTooltip(ctx, offsetLeft, top, maxWidth);
             }
             else if (candleStyles.tooltip.showType === 'rect' &&
                 indicatorStyles.tooltip.showType === 'standard') {
-                var _b = candleStyles.tooltip, offsetLeft = _b.offsetLeft, offsetTop = _b.offsetTop, offsetRight = _b.offsetRight;
-                var maxWidth = bounding.width - offsetRight;
-                var top_2 = this.drawIndicatorTooltip(ctx, offsetLeft, offsetTop, maxWidth);
-                var isDrawCandleTooltip = this.isDrawTooltip(crosshair, candleStyles.tooltip);
-                this._drawRectTooltip(ctx, isDrawCandleTooltip, false, top_2);
+                const { offsetLeft, offsetTop, offsetRight } = candleStyles.tooltip;
+                const maxWidth = bounding.width - offsetRight;
+                const top = this.drawIndicatorTooltip(ctx, offsetLeft, offsetTop, maxWidth);
+                const isDrawCandleTooltip = this.isDrawTooltip(crosshair, candleStyles.tooltip);
+                this._drawRectTooltip(ctx, isDrawCandleTooltip, false, top);
             }
             else {
-                var _c = candleStyles.tooltip, offsetLeft = _c.offsetLeft, offsetTop = _c.offsetTop, offsetRight = _c.offsetRight;
-                var maxWidth = bounding.width - offsetRight;
-                var top_3 = this._drawCandleStandardTooltip(ctx, offsetLeft, offsetTop, maxWidth);
-                var isDrawIndicatorTooltip = this.isDrawTooltip(crosshair, indicatorStyles.tooltip);
-                this._drawRectTooltip(ctx, false, isDrawIndicatorTooltip, top_3);
+                const { offsetLeft, offsetTop, offsetRight } = candleStyles.tooltip;
+                const maxWidth = bounding.width - offsetRight;
+                const top = this._drawCandleStandardTooltip(ctx, offsetLeft, offsetTop, maxWidth);
+                const isDrawIndicatorTooltip = this.isDrawTooltip(crosshair, indicatorStyles.tooltip);
+                this._drawRectTooltip(ctx, false, isDrawIndicatorTooltip, top);
             }
         }
-    };
-    CandleTooltipView.prototype._drawCandleStandardTooltip = function (ctx, left, top, maxWidth) {
-        var _a;
-        var chartStore = this.getWidget().getPane().getChart().getChartStore();
-        var styles = chartStore.getStyles().candle;
-        var tooltipStyles = styles.tooltip;
-        var tooltipLegendStyles = tooltipStyles.legend;
-        var prevRowHeight = 0;
-        var coordinate = { x: left, y: top };
-        var crosshair = chartStore.getCrosshair();
+    }
+    _drawCandleStandardTooltip(ctx, left, top, maxWidth) {
+        const chartStore = this.getWidget().getPane().getChart().getChartStore();
+        const styles = chartStore.getStyles().candle;
+        const tooltipStyles = styles.tooltip;
+        const tooltipLegendStyles = tooltipStyles.legend;
+        let prevRowHeight = 0;
+        const coordinate = { x: left, y: top };
+        const crosshair = chartStore.getCrosshair();
         if (this.isDrawTooltip(crosshair, tooltipStyles)) {
-            var tooltipTitleStyles = tooltipStyles.title;
+            const tooltipTitleStyles = tooltipStyles.title;
             if (tooltipTitleStyles.show) {
-                var _b = (_a = chartStore.getPeriod()) !== null && _a !== void 0 ? _a : {}, _c = _b.type, type = _c === void 0 ? '' : _c, _d = _b.span, span = _d === void 0 ? '' : _d;
-                var text = formatTemplateString(tooltipTitleStyles.template, __assign(__assign({}, chartStore.getSymbol()), { period: "".concat(span).concat(i18n(type, chartStore.getLocale())) }));
-                var color = tooltipTitleStyles.color;
-                var height = this.drawStandardTooltipLegends(ctx, [
+                const { type = '', span = '' } = chartStore.getPeriod() ?? {};
+                const text = formatTemplateString(tooltipTitleStyles.template, { ...chartStore.getSymbol(), period: `${span}${i18n(type, chartStore.getLocale())}` });
+                const color = tooltipTitleStyles.color;
+                const height = this.drawStandardTooltipLegends(ctx, [
                     {
-                        title: { text: '', color: color },
-                        value: { text: text, color: color }
+                        title: { text: '', color },
+                        value: { text, color }
                     }
                 ], { x: left, y: top }, left, 0, maxWidth, tooltipTitleStyles);
                 coordinate.y = coordinate.y + height;
             }
-            var legends = this._getCandleTooltipLegends();
-            var features = this.classifyTooltipFeatures(tooltipStyles.features);
+            const legends = this._getCandleTooltipLegends();
+            const features = this.classifyTooltipFeatures(tooltipStyles.features);
             prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[0], coordinate, null, left, prevRowHeight, maxWidth);
             prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[1], coordinate, null, left, prevRowHeight, maxWidth);
             if (legends.length > 0) {
@@ -10533,239 +10812,243 @@ var CandleTooltipView = /** @class */ (function (_super) {
             prevRowHeight = this.drawStandardTooltipFeatures(ctx, features[2], coordinate, null, left, prevRowHeight, maxWidth);
         }
         return coordinate.y + prevRowHeight;
-    };
-    CandleTooltipView.prototype._drawRectTooltip = function (ctx, isDrawCandleTooltip, isDrawIndicatorTooltip, top) {
-        var _this = this;
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var styles = chartStore.getStyles();
-        var candleStyles = styles.candle;
-        var indicatorStyles = styles.indicator;
-        var candleTooltipStyles = candleStyles.tooltip;
-        var indicatorTooltipStyles = indicatorStyles.tooltip;
+    }
+    _drawRectTooltip(ctx, isDrawCandleTooltip, isDrawIndicatorTooltip, top) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const styles = chartStore.getStyles();
+        const candleStyles = styles.candle;
+        const indicatorStyles = styles.indicator;
+        const candleTooltipStyles = candleStyles.tooltip;
+        const indicatorTooltipStyles = indicatorStyles.tooltip;
         if (isDrawCandleTooltip || isDrawIndicatorTooltip) {
-            var candleLegends = this._getCandleTooltipLegends();
-            var offsetLeft = candleTooltipStyles.offsetLeft, offsetTop = candleTooltipStyles.offsetTop, offsetRight = candleTooltipStyles.offsetRight, offsetBottom = candleTooltipStyles.offsetBottom;
-            var _c = candleTooltipStyles.legend, baseLegendMarginLeft_1 = _c.marginLeft, baseLegendMarginRight_1 = _c.marginRight, baseLegendMarginTop_1 = _c.marginTop, baseLegendMarginBottom_1 = _c.marginBottom, baseLegendSize_1 = _c.size, baseLegendWeight_1 = _c.weight, baseLegendFamily_1 = _c.family;
-            var _d = candleTooltipStyles.rect, rectPosition = _d.position, rectPaddingLeft = _d.paddingLeft, rectPaddingRight_1 = _d.paddingRight, rectPaddingTop = _d.paddingTop, rectPaddingBottom = _d.paddingBottom, rectOffsetLeft = _d.offsetLeft, rectOffsetRight = _d.offsetRight, rectOffsetTop = _d.offsetTop, rectOffsetBottom = _d.offsetBottom, rectBorderSize_1 = _d.borderSize, rectBorderRadius = _d.borderRadius, rectBorderColor = _d.borderColor, rectBackgroundColor = _d.color;
-            var maxTextWidth_1 = 0;
-            var rectWidth_1 = 0;
-            var rectHeight_1 = 0;
+            const candleLegends = this._getCandleTooltipLegends();
+            const { offsetLeft, offsetTop, offsetRight, offsetBottom } = candleTooltipStyles;
+            const { marginLeft: baseLegendMarginLeft, marginRight: baseLegendMarginRight, marginTop: baseLegendMarginTop, marginBottom: baseLegendMarginBottom, size: baseLegendSize, weight: baseLegendWeight, family: baseLegendFamily } = candleTooltipStyles.legend;
+            const { position: rectPosition, paddingLeft: rectPaddingLeft, paddingRight: rectPaddingRight, paddingTop: rectPaddingTop, paddingBottom: rectPaddingBottom, offsetLeft: rectOffsetLeft, offsetRight: rectOffsetRight, offsetTop: rectOffsetTop, offsetBottom: rectOffsetBottom, borderSize: rectBorderSize, borderRadius: rectBorderRadius, borderColor: rectBorderColor, color: rectBackgroundColor } = candleTooltipStyles.rect;
+            let maxTextWidth = 0;
+            let rectWidth = 0;
+            let rectHeight = 0;
             if (isDrawCandleTooltip) {
-                ctx.font = createFont(baseLegendSize_1, baseLegendWeight_1, baseLegendFamily_1);
-                candleLegends.forEach(function (data) {
-                    var title = data.title;
-                    var value = data.value;
-                    var text = "".concat(title.text).concat(value.text);
-                    var labelWidth = ctx.measureText(text).width + baseLegendMarginLeft_1 + baseLegendMarginRight_1;
-                    maxTextWidth_1 = Math.max(maxTextWidth_1, labelWidth);
+                ctx.font = createFont(baseLegendSize, baseLegendWeight, baseLegendFamily);
+                candleLegends.forEach(data => {
+                    const title = data.title;
+                    const value = data.value;
+                    const text = `${title.text}${value.text}`;
+                    const labelWidth = ctx.measureText(text).width + baseLegendMarginLeft + baseLegendMarginRight;
+                    maxTextWidth = Math.max(maxTextWidth, labelWidth);
                 });
-                rectHeight_1 += ((baseLegendMarginBottom_1 + baseLegendMarginTop_1 + baseLegendSize_1) * candleLegends.length);
+                rectHeight += ((baseLegendMarginBottom + baseLegendMarginTop + baseLegendSize) * candleLegends.length);
             }
-            var _e = indicatorTooltipStyles.legend, indicatorLegendMarginLeft_1 = _e.marginLeft, indicatorLegendMarginRight_1 = _e.marginRight, indicatorLegendMarginTop_1 = _e.marginTop, indicatorLegendMarginBottom_1 = _e.marginBottom, indicatorLegendSize_1 = _e.size, indicatorLegendWeight_1 = _e.weight, indicatorLegendFamily_1 = _e.family;
-            var indicatorLegendsArray_1 = [];
+            const { marginLeft: indicatorLegendMarginLeft, marginRight: indicatorLegendMarginRight, marginTop: indicatorLegendMarginTop, marginBottom: indicatorLegendMarginBottom, size: indicatorLegendSize, weight: indicatorLegendWeight, family: indicatorLegendFamily } = indicatorTooltipStyles.legend;
+            const indicatorLegendsArray = [];
             if (isDrawIndicatorTooltip) {
-                var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-                ctx.font = createFont(indicatorLegendSize_1, indicatorLegendWeight_1, indicatorLegendFamily_1);
-                indicators.forEach(function (indicator) {
-                    var tooltipDataLegends = _this.getIndicatorTooltipData(indicator).legends;
-                    indicatorLegendsArray_1.push(tooltipDataLegends);
-                    tooltipDataLegends.forEach(function (data) {
-                        var title = data.title;
-                        var value = data.value;
-                        var text = "".concat(title.text).concat(value.text);
-                        var textWidth = ctx.measureText(text).width + indicatorLegendMarginLeft_1 + indicatorLegendMarginRight_1;
-                        maxTextWidth_1 = Math.max(maxTextWidth_1, textWidth);
-                        rectHeight_1 += (indicatorLegendMarginTop_1 + indicatorLegendMarginBottom_1 + indicatorLegendSize_1);
+                const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+                ctx.font = createFont(indicatorLegendSize, indicatorLegendWeight, indicatorLegendFamily);
+                indicators.forEach(indicator => {
+                    const tooltipDataLegends = this.getIndicatorTooltipData(indicator).legends;
+                    indicatorLegendsArray.push(tooltipDataLegends);
+                    tooltipDataLegends.forEach(data => {
+                        const title = data.title;
+                        const value = data.value;
+                        const text = `${title.text}${value.text}`;
+                        const textWidth = ctx.measureText(text).width + indicatorLegendMarginLeft + indicatorLegendMarginRight;
+                        maxTextWidth = Math.max(maxTextWidth, textWidth);
+                        rectHeight += (indicatorLegendMarginTop + indicatorLegendMarginBottom + indicatorLegendSize);
                     });
                 });
             }
-            rectWidth_1 += maxTextWidth_1;
-            if (rectWidth_1 !== 0 && rectHeight_1 !== 0) {
-                var crosshair = chartStore.getCrosshair();
-                var bounding = widget.getBounding();
-                var yAxisBounding = pane.getYAxisWidget().getBounding();
-                rectWidth_1 += (rectBorderSize_1 * 2 + rectPaddingLeft + rectPaddingRight_1);
-                rectHeight_1 += (rectBorderSize_1 * 2 + rectPaddingTop + rectPaddingBottom);
-                var centerX = bounding.width / 2;
-                var isPointer = rectPosition === 'pointer' && crosshair.paneId === PaneIdConstants.CANDLE;
-                var isLeft = ((_a = crosshair.realX) !== null && _a !== void 0 ? _a : 0) > centerX;
-                var rectX_1 = 0;
+            rectWidth += maxTextWidth;
+            if (rectWidth !== 0 && rectHeight !== 0) {
+                const crosshair = chartStore.getCrosshair();
+                const bounding = widget.getBounding();
+                const yAxisBounding = pane.getYAxisWidget().getBounding();
+                rectWidth += (rectBorderSize * 2 + rectPaddingLeft + rectPaddingRight);
+                rectHeight += (rectBorderSize * 2 + rectPaddingTop + rectPaddingBottom);
+                const centerX = bounding.width / 2;
+                const isPointer = rectPosition === 'pointer' && crosshair.paneId === PaneIdConstants.CANDLE;
+                const isLeft = (crosshair.realX ?? 0) > centerX;
+                let rectX = 0;
                 if (isPointer) {
-                    var realX = crosshair.realX;
+                    const realX = crosshair.realX;
                     if (isLeft) {
-                        rectX_1 = realX - rectOffsetRight - rectWidth_1;
+                        rectX = realX - rectOffsetRight - rectWidth;
                     }
                     else {
-                        rectX_1 = realX + rectOffsetLeft;
+                        rectX = realX + rectOffsetLeft;
                     }
                 }
                 else {
-                    var yAxis = this.getWidget().getPane().getAxisComponent();
+                    const yAxis = this.getWidget().getPane().getAxisComponent();
                     if (isLeft) {
-                        rectX_1 = rectOffsetLeft + offsetLeft;
+                        rectX = rectOffsetLeft + offsetLeft;
                         if (yAxis.inside && yAxis.position === 'left') {
-                            rectX_1 += yAxisBounding.width;
+                            rectX += yAxisBounding.width;
                         }
                     }
                     else {
-                        rectX_1 = bounding.width - rectOffsetRight - rectWidth_1 - offsetRight;
+                        rectX = bounding.width - rectOffsetRight - rectWidth - offsetRight;
                         if (yAxis.inside && yAxis.position === 'right') {
-                            rectX_1 -= yAxisBounding.width;
+                            rectX -= yAxisBounding.width;
                         }
                     }
                 }
-                var rectY = top + rectOffsetTop;
+                let rectY = top + rectOffsetTop;
                 if (isPointer) {
-                    var y = crosshair.y;
-                    rectY = y - rectHeight_1 / 2;
-                    if (rectY + rectHeight_1 > bounding.height - rectOffsetBottom - offsetBottom) {
-                        rectY = bounding.height - rectOffsetBottom - rectHeight_1 - offsetBottom;
+                    const y = crosshair.y;
+                    rectY = y - rectHeight / 2;
+                    if (rectY + rectHeight > bounding.height - rectOffsetBottom - offsetBottom) {
+                        rectY = bounding.height - rectOffsetBottom - rectHeight - offsetBottom;
                     }
                     if (rectY < top + rectOffsetTop) {
                         rectY = top + rectOffsetTop + offsetTop;
                     }
                 }
-                (_b = this.createFigure({
+                this.createFigure({
                     name: 'rect',
                     attrs: {
-                        x: rectX_1,
+                        x: rectX,
                         y: rectY,
-                        width: rectWidth_1,
-                        height: rectHeight_1
+                        width: rectWidth,
+                        height: rectHeight
                     },
                     styles: {
                         style: 'stroke_fill',
                         color: rectBackgroundColor,
                         borderColor: rectBorderColor,
-                        borderSize: rectBorderSize_1,
+                        borderSize: rectBorderSize,
                         borderRadius: rectBorderRadius
                     }
-                })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-                var candleTextX_1 = rectX_1 + rectBorderSize_1 + rectPaddingLeft + baseLegendMarginLeft_1;
-                var textY_1 = rectY + rectBorderSize_1 + rectPaddingTop;
+                })?.draw(ctx);
+                const candleTextX = rectX + rectBorderSize + rectPaddingLeft + baseLegendMarginLeft;
+                let textY = rectY + rectBorderSize + rectPaddingTop;
                 if (isDrawCandleTooltip) {
                     // render candle texts
-                    candleLegends.forEach(function (data) {
-                        var _a, _b;
-                        textY_1 += baseLegendMarginTop_1;
-                        var title = data.title;
-                        (_a = _this.createFigure({
+                    candleLegends.forEach(data => {
+                        textY += baseLegendMarginTop;
+                        const title = data.title;
+                        this.createFigure({
                             name: 'text',
                             attrs: {
-                                x: candleTextX_1,
-                                y: textY_1,
+                                x: candleTextX,
+                                y: textY,
                                 text: title.text
                             },
                             styles: {
                                 color: title.color,
-                                size: baseLegendSize_1,
-                                family: baseLegendFamily_1,
-                                weight: baseLegendWeight_1
+                                size: baseLegendSize,
+                                family: baseLegendFamily,
+                                weight: baseLegendWeight
                             }
-                        })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
-                        var value = data.value;
-                        (_b = _this.createFigure({
+                        })?.draw(ctx);
+                        const value = data.value;
+                        this.createFigure({
                             name: 'text',
                             attrs: {
-                                x: rectX_1 + rectWidth_1 - rectBorderSize_1 - baseLegendMarginRight_1 - rectPaddingRight_1,
-                                y: textY_1,
+                                x: rectX + rectWidth - rectBorderSize - baseLegendMarginRight - rectPaddingRight,
+                                y: textY,
                                 text: value.text,
                                 align: 'right'
                             },
                             styles: {
                                 color: value.color,
-                                size: baseLegendSize_1,
-                                family: baseLegendFamily_1,
-                                weight: baseLegendWeight_1
+                                size: baseLegendSize,
+                                family: baseLegendFamily,
+                                weight: baseLegendWeight
                             }
-                        })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-                        textY_1 += (baseLegendSize_1 + baseLegendMarginBottom_1);
+                        })?.draw(ctx);
+                        textY += (baseLegendSize + baseLegendMarginBottom);
                     });
                 }
                 if (isDrawIndicatorTooltip) {
                     // render indicator legends
-                    var indicatorTextX_1 = rectX_1 + rectBorderSize_1 + rectPaddingLeft + indicatorLegendMarginLeft_1;
-                    indicatorLegendsArray_1.forEach(function (legends) {
-                        legends.forEach(function (data) {
-                            var _a, _b;
-                            textY_1 += indicatorLegendMarginTop_1;
-                            var title = data.title;
-                            var value = data.value;
-                            (_a = _this.createFigure({
+                    const indicatorTextX = rectX + rectBorderSize + rectPaddingLeft + indicatorLegendMarginLeft;
+                    indicatorLegendsArray.forEach(legends => {
+                        legends.forEach(data => {
+                            textY += indicatorLegendMarginTop;
+                            const title = data.title;
+                            const value = data.value;
+                            this.createFigure({
                                 name: 'text',
                                 attrs: {
-                                    x: indicatorTextX_1,
-                                    y: textY_1,
+                                    x: indicatorTextX,
+                                    y: textY,
                                     text: title.text
                                 },
                                 styles: {
                                     color: title.color,
-                                    size: indicatorLegendSize_1,
-                                    family: indicatorLegendFamily_1,
-                                    weight: indicatorLegendWeight_1
+                                    size: indicatorLegendSize,
+                                    family: indicatorLegendFamily,
+                                    weight: indicatorLegendWeight
                                 }
-                            })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
-                            (_b = _this.createFigure({
+                            })?.draw(ctx);
+                            this.createFigure({
                                 name: 'text',
                                 attrs: {
-                                    x: rectX_1 + rectWidth_1 - rectBorderSize_1 - indicatorLegendMarginRight_1 - rectPaddingRight_1,
-                                    y: textY_1,
+                                    x: rectX + rectWidth - rectBorderSize - indicatorLegendMarginRight - rectPaddingRight,
+                                    y: textY,
                                     text: value.text,
                                     align: 'right'
                                 },
                                 styles: {
                                     color: value.color,
-                                    size: indicatorLegendSize_1,
-                                    family: indicatorLegendFamily_1,
-                                    weight: indicatorLegendWeight_1
+                                    size: indicatorLegendSize,
+                                    family: indicatorLegendFamily,
+                                    weight: indicatorLegendWeight
                                 }
-                            })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
-                            textY_1 += (indicatorLegendSize_1 + indicatorLegendMarginBottom_1);
+                            })?.draw(ctx);
+                            textY += (indicatorLegendSize + indicatorLegendMarginBottom);
                         });
                     });
                 }
             }
         }
-    };
-    CandleTooltipView.prototype._getCandleTooltipLegends = function () {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        var chartStore = this.getWidget().getPane().getChart().getChartStore();
-        var styles = chartStore.getStyles().candle;
-        var dataList = chartStore.getDataList();
-        var formatter = chartStore.getInnerFormatter();
-        var decimalFold = chartStore.getDecimalFold();
-        var thousandsSeparator = chartStore.getThousandsSeparator();
-        var locale = chartStore.getLocale();
-        var _j = (_a = chartStore.getSymbol()) !== null && _a !== void 0 ? _a : {}, _k = _j.pricePrecision, pricePrecision = _k === void 0 ? SymbolDefaultPrecisionConstants.PRICE : _k, _l = _j.volumePrecision, volumePrecision = _l === void 0 ? SymbolDefaultPrecisionConstants.VOLUME : _l;
-        var period = chartStore.getPeriod();
-        var dataIndex = (_b = chartStore.getCrosshair().dataIndex) !== null && _b !== void 0 ? _b : 0;
-        var tooltipStyles = styles.tooltip;
-        var _m = tooltipStyles.legend, textColor = _m.color, defaultValue = _m.defaultValue, template = _m.template;
-        var prev = (_c = dataList[dataIndex - 1]) !== null && _c !== void 0 ? _c : null;
-        var current = dataList[dataIndex];
+    }
+    _getCandleTooltipLegends() {
+        const chartStore = this.getWidget().getPane().getChart().getChartStore();
+        const styles = chartStore.getStyles().candle;
+        const dataList = chartStore.getDataList();
+        const formatter = chartStore.getInnerFormatter();
+        const decimalFold = chartStore.getDecimalFold();
+        const thousandsSeparator = chartStore.getThousandsSeparator();
+        const locale = chartStore.getLocale();
+        const { pricePrecision = SymbolDefaultPrecisionConstants.PRICE, volumePrecision = SymbolDefaultPrecisionConstants.VOLUME } = chartStore.getSymbol() ?? {};
+        const period = chartStore.getPeriod();
+        const dataIndex = chartStore.getCrosshair().dataIndex ?? 0;
+        const tooltipStyles = styles.tooltip;
+        const { color: textColor, defaultValue, template } = tooltipStyles.legend;
+        const prev = dataList[dataIndex - 1] ?? null;
+        const current = dataList[dataIndex];
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-        var prevClose = (_d = prev === null || prev === void 0 ? void 0 : prev.close) !== null && _d !== void 0 ? _d : current.close;
-        var changeValue = current.close - prevClose;
-        var mapping = __assign(__assign({}, current), { time: formatter.formatDate(current.timestamp, PeriodTypeCrosshairTooltipFormat[(_e = period === null || period === void 0 ? void 0 : period.type) !== null && _e !== void 0 ? _e : 'day'], 'tooltip'), open: decimalFold.format(thousandsSeparator.format(formatPrecision(current.open, pricePrecision))), high: decimalFold.format(thousandsSeparator.format(formatPrecision(current.high, pricePrecision))), low: decimalFold.format(thousandsSeparator.format(formatPrecision(current.low, pricePrecision))), close: decimalFold.format(thousandsSeparator.format(formatPrecision(current.close, pricePrecision))), volume: decimalFold.format(thousandsSeparator.format(formatter.formatBigNumber(formatPrecision((_f = current.volume) !== null && _f !== void 0 ? _f : defaultValue, volumePrecision)))), turnover: decimalFold.format(thousandsSeparator.format(formatPrecision((_g = current.turnover) !== null && _g !== void 0 ? _g : defaultValue, pricePrecision))), change: prevClose === 0 ? defaultValue : "".concat(thousandsSeparator.format(formatPrecision(changeValue / prevClose * 100)), "%") });
-        var legends = (isFunction(template)
-            ? template({ prev: prev, current: current, next: (_h = dataList[dataIndex + 1]) !== null && _h !== void 0 ? _h : null }, styles)
+        const prevClose = prev?.close ?? current.close;
+        const changeValue = current.close - prevClose;
+        const mapping = {
+            ...current,
+            time: formatter.formatDate(current.timestamp, PeriodTypeCrosshairTooltipFormat[period?.type ?? 'day'], 'tooltip'),
+            open: decimalFold.format(thousandsSeparator.format(formatPrecision(current.open, pricePrecision))),
+            high: decimalFold.format(thousandsSeparator.format(formatPrecision(current.high, pricePrecision))),
+            low: decimalFold.format(thousandsSeparator.format(formatPrecision(current.low, pricePrecision))),
+            close: decimalFold.format(thousandsSeparator.format(formatPrecision(current.close, pricePrecision))),
+            volume: decimalFold.format(thousandsSeparator.format(formatter.formatBigNumber(formatPrecision(current.volume ?? defaultValue, volumePrecision)))),
+            turnover: decimalFold.format(thousandsSeparator.format(formatPrecision(current.turnover ?? defaultValue, pricePrecision))),
+            change: prevClose === 0 ? defaultValue : `${thousandsSeparator.format(formatPrecision(changeValue / prevClose * 100))}%`
+        };
+        const legends = (isFunction(template)
+            ? template({ prev, current, next: dataList[dataIndex + 1] ?? null }, styles)
             : template);
-        return legends.map(function (_a) {
-            var title = _a.title, value = _a.value;
-            var t = { text: '', color: textColor };
+        return legends.map(({ title, value }) => {
+            let t = { text: '', color: textColor };
             if (isObject(title)) {
-                t = __assign({}, title);
+                t = { ...title };
             }
             else {
                 t.text = title;
             }
             t.text = i18n(t.text, locale);
-            var v = { text: defaultValue, color: textColor };
+            let v = { text: defaultValue, color: textColor };
             if (isObject(value)) {
-                v = __assign({}, value);
+                v = { ...value };
             }
             else {
                 v.text = value;
@@ -10776,9 +11059,8 @@ var CandleTooltipView = /** @class */ (function (_super) {
             v.text = formatTemplateString(v.text, mapping);
             return { title: t, value: v };
         });
-    };
-    return CandleTooltipView;
-}(IndicatorTooltipView));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10793,143 +11075,137 @@ var CandleTooltipView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CrosshairFeatureView = /** @class */ (function (_super) {
-    __extends(CrosshairFeatureView, _super);
-    function CrosshairFeatureView(widget) {
-        var _this = _super.call(this, widget) || this;
-        _this._activeFeatureInfo = null;
-        _this._featureClickEvent = function (featureInfo) { return function () {
-            var pane = _this.getWidget().getPane();
-            pane.getChart().getChartStore().executeAction('onCrosshairFeatureClick', featureInfo);
-            return true;
-        }; };
-        _this._featureMouseMoveEvent = function (featureInfo) { return function () {
-            _this._activeFeatureInfo = featureInfo;
-            _this.getWidget().setForceCursor('pointer');
-            return true;
-        }; };
-        _this.registerEvent('mouseMoveEvent', function (_) {
-            _this._activeFeatureInfo = null;
-            _this.getWidget().setForceCursor(null);
+class CrosshairFeatureView extends View {
+    _activeFeatureInfo = null;
+    _featureClickEvent = (featureInfo) => () => {
+        const pane = this.getWidget().getPane();
+        pane.getChart().getChartStore().executeAction('onCrosshairFeatureClick', featureInfo);
+        return true;
+    };
+    _featureMouseMoveEvent = (featureInfo) => () => {
+        this._activeFeatureInfo = featureInfo;
+        this.getWidget().setForceCursor('pointer');
+        return true;
+    };
+    constructor(widget) {
+        super(widget);
+        this.registerEvent('mouseMoveEvent', _ => {
+            this._activeFeatureInfo = null;
+            this.getWidget().setForceCursor(null);
             return false;
         });
-        return _this;
     }
-    CrosshairFeatureView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = widget.getPane().getChart().getChartStore();
-        var crosshair = chartStore.getCrosshair();
-        var weight = this.getWidget();
-        var yAxis = weight.getPane().getAxisComponent();
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = widget.getPane().getChart().getChartStore();
+        const crosshair = chartStore.getCrosshair();
+        const weight = this.getWidget();
+        const yAxis = weight.getPane().getAxisComponent();
         if (isString(crosshair.paneId) && crosshair.paneId === pane.getId() && yAxis.isInCandle()) {
-            var styles = chartStore.getStyles().crosshair;
-            var features = styles.horizontal.features;
+            const styles = chartStore.getStyles().crosshair;
+            const features = styles.horizontal.features;
             if (styles.show && styles.horizontal.show && features.length > 0) {
-                var isRight_1 = yAxis.position === 'right';
-                var bounding = weight.getBounding();
-                var yAxisTextWidth = 0;
-                var horizontalTextStyles = styles.horizontal.text;
+                const isRight = yAxis.position === 'right';
+                const bounding = weight.getBounding();
+                let yAxisTextWidth = 0;
+                const horizontalTextStyles = styles.horizontal.text;
                 if (yAxis.inside && horizontalTextStyles.show) {
-                    var value = yAxis.convertFromPixel(crosshair.y);
-                    var range = yAxis.getRange();
-                    var text = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(value, { range: range }), { range: range }), (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE);
+                    const value = yAxis.convertFromPixel(crosshair.y);
+                    const range = yAxis.getRange();
+                    let text = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(value, { range }), { range }), chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE);
                     text = chartStore.getDecimalFold().format(chartStore.getThousandsSeparator().format(text));
                     yAxisTextWidth = horizontalTextStyles.paddingLeft +
                         calcTextWidth(text, horizontalTextStyles.size, horizontalTextStyles.weight, horizontalTextStyles.family) +
                         horizontalTextStyles.paddingRight;
                 }
-                var x_1 = yAxisTextWidth;
-                if (isRight_1) {
-                    x_1 = bounding.width - yAxisTextWidth;
+                let x = yAxisTextWidth;
+                if (isRight) {
+                    x = bounding.width - yAxisTextWidth;
                 }
-                var y_1 = crosshair.y;
-                features.forEach(function (feature) {
-                    var _a, _b, _c, _d;
-                    var _e = feature.marginLeft, marginLeft = _e === void 0 ? 0 : _e, _f = feature.marginTop, marginTop = _f === void 0 ? 0 : _f, _g = feature.marginRight, marginRight = _g === void 0 ? 0 : _g, _h = feature.paddingLeft, paddingLeft = _h === void 0 ? 0 : _h, _j = feature.paddingTop, paddingTop = _j === void 0 ? 0 : _j, _k = feature.paddingRight, paddingRight = _k === void 0 ? 0 : _k, _l = feature.paddingBottom, paddingBottom = _l === void 0 ? 0 : _l, color = feature.color, activeColor = feature.activeColor, backgroundColor = feature.backgroundColor, activeBackgroundColor = feature.activeBackgroundColor, borderRadius = feature.borderRadius, _m = feature.size, size = _m === void 0 ? 0 : _m, type = feature.type, content = feature.content;
-                    var width = size;
+                const y = crosshair.y;
+                features.forEach(feature => {
+                    const { marginLeft = 0, marginTop = 0, marginRight = 0, paddingLeft = 0, paddingTop = 0, paddingRight = 0, paddingBottom = 0, color, activeColor, backgroundColor, activeBackgroundColor, borderRadius, size = 0, type, content } = feature;
+                    let width = size;
                     if (type === 'icon_font') {
-                        var iconFont = content;
+                        const iconFont = content;
                         width = paddingLeft + calcTextWidth(iconFont.code, size, 'normal', iconFont.family) + paddingRight;
                     }
-                    if (isRight_1) {
-                        x_1 -= (width + marginRight);
+                    if (isRight) {
+                        x -= (width + marginRight);
                     }
                     else {
-                        x_1 += marginLeft;
+                        x += marginLeft;
                     }
-                    var finalColor = color;
-                    var finalBackgroundColor = backgroundColor;
-                    if (((_a = _this._activeFeatureInfo) === null || _a === void 0 ? void 0 : _a.feature.id) === feature.id) {
+                    let finalColor = color;
+                    let finalBackgroundColor = backgroundColor;
+                    if (this._activeFeatureInfo?.feature.id === feature.id) {
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                        finalColor = activeColor !== null && activeColor !== void 0 ? activeColor : color;
+                        finalColor = activeColor ?? color;
                         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                        finalBackgroundColor = activeBackgroundColor !== null && activeBackgroundColor !== void 0 ? activeBackgroundColor : backgroundColor;
+                        finalBackgroundColor = activeBackgroundColor ?? backgroundColor;
                     }
-                    var eventHandler = {
-                        mouseDownEvent: _this._featureClickEvent({ crosshair: crosshair, feature: feature }),
-                        mouseMoveEvent: _this._featureMouseMoveEvent({ crosshair: crosshair, feature: feature })
+                    const eventHandler = {
+                        mouseDownEvent: this._featureClickEvent({ crosshair, feature }),
+                        mouseMoveEvent: this._featureMouseMoveEvent({ crosshair, feature })
                     };
                     if (type === 'icon_font') {
-                        var iconFont = content;
-                        (_b = _this.createFigure({
+                        const iconFont = content;
+                        this.createFigure({
                             name: 'text',
                             attrs: {
                                 text: iconFont.code,
-                                x: x_1,
-                                y: y_1 + marginTop,
+                                x,
+                                y: y + marginTop,
                                 baseline: 'middle'
                             },
                             styles: {
-                                paddingLeft: paddingLeft,
-                                paddingTop: paddingTop,
-                                paddingRight: paddingRight,
-                                paddingBottom: paddingBottom,
-                                borderRadius: borderRadius,
-                                size: size,
+                                paddingLeft,
+                                paddingTop,
+                                paddingRight,
+                                paddingBottom,
+                                borderRadius,
+                                size,
                                 family: iconFont.family,
                                 color: finalColor,
                                 backgroundColor: finalBackgroundColor
                             }
-                        }, eventHandler)) === null || _b === void 0 ? void 0 : _b.draw(ctx);
+                        }, eventHandler)?.draw(ctx);
                     }
                     else {
-                        (_c = _this.createFigure({
+                        this.createFigure({
                             name: 'rect',
-                            attrs: { x: x_1, y: y_1 + marginTop - size / 2, width: size, height: size },
+                            attrs: { x, y: y + marginTop - size / 2, width: size, height: size },
                             styles: {
-                                paddingLeft: paddingLeft,
-                                paddingTop: paddingTop,
-                                paddingRight: paddingRight,
-                                paddingBottom: paddingBottom,
+                                paddingLeft,
+                                paddingTop,
+                                paddingRight,
+                                paddingBottom,
                                 color: finalBackgroundColor
                             }
-                        }, eventHandler)) === null || _c === void 0 ? void 0 : _c.draw(ctx);
-                        var path = content;
-                        (_d = _this.createFigure({
+                        }, eventHandler)?.draw(ctx);
+                        const path = content;
+                        this.createFigure({
                             name: 'path',
-                            attrs: { path: path.path, x: x_1, y: y_1 + marginTop + paddingTop - size / 2, width: size, height: size },
+                            attrs: { path: path.path, x, y: y + marginTop + paddingTop - size / 2, width: size, height: size },
                             styles: {
                                 style: path.style,
                                 lineWidth: path.lineWidth,
                                 color: finalColor
                             }
-                        })) === null || _d === void 0 ? void 0 : _d.draw(ctx);
+                        })?.draw(ctx);
                     }
-                    if (isRight_1) {
-                        x_1 -= marginLeft;
+                    if (isRight) {
+                        x -= marginLeft;
                     }
                     else {
-                        x_1 += (width + marginRight);
+                        x += (width + marginRight);
                     }
                 });
             }
         }
-    };
-    return CrosshairFeatureView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10944,21 +11220,19 @@ var CrosshairFeatureView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleWidget = /** @class */ (function (_super) {
-    __extends(CandleWidget, _super);
-    function CandleWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._candleBarView = new CandleBarView(_this);
-        _this._candleAreaView = new CandleAreaView(_this);
-        _this._candleHighLowPriceView = new CandleHighLowPriceView(_this);
-        _this._candleLastPriceLineView = new CandleLastPriceView(_this);
-        _this._crosshairFeatureView = new CrosshairFeatureView(_this);
-        _this.addChild(_this._candleBarView);
-        _this.addChild(_this._crosshairFeatureView);
-        return _this;
+class CandleWidget extends IndicatorWidget {
+    _candleBarView = new CandleBarView(this);
+    _candleAreaView = new CandleAreaView(this);
+    _candleHighLowPriceView = new CandleHighLowPriceView(this);
+    _candleLastPriceLineView = new CandleLastPriceView(this);
+    _crosshairFeatureView = new CrosshairFeatureView(this);
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
+        this.addChild(this._candleBarView);
+        this.addChild(this._crosshairFeatureView);
     }
-    CandleWidget.prototype.updateMainContent = function (ctx) {
-        var candleStyles = this.getPane().getChart().getStyles().candle;
+    updateMainContent(ctx) {
+        const candleStyles = this.getPane().getChart().getStyles().candle;
         if (candleStyles.type !== 'area') {
             this._candleBarView.draw(ctx);
             this._candleHighLowPriceView.draw(ctx);
@@ -10968,15 +11242,14 @@ var CandleWidget = /** @class */ (function (_super) {
             this._candleAreaView.draw(ctx);
         }
         this._candleLastPriceLineView.draw(ctx);
-    };
-    CandleWidget.prototype.updateOverlayContent = function (ctx) {
+    }
+    updateOverlayContent(ctx) {
         this._crosshairFeatureView.draw(ctx);
-    };
-    CandleWidget.prototype.createTooltipView = function () {
+    }
+    createTooltipView() {
         return new CandleTooltipView(this);
-    };
-    return CandleWidget;
-}(IndicatorWidget));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -10991,53 +11264,45 @@ var CandleWidget = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var AxisView = /** @class */ (function (_super) {
-    __extends(AxisView, _super);
-    function AxisView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    AxisView.prototype.drawImp = function (ctx, extend) {
-        var _this = this;
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var bounding = widget.getBounding();
-        var axis = pane.getAxisComponent();
-        var styles = this.getAxisStyles(pane.getChart().getStyles());
+class AxisView extends View {
+    drawImp(ctx, extend) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const axis = pane.getAxisComponent();
+        const styles = this.getAxisStyles(pane.getChart().getStyles());
         if (styles.show) {
             if (styles.axisLine.show) {
-                (_a = this.createFigure({
+                this.createFigure({
                     name: 'line',
                     attrs: this.createAxisLine(bounding, styles),
                     styles: styles.axisLine
-                })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                })?.draw(ctx);
             }
             if (!extend[0]) {
-                var ticks = axis.getTicks();
+                const ticks = axis.getTicks();
                 if (styles.tickLine.show) {
-                    var lines = this.createTickLines(ticks, bounding, styles);
-                    lines.forEach(function (line) {
-                        var _a;
-                        (_a = _this.createFigure({
+                    const lines = this.createTickLines(ticks, bounding, styles);
+                    lines.forEach(line => {
+                        this.createFigure({
                             name: 'line',
                             attrs: line,
                             styles: styles.tickLine
-                        })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                        })?.draw(ctx);
                     });
                 }
                 if (styles.tickText.show) {
-                    var texts = this.createTickTexts(ticks, bounding, styles);
-                    (_b = this.createFigure({
+                    const texts = this.createTickTexts(ticks, bounding, styles);
+                    this.createFigure({
                         name: 'text',
                         attrs: texts,
                         styles: styles.tickText
-                    })) === null || _b === void 0 ? void 0 : _b.draw(ctx);
+                    })?.draw(ctx);
                 }
             }
         }
-    };
-    return AxisView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11052,18 +11317,14 @@ var AxisView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var YAxisView = /** @class */ (function (_super) {
-    __extends(YAxisView, _super);
-    function YAxisView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    YAxisView.prototype.getAxisStyles = function (styles) {
+class YAxisView extends AxisView {
+    getAxisStyles(styles) {
         return styles.yAxis;
-    };
-    YAxisView.prototype.createAxisLine = function (bounding, styles) {
-        var yAxis = this.getWidget().getPane().getAxisComponent();
-        var size = styles.axisLine.size;
-        var x = 0;
+    }
+    createAxisLine(bounding, styles) {
+        const yAxis = this.getWidget().getPane().getAxisComponent();
+        const size = styles.axisLine.size;
+        let x = 0;
         if (yAxis.isFromZero()) {
             x = 0;
         }
@@ -11072,17 +11333,17 @@ var YAxisView = /** @class */ (function (_super) {
         }
         return {
             coordinates: [
-                { x: x, y: 0 },
-                { x: x, y: bounding.height }
+                { x, y: 0 },
+                { x, y: bounding.height }
             ]
         };
-    };
-    YAxisView.prototype.createTickLines = function (ticks, bounding, styles) {
-        var yAxis = this.getWidget().getPane().getAxisComponent();
-        var axisLineStyles = styles.axisLine;
-        var tickLineStyles = styles.tickLine;
-        var startX = 0;
-        var endX = 0;
+    }
+    createTickLines(ticks, bounding, styles) {
+        const yAxis = this.getWidget().getPane().getAxisComponent();
+        const axisLineStyles = styles.axisLine;
+        const tickLineStyles = styles.tickLine;
+        let startX = 0;
+        let endX = 0;
         if (yAxis.isFromZero()) {
             startX = 0;
             if (axisLineStyles.show) {
@@ -11097,19 +11358,19 @@ var YAxisView = /** @class */ (function (_super) {
             }
             endX = startX - tickLineStyles.length;
         }
-        return ticks.map(function (tick) { return ({
+        return ticks.map(tick => ({
             coordinates: [
                 { x: startX, y: tick.coord },
                 { x: endX, y: tick.coord }
             ]
-        }); });
-    };
-    YAxisView.prototype.createTickTexts = function (ticks, bounding, styles) {
-        var yAxis = this.getWidget().getPane().getAxisComponent();
-        var axisLineStyles = styles.axisLine;
-        var tickLineStyles = styles.tickLine;
-        var tickTextStyles = styles.tickText;
-        var x = 0;
+        }));
+    }
+    createTickTexts(ticks, bounding, styles) {
+        const yAxis = this.getWidget().getPane().getAxisComponent();
+        const axisLineStyles = styles.axisLine;
+        const tickLineStyles = styles.tickLine;
+        const tickTextStyles = styles.tickText;
+        let x = 0;
         if (yAxis.isFromZero()) {
             x = tickTextStyles.marginStart;
             if (axisLineStyles.show) {
@@ -11128,17 +11389,16 @@ var YAxisView = /** @class */ (function (_super) {
                 x -= tickLineStyles.length;
             }
         }
-        var textAlign = this.getWidget().getPane().getAxisComponent().isFromZero() ? 'left' : 'right';
-        return ticks.map(function (tick) { return ({
-            x: x,
+        const textAlign = this.getWidget().getPane().getAxisComponent().isFromZero() ? 'left' : 'right';
+        return ticks.map(tick => ({
+            x,
             y: tick.coord,
             text: tick.text,
             align: textAlign,
             baseline: 'middle'
-        }); });
-    };
-    return YAxisView;
-}(AxisView));
+        }));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11153,115 +11413,110 @@ var YAxisView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandleLastPriceLabelView = /** @class */ (function (_super) {
-    __extends(CandleLastPriceLabelView, _super);
-    function CandleLastPriceLabelView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CandleLastPriceLabelView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        var _a, _b, _c, _d;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var bounding = widget.getBounding();
-        var chartStore = pane.getChart().getChartStore();
-        var priceMarkStyles = chartStore.getStyles().candle.priceMark;
-        var lastPriceMarkStyles = priceMarkStyles.last;
-        var lastPriceMarkTextStyles = lastPriceMarkStyles.text;
+class CandleLastPriceLabelView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const chartStore = pane.getChart().getChartStore();
+        const priceMarkStyles = chartStore.getStyles().candle.priceMark;
+        const lastPriceMarkStyles = priceMarkStyles.last;
+        const lastPriceMarkTextStyles = lastPriceMarkStyles.text;
         if (priceMarkStyles.show && lastPriceMarkStyles.show && lastPriceMarkTextStyles.show) {
-            var precision = (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE;
-            var yAxis = pane.getAxisComponent();
-            var dataList = chartStore.getDataList();
-            var data_1 = dataList[dataList.length - 1];
-            if (isValid(data_1)) {
-                var close_1 = data_1.close, open_1 = data_1.open;
-                var comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open_1 : ((_d = (_c = dataList[dataList.length - 2]) === null || _c === void 0 ? void 0 : _c.close) !== null && _d !== void 0 ? _d : close_1);
-                var priceY = yAxis.convertToNicePixel(close_1);
-                var backgroundColor_1 = '';
-                if (close_1 > comparePrice) {
-                    backgroundColor_1 = lastPriceMarkStyles.upColor;
+            const precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
+            const yAxis = pane.getAxisComponent();
+            const dataList = chartStore.getDataList();
+            const data = dataList[dataList.length - 1];
+            if (isValid(data)) {
+                const { close, open } = data;
+                const comparePrice = lastPriceMarkStyles.compareRule === 'current_open' ? open : (dataList[dataList.length - 2]?.close ?? close);
+                const priceY = yAxis.convertToNicePixel(close);
+                let backgroundColor = '';
+                if (close > comparePrice) {
+                    backgroundColor = lastPriceMarkStyles.upColor;
                 }
-                else if (close_1 < comparePrice) {
-                    backgroundColor_1 = lastPriceMarkStyles.downColor;
+                else if (close < comparePrice) {
+                    backgroundColor = lastPriceMarkStyles.downColor;
                 }
                 else {
-                    backgroundColor_1 = lastPriceMarkStyles.noChangeColor;
+                    backgroundColor = lastPriceMarkStyles.noChangeColor;
                 }
-                var x_1 = 0;
-                var textAlgin_1 = 'left';
+                let x = 0;
+                let textAlgin = 'left';
                 if (yAxis.isFromZero()) {
-                    x_1 = 0;
-                    textAlgin_1 = 'left';
+                    x = 0;
+                    textAlgin = 'left';
                 }
                 else {
-                    x_1 = bounding.width;
-                    textAlgin_1 = 'right';
+                    x = bounding.width;
+                    textAlgin = 'right';
                 }
-                var textFigures_1 = [];
-                var yAxisRange = yAxis.getRange();
-                var priceText = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(close_1, { range: yAxisRange }), { range: yAxisRange }), precision);
+                const textFigures = [];
+                const yAxisRange = yAxis.getRange();
+                let priceText = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(close, { range: yAxisRange }), { range: yAxisRange }), precision);
                 priceText = chartStore.getDecimalFold().format(chartStore.getThousandsSeparator().format(priceText));
-                var paddingLeft = lastPriceMarkTextStyles.paddingLeft, paddingRight = lastPriceMarkTextStyles.paddingRight, paddingTop = lastPriceMarkTextStyles.paddingTop, paddingBottom = lastPriceMarkTextStyles.paddingBottom, size = lastPriceMarkTextStyles.size, family = lastPriceMarkTextStyles.family, weight = lastPriceMarkTextStyles.weight;
-                var textWidth_1 = paddingLeft + calcTextWidth(priceText, size, weight, family) + paddingRight;
-                var priceTextHeight = paddingTop + size + paddingBottom;
-                textFigures_1.push({
+                const { paddingLeft, paddingRight, paddingTop, paddingBottom, size, family, weight } = lastPriceMarkTextStyles;
+                let textWidth = paddingLeft + calcTextWidth(priceText, size, weight, family) + paddingRight;
+                const priceTextHeight = paddingTop + size + paddingBottom;
+                textFigures.push({
                     name: 'text',
                     attrs: {
-                        x: x_1,
+                        x,
                         y: priceY,
-                        width: textWidth_1,
+                        width: textWidth,
                         height: priceTextHeight,
                         text: priceText,
-                        align: textAlgin_1,
+                        align: textAlgin,
                         baseline: 'middle'
                     },
-                    styles: __assign(__assign({}, lastPriceMarkTextStyles), { backgroundColor: backgroundColor_1 })
+                    styles: {
+                        ...lastPriceMarkTextStyles,
+                        backgroundColor
+                    }
                 });
-                var formatExtendText_1 = chartStore.getInnerFormatter().formatExtendText;
-                var priceTextHalfHeight = size / 2;
-                var aboveY_1 = priceY - priceTextHalfHeight - paddingTop;
-                var belowY_1 = priceY + priceTextHalfHeight + paddingBottom;
-                lastPriceMarkStyles.extendTexts.forEach(function (item, index) {
-                    var text = formatExtendText_1({ type: 'last_price', data: data_1, index: index });
+                const formatExtendText = chartStore.getInnerFormatter().formatExtendText;
+                const priceTextHalfHeight = size / 2;
+                let aboveY = priceY - priceTextHalfHeight - paddingTop;
+                let belowY = priceY + priceTextHalfHeight + paddingBottom;
+                lastPriceMarkStyles.extendTexts.forEach((item, index) => {
+                    const text = formatExtendText({ type: 'last_price', data, index });
                     if (text.length > 0 && item.show) {
-                        var textHalfHeight = item.size / 2;
-                        var textY = 0;
+                        const textHalfHeight = item.size / 2;
+                        let textY = 0;
                         if (item.position === 'above_price') {
-                            aboveY_1 -= (item.paddingBottom + textHalfHeight);
-                            textY = aboveY_1;
-                            aboveY_1 -= (textHalfHeight + item.paddingTop);
+                            aboveY -= (item.paddingBottom + textHalfHeight);
+                            textY = aboveY;
+                            aboveY -= (textHalfHeight + item.paddingTop);
                         }
                         else {
-                            belowY_1 += (item.paddingTop + textHalfHeight);
-                            textY = belowY_1;
-                            belowY_1 += (textHalfHeight + item.paddingBottom);
+                            belowY += (item.paddingTop + textHalfHeight);
+                            textY = belowY;
+                            belowY += (textHalfHeight + item.paddingBottom);
                         }
-                        textWidth_1 = Math.max(textWidth_1, item.paddingLeft + calcTextWidth(text, item.size, item.weight, item.family) + item.paddingRight);
-                        textFigures_1.push({
+                        textWidth = Math.max(textWidth, item.paddingLeft + calcTextWidth(text, item.size, item.weight, item.family) + item.paddingRight);
+                        textFigures.push({
                             name: 'text',
                             attrs: {
-                                x: x_1,
+                                x,
                                 y: textY,
-                                width: textWidth_1,
+                                width: textWidth,
                                 height: item.paddingTop + item.size + item.paddingBottom,
-                                text: text,
-                                align: textAlgin_1,
+                                text,
+                                align: textAlgin,
                                 baseline: 'middle'
                             },
-                            styles: __assign(__assign({}, item), { backgroundColor: backgroundColor_1 })
+                            styles: { ...item, backgroundColor }
                         });
                     }
                 });
-                textFigures_1.forEach(function (figure) {
-                    var _a;
-                    figure.attrs.width = textWidth_1;
-                    (_a = _this.createFigure(figure)) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                textFigures.forEach(figure => {
+                    figure.attrs.width = textWidth;
+                    this.createFigure(figure)?.draw(ctx);
                 });
             }
         }
-    };
-    return CandleLastPriceLabelView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11276,49 +11531,42 @@ var CandleLastPriceLabelView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var IndicatorLastValueView = /** @class */ (function (_super) {
-    __extends(IndicatorLastValueView, _super);
-    function IndicatorLastValueView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    IndicatorLastValueView.prototype.drawImp = function (ctx) {
-        var _this = this;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var bounding = widget.getBounding();
-        var chartStore = pane.getChart().getChartStore();
-        var defaultStyles = chartStore.getStyles().indicator;
-        var lastValueMarkStyles = defaultStyles.lastValueMark;
-        var lastValueMarkTextStyles = lastValueMarkStyles.text;
+class IndicatorLastValueView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const chartStore = pane.getChart().getChartStore();
+        const defaultStyles = chartStore.getStyles().indicator;
+        const lastValueMarkStyles = defaultStyles.lastValueMark;
+        const lastValueMarkTextStyles = lastValueMarkStyles.text;
         if (lastValueMarkStyles.show) {
-            var yAxis_1 = pane.getAxisComponent();
-            var yAxisRange_1 = yAxis_1.getRange();
-            var dataList = chartStore.getDataList();
-            var dataIndex_1 = dataList.length - 1;
-            var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-            var formatter_1 = chartStore.getInnerFormatter();
-            var decimalFold_1 = chartStore.getDecimalFold();
-            var thousandsSeparator_1 = chartStore.getThousandsSeparator();
-            indicators.forEach(function (indicator) {
-                var _a;
-                var result = indicator.result;
-                var data = (_a = result[dataIndex_1]) !== null && _a !== void 0 ? _a : {};
+            const yAxis = pane.getAxisComponent();
+            const yAxisRange = yAxis.getRange();
+            const dataList = chartStore.getDataList();
+            const dataIndex = dataList.length - 1;
+            const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
+            const formatter = chartStore.getInnerFormatter();
+            const decimalFold = chartStore.getDecimalFold();
+            const thousandsSeparator = chartStore.getThousandsSeparator();
+            indicators.forEach(indicator => {
+                const result = indicator.result;
+                const data = result[dataIndex] ?? {};
                 if (isValid(data) && indicator.visible) {
-                    var precision_1 = indicator.precision;
-                    eachFigures(indicator, dataIndex_1, defaultStyles, function (figure, figureStyles) {
-                        var _a;
+                    const precision = indicator.precision;
+                    eachFigures(indicator, dataIndex, defaultStyles, (figure, figureStyles) => {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                        var value = data[figure.key];
+                        const value = data[figure.key];
                         if (isNumber(value)) {
-                            var y = yAxis_1.convertToNicePixel(value);
-                            var text = yAxis_1.displayValueToText(yAxis_1.realValueToDisplayValue(yAxis_1.valueToRealValue(value, { range: yAxisRange_1 }), { range: yAxisRange_1 }), precision_1);
+                            const y = yAxis.convertToNicePixel(value);
+                            let text = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(value, { range: yAxisRange }), { range: yAxisRange }), precision);
                             if (indicator.shouldFormatBigNumber) {
-                                text = formatter_1.formatBigNumber(text);
+                                text = formatter.formatBigNumber(text);
                             }
-                            text = decimalFold_1.format(thousandsSeparator_1.format(text));
-                            var x = 0;
-                            var textAlign = 'left';
-                            if (yAxis_1.isFromZero()) {
+                            text = decimalFold.format(thousandsSeparator.format(text));
+                            let x = 0;
+                            let textAlign = 'left';
+                            if (yAxis.isFromZero()) {
                                 x = 0;
                                 textAlign = 'left';
                             }
@@ -11326,25 +11574,27 @@ var IndicatorLastValueView = /** @class */ (function (_super) {
                                 x = bounding.width;
                                 textAlign = 'right';
                             }
-                            (_a = _this.createFigure({
+                            this.createFigure({
                                 name: 'text',
                                 attrs: {
-                                    x: x,
-                                    y: y,
-                                    text: text,
+                                    x,
+                                    y,
+                                    text,
                                     align: textAlign,
                                     baseline: 'middle'
                                 },
-                                styles: __assign(__assign({}, lastValueMarkTextStyles), { backgroundColor: figureStyles.color })
-                            })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                                styles: {
+                                    ...lastValueMarkTextStyles,
+                                    backgroundColor: figureStyles.color
+                                }
+                            })?.draw(ctx);
                         }
                     });
                 }
             });
         }
-    };
-    return IndicatorLastValueView;
-}(View));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11359,72 +11609,64 @@ var IndicatorLastValueView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var OverlayYAxisView = /** @class */ (function (_super) {
-    __extends(OverlayYAxisView, _super);
-    function OverlayYAxisView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    OverlayYAxisView.prototype.coordinateToPointTimestampDataIndexFlag = function () {
+class OverlayYAxisView extends OverlayView {
+    coordinateToPointTimestampDataIndexFlag() {
         return false;
-    };
-    OverlayYAxisView.prototype.drawDefaultFigures = function (ctx, overlay, coordinates) {
+    }
+    drawDefaultFigures(ctx, overlay, coordinates) {
         this.drawFigures(ctx, overlay, this.getDefaultFigures(overlay, coordinates));
-    };
-    OverlayYAxisView.prototype.getDefaultFigures = function (overlay, coordinates) {
-        var _a;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var clickOverlayInfo = chartStore.getClickOverlayInfo();
-        var figures = [];
+    }
+    getDefaultFigures(overlay, coordinates) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const clickOverlayInfo = chartStore.getClickOverlayInfo();
+        const figures = [];
         if (overlay.needDefaultYAxisFigure &&
-            overlay.id === ((_a = clickOverlayInfo.overlay) === null || _a === void 0 ? void 0 : _a.id) &&
+            overlay.id === clickOverlayInfo.overlay?.id &&
             clickOverlayInfo.paneId === pane.getId()) {
-            var yAxis = pane.getAxisComponent();
-            var bounding = widget.getBounding();
-            var topY_1 = Number.MAX_SAFE_INTEGER;
-            var bottomY_1 = Number.MIN_SAFE_INTEGER;
-            var isFromZero = yAxis.isFromZero();
-            var textAlign_1 = 'left';
-            var x_1 = 0;
+            const yAxis = pane.getAxisComponent();
+            const bounding = widget.getBounding();
+            let topY = Number.MAX_SAFE_INTEGER;
+            let bottomY = Number.MIN_SAFE_INTEGER;
+            const isFromZero = yAxis.isFromZero();
+            let textAlign = 'left';
+            let x = 0;
             if (isFromZero) {
-                textAlign_1 = 'left';
-                x_1 = 0;
+                textAlign = 'left';
+                x = 0;
             }
             else {
-                textAlign_1 = 'right';
-                x_1 = bounding.width;
+                textAlign = 'right';
+                x = bounding.width;
             }
-            var decimalFold_1 = chartStore.getDecimalFold();
-            var thousandsSeparator_1 = chartStore.getThousandsSeparator();
-            coordinates.forEach(function (coordinate, index) {
-                var _a, _b;
-                var point = overlay.points[index];
+            const decimalFold = chartStore.getDecimalFold();
+            const thousandsSeparator = chartStore.getThousandsSeparator();
+            coordinates.forEach((coordinate, index) => {
+                const point = overlay.points[index];
                 if (isNumber(point.value)) {
-                    topY_1 = Math.min(topY_1, coordinate.y);
-                    bottomY_1 = Math.max(bottomY_1, coordinate.y);
-                    var text = decimalFold_1.format(thousandsSeparator_1.format(formatPrecision(point.value, (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE)));
-                    figures.push({ type: 'text', attrs: { x: x_1, y: coordinate.y, text: text, align: textAlign_1, baseline: 'middle' }, ignoreEvent: true });
+                    topY = Math.min(topY, coordinate.y);
+                    bottomY = Math.max(bottomY, coordinate.y);
+                    const text = decimalFold.format(thousandsSeparator.format(formatPrecision(point.value, chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE)));
+                    figures.push({ type: 'text', attrs: { x, y: coordinate.y, text, align: textAlign, baseline: 'middle' }, ignoreEvent: true });
                 }
             });
             if (coordinates.length > 1) {
-                figures.unshift({ type: 'rect', attrs: { x: 0, y: topY_1, width: bounding.width, height: bottomY_1 - topY_1 }, ignoreEvent: true });
+                figures.unshift({ type: 'rect', attrs: { x: 0, y: topY, width: bounding.width, height: bottomY - topY }, ignoreEvent: true });
             }
         }
         return figures;
-    };
-    OverlayYAxisView.prototype.getFigures = function (overlay, coordinates) {
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chart = pane.getChart();
-        var yAxis = pane.getAxisComponent();
-        var xAxis = chart.getXAxisPane().getAxisComponent();
-        var bounding = widget.getBounding();
-        return (_b = (_a = overlay.createYAxisFigures) === null || _a === void 0 ? void 0 : _a.call(overlay, { chart: chart, overlay: overlay, coordinates: coordinates, bounding: bounding, xAxis: xAxis, yAxis: yAxis })) !== null && _b !== void 0 ? _b : [];
-    };
-    return OverlayYAxisView;
-}(OverlayView));
+    }
+    getFigures(overlay, coordinates) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chart = pane.getChart();
+        const yAxis = pane.getAxisComponent();
+        const xAxis = chart.getXAxisPane().getAxisComponent();
+        const bounding = widget.getBounding();
+        return overlay.createYAxisFigures?.({ chart, overlay, coordinates, bounding, xAxis, yAxis }) ?? [];
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11439,70 +11681,64 @@ var OverlayYAxisView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CrosshairHorizontalLabelView = /** @class */ (function (_super) {
-    __extends(CrosshairHorizontalLabelView, _super);
-    function CrosshairHorizontalLabelView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CrosshairHorizontalLabelView.prototype.drawImp = function (ctx) {
-        var _a;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = widget.getPane().getChart().getChartStore();
-        var crosshair = chartStore.getCrosshair();
+class CrosshairHorizontalLabelView extends View {
+    drawImp(ctx) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = widget.getPane().getChart().getChartStore();
+        const crosshair = chartStore.getCrosshair();
         if (isString(crosshair.paneId) && this.compare(crosshair, pane.getId())) {
-            var styles = chartStore.getStyles().crosshair;
+            const styles = chartStore.getStyles().crosshair;
             if (styles.show) {
-                var directionStyles = this.getDirectionStyles(styles);
-                var textStyles = directionStyles.text;
+                const directionStyles = this.getDirectionStyles(styles);
+                const textStyles = directionStyles.text;
                 if (directionStyles.show && textStyles.show) {
-                    var bounding = widget.getBounding();
-                    var axis = pane.getAxisComponent();
-                    var text = this.getText(crosshair, chartStore, axis);
+                    const bounding = widget.getBounding();
+                    const axis = pane.getAxisComponent();
+                    const text = this.getText(crosshair, chartStore, axis);
                     ctx.font = createFont(textStyles.size, textStyles.weight, textStyles.family);
-                    (_a = this.createFigure({
+                    this.createFigure({
                         name: 'text',
                         attrs: this.getTextAttrs(text, ctx.measureText(text).width, crosshair, bounding, axis, textStyles),
                         styles: textStyles
-                    })) === null || _a === void 0 ? void 0 : _a.draw(ctx);
+                    })?.draw(ctx);
                 }
             }
         }
-    };
-    CrosshairHorizontalLabelView.prototype.compare = function (crosshair, paneId) {
+    }
+    compare(crosshair, paneId) {
         return crosshair.paneId === paneId;
-    };
-    CrosshairHorizontalLabelView.prototype.getDirectionStyles = function (styles) {
+    }
+    getDirectionStyles(styles) {
         return styles.horizontal;
-    };
-    CrosshairHorizontalLabelView.prototype.getText = function (crosshair, chartStore, axis) {
-        var _a, _b;
-        var yAxis = axis;
-        var value = axis.convertFromPixel(crosshair.y);
-        var precision = 0;
-        var shouldFormatBigNumber = false;
+    }
+    getText(crosshair, chartStore, axis) {
+        const yAxis = axis;
+        const value = axis.convertFromPixel(crosshair.y);
+        let precision = 0;
+        let shouldFormatBigNumber = false;
         if (yAxis.isInCandle()) {
-            precision = (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE;
+            precision = chartStore.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE;
         }
         else {
-            var indicators = chartStore.getIndicatorsByPaneId(crosshair.paneId);
-            indicators.forEach(function (indicator) {
+            const indicators = chartStore.getIndicatorsByPaneId(crosshair.paneId);
+            indicators.forEach(indicator => {
                 precision = Math.max(indicator.precision, precision);
-                shouldFormatBigNumber || (shouldFormatBigNumber = indicator.shouldFormatBigNumber);
+                shouldFormatBigNumber ||= indicator.shouldFormatBigNumber;
             });
         }
-        var yAxisRange = yAxis.getRange();
-        var text = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(value, { range: yAxisRange }), { range: yAxisRange }), precision);
+        const yAxisRange = yAxis.getRange();
+        let text = yAxis.displayValueToText(yAxis.realValueToDisplayValue(yAxis.valueToRealValue(value, { range: yAxisRange }), { range: yAxisRange }), precision);
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
         if (shouldFormatBigNumber) {
             text = chartStore.getInnerFormatter().formatBigNumber(text);
         }
         return chartStore.getDecimalFold().format(chartStore.getThousandsSeparator().format(text));
-    };
-    CrosshairHorizontalLabelView.prototype.getTextAttrs = function (text, _textWidth, crosshair, bounding, axis, _styles) {
-        var yAxis = axis;
-        var x = 0;
-        var textAlign = 'left';
+    }
+    getTextAttrs(text, _textWidth, crosshair, bounding, axis, _styles) {
+        const yAxis = axis;
+        let x = 0;
+        let textAlign = 'left';
         if (yAxis.isFromZero()) {
             x = 0;
             textAlign = 'left';
@@ -11511,10 +11747,9 @@ var CrosshairHorizontalLabelView = /** @class */ (function (_super) {
             x = bounding.width;
             textAlign = 'right';
         }
-        return { x: x, y: crosshair.y, text: text, align: textAlign, baseline: 'middle' };
-    };
-    return CrosshairHorizontalLabelView;
-}(View));
+        return { x, y: crosshair.y, text, align: textAlign, baseline: 'middle' };
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -11529,24 +11764,22 @@ var CrosshairHorizontalLabelView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var YAxisWidget = /** @class */ (function (_super) {
-    __extends(YAxisWidget, _super);
-    function YAxisWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._yAxisView = new YAxisView(_this);
-        _this._candleLastPriceLabelView = new CandleLastPriceLabelView(_this);
-        _this._indicatorLastValueView = new IndicatorLastValueView(_this);
-        _this._overlayYAxisView = new OverlayYAxisView(_this);
-        _this._crosshairHorizontalLabelView = new CrosshairHorizontalLabelView(_this);
-        _this.setCursor('ns-resize');
-        _this.addChild(_this._overlayYAxisView);
-        return _this;
+class YAxisWidget extends DrawWidget {
+    _yAxisView = new YAxisView(this);
+    _candleLastPriceLabelView = new CandleLastPriceLabelView(this);
+    _indicatorLastValueView = new IndicatorLastValueView(this);
+    _overlayYAxisView = new OverlayYAxisView(this);
+    _crosshairHorizontalLabelView = new CrosshairHorizontalLabelView(this);
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
+        this.setCursor('ns-resize');
+        this.addChild(this._overlayYAxisView);
     }
-    YAxisWidget.prototype.getName = function () {
+    getName() {
         return WidgetNameConstants.Y_AXIS;
-    };
-    YAxisWidget.prototype.updateMain = function (ctx) {
-        var minimize = this.getPane().getOptions().state === 'minimize';
+    }
+    updateMain(ctx) {
+        const minimize = this.getPane().getOptions().state === 'minimize';
         this._yAxisView.draw(ctx, minimize);
         if (!minimize) {
             if (this.getPane().getAxisComponent().isInCandle()) {
@@ -11554,600 +11787,13 @@ var YAxisWidget = /** @class */ (function (_super) {
             }
             this._indicatorLastValueView.draw(ctx);
         }
-    };
-    YAxisWidget.prototype.updateOverlay = function (ctx) {
+    }
+    updateOverlay(ctx) {
         if (this.getPane().getOptions().state !== 'minimize') {
             this._overlayYAxisView.draw(ctx);
             this._crosshairHorizontalLabelView.draw(ctx);
         }
-    };
-    return YAxisWidget;
-}(DrawWidget));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-function getDefaultAxisRange() {
-    return {
-        from: 0,
-        to: 0,
-        range: 0,
-        realFrom: 0,
-        realTo: 0,
-        realRange: 0,
-        displayFrom: 0,
-        displayTo: 0,
-        displayRange: 0
-    };
-}
-var AxisImp = /** @class */ (function () {
-    function AxisImp(parent) {
-        this.scrollZoomEnabled = true;
-        this._range = getDefaultAxisRange();
-        this._prevRange = getDefaultAxisRange();
-        this._ticks = [];
-        this._autoCalcTickFlag = true;
-        this._parent = parent;
     }
-    AxisImp.prototype.getParent = function () { return this._parent; };
-    AxisImp.prototype.buildTicks = function (force) {
-        if (this._autoCalcTickFlag) {
-            this._range = this.createRangeImp();
-        }
-        if (this._prevRange.from !== this._range.from || this._prevRange.to !== this._range.to || force) {
-            this._prevRange = this._range;
-            this._ticks = this.createTicksImp();
-            return true;
-        }
-        return false;
-    };
-    AxisImp.prototype.getTicks = function () {
-        return this._ticks;
-    };
-    AxisImp.prototype.setRange = function (range) {
-        this._autoCalcTickFlag = false;
-        this._range = range;
-    };
-    AxisImp.prototype.getRange = function () { return this._range; };
-    AxisImp.prototype.setAutoCalcTickFlag = function (flag) {
-        this._autoCalcTickFlag = flag;
-    };
-    AxisImp.prototype.getAutoCalcTickFlag = function () { return this._autoCalcTickFlag; };
-    return AxisImp;
-}());
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var TICK_COUNT = 8;
-var YAxisImp = /** @class */ (function (_super) {
-    __extends(YAxisImp, _super);
-    function YAxisImp(parent, yAxis) {
-        var _this = _super.call(this, parent) || this;
-        _this.reverse = false;
-        _this.inside = false;
-        _this.position = 'right';
-        _this.gap = {
-            top: 0.2,
-            bottom: 0.1
-        };
-        _this.createRange = function (params) { return params.defaultRange; };
-        _this.minSpan = function (precision) { return index10(-precision); };
-        _this.valueToRealValue = function (value) { return value; };
-        _this.realValueToDisplayValue = function (value) { return value; };
-        _this.displayValueToRealValue = function (value) { return value; };
-        _this.realValueToValue = function (value) { return value; };
-        _this.displayValueToText = function (value, precision) { return formatPrecision(value, precision); };
-        _this.override(yAxis);
-        return _this;
-    }
-    YAxisImp.prototype.override = function (yAxis) {
-        var name = yAxis.name, gap = yAxis.gap, others = __rest(yAxis, ["name", "gap"]);
-        if (!isString(this.name)) {
-            this.name = name;
-        }
-        merge(this.gap, gap);
-        merge(this, others);
-    };
-    YAxisImp.prototype.createRangeImp = function () {
-        var _a, _b;
-        var parent = this.getParent();
-        var chart = parent.getChart();
-        var chartStore = chart.getChartStore();
-        var paneId = parent.getId();
-        var min = Number.MAX_SAFE_INTEGER;
-        var max = Number.MIN_SAFE_INTEGER;
-        var shouldOhlc = false;
-        var specifyMin = Number.MAX_SAFE_INTEGER;
-        var specifyMax = Number.MIN_SAFE_INTEGER;
-        var indicatorPrecision = Number.MAX_SAFE_INTEGER;
-        var indicators = chartStore.getIndicatorsByPaneId(paneId);
-        indicators.forEach(function (indicator) {
-            shouldOhlc || (shouldOhlc = indicator.shouldOhlc);
-            indicatorPrecision = Math.min(indicatorPrecision, indicator.precision);
-            if (isNumber(indicator.minValue)) {
-                specifyMin = Math.min(specifyMin, indicator.minValue);
-            }
-            if (isNumber(indicator.maxValue)) {
-                specifyMax = Math.max(specifyMax, indicator.maxValue);
-            }
-        });
-        var precision = 4;
-        var inCandle = this.isInCandle();
-        if (inCandle) {
-            var pricePrecision = (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE;
-            if (indicatorPrecision !== Number.MAX_SAFE_INTEGER) {
-                precision = Math.min(indicatorPrecision, pricePrecision);
-            }
-            else {
-                precision = pricePrecision;
-            }
-        }
-        else {
-            if (indicatorPrecision !== Number.MAX_SAFE_INTEGER) {
-                precision = indicatorPrecision;
-            }
-        }
-        var visibleRangeDataList = chartStore.getVisibleRangeDataList();
-        var candleStyles = chart.getStyles().candle;
-        var isArea = candleStyles.type === 'area';
-        var areaValueKey = candleStyles.area.value;
-        var shouldCompareHighLow = (inCandle && !isArea) || (!inCandle && shouldOhlc);
-        visibleRangeDataList.forEach(function (visibleData) {
-            var dataIndex = visibleData.dataIndex;
-            var data = visibleData.data.current;
-            if (isValid(data)) {
-                if (shouldCompareHighLow) {
-                    min = Math.min(min, data.low);
-                    max = Math.max(max, data.high);
-                }
-                if (inCandle && isArea) {
-                    var value = data[areaValueKey];
-                    if (isNumber(value)) {
-                        min = Math.min(min, value);
-                        max = Math.max(max, value);
-                    }
-                }
-            }
-            indicators.forEach(function (_a) {
-                var _b;
-                var result = _a.result, figures = _a.figures;
-                var data = (_b = result[dataIndex]) !== null && _b !== void 0 ? _b : {};
-                figures.forEach(function (figure) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ignore
-                    var value = data[figure.key];
-                    if (isNumber(value)) {
-                        min = Math.min(min, value);
-                        max = Math.max(max, value);
-                    }
-                });
-            });
-        });
-        if (min !== Number.MAX_SAFE_INTEGER && max !== Number.MIN_SAFE_INTEGER) {
-            min = Math.min(specifyMin, min);
-            max = Math.max(specifyMax, max);
-        }
-        else {
-            min = 0;
-            max = 10;
-        }
-        var defaultDiff = max - min;
-        var defaultRange = {
-            from: min,
-            to: max,
-            range: defaultDiff,
-            realFrom: min,
-            realTo: max,
-            realRange: defaultDiff,
-            displayFrom: min,
-            displayTo: max,
-            displayRange: defaultDiff
-        };
-        var range = this.createRange({
-            chart: chart,
-            paneId: paneId,
-            defaultRange: defaultRange
-        });
-        var realFrom = range.realFrom;
-        var realTo = range.realTo;
-        var realRange = range.realRange;
-        var minSpan = this.minSpan(precision);
-        if (realFrom === realTo || realRange < minSpan) {
-            var minCheck = specifyMin === realFrom;
-            var maxCheck = specifyMax === realTo;
-            var halfTickCount = TICK_COUNT / 2;
-            realFrom = minCheck ? realFrom : (maxCheck ? realFrom - TICK_COUNT * minSpan : realFrom - halfTickCount * minSpan);
-            realTo = maxCheck ? realTo : (minCheck ? realTo + TICK_COUNT * minSpan : realTo + halfTickCount * minSpan);
-        }
-        var height = this.getBounding().height;
-        var _c = this.gap, top = _c.top, bottom = _c.bottom;
-        var topRate = top;
-        if (topRate >= 1) {
-            topRate = topRate / height;
-        }
-        var bottomRate = bottom;
-        if (bottomRate >= 1) {
-            bottomRate = bottomRate / height;
-        }
-        realRange = realTo - realFrom;
-        realFrom = realFrom - realRange * bottomRate;
-        realTo = realTo + realRange * topRate;
-        var from = this.realValueToValue(realFrom, { range: range });
-        var to = this.realValueToValue(realTo, { range: range });
-        var displayFrom = this.realValueToDisplayValue(realFrom, { range: range });
-        var displayTo = this.realValueToDisplayValue(realTo, { range: range });
-        return {
-            from: from,
-            to: to,
-            range: to - from,
-            realFrom: realFrom,
-            realTo: realTo,
-            realRange: realTo - realFrom,
-            displayFrom: displayFrom,
-            displayTo: displayTo,
-            displayRange: displayTo - displayFrom
-        };
-    };
-    /**
-     * 是否是蜡烛图轴
-     * @return {boolean}
-     */
-    YAxisImp.prototype.isInCandle = function () {
-        return this.getParent().getId() === PaneIdConstants.CANDLE;
-    };
-    /**
-     * 是否从y轴0开始
-     * @return {boolean}
-     */
-    YAxisImp.prototype.isFromZero = function () {
-        return ((this.position === 'left' && this.inside) ||
-            (this.position === 'right' && !this.inside));
-    };
-    YAxisImp.prototype.createTicksImp = function () {
-        var _this = this;
-        var _a, _b, _c, _d;
-        var range = this.getRange();
-        var displayFrom = range.displayFrom, displayTo = range.displayTo, displayRange = range.displayRange;
-        var ticks = [];
-        if (displayRange >= 0) {
-            var interval = nice(displayRange / TICK_COUNT);
-            var precision_1 = getPrecision(interval);
-            var first = round(Math.ceil(displayFrom / interval) * interval, precision_1);
-            var last = round(Math.floor(displayTo / interval) * interval, precision_1);
-            var n = 0;
-            var f = first;
-            if (interval !== 0) {
-                while (f <= last) {
-                    var v = f.toFixed(precision_1);
-                    ticks[n] = { text: v, coord: 0, value: v };
-                    ++n;
-                    f += interval;
-                }
-            }
-        }
-        var pane = this.getParent();
-        var height = (_b = (_a = pane.getYAxisWidget()) === null || _a === void 0 ? void 0 : _a.getBounding().height) !== null && _b !== void 0 ? _b : 0;
-        var chartStore = pane.getChart().getChartStore();
-        var optimalTicks = [];
-        var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-        var styles = chartStore.getStyles();
-        var precision = 0;
-        var shouldFormatBigNumber = false;
-        if (this.isInCandle()) {
-            precision = (_d = (_c = chartStore.getSymbol()) === null || _c === void 0 ? void 0 : _c.pricePrecision) !== null && _d !== void 0 ? _d : SymbolDefaultPrecisionConstants.PRICE;
-        }
-        else {
-            indicators.forEach(function (indicator) {
-                precision = Math.max(precision, indicator.precision);
-                shouldFormatBigNumber || (shouldFormatBigNumber = indicator.shouldFormatBigNumber);
-            });
-        }
-        var formatter = chartStore.getInnerFormatter();
-        var thousandsSeparator = chartStore.getThousandsSeparator();
-        var decimalFold = chartStore.getDecimalFold();
-        var textHeight = styles.xAxis.tickText.size;
-        var validY = NaN;
-        ticks.forEach(function (_a) {
-            var value = _a.value;
-            var v = _this.displayValueToText(+value, precision);
-            var y = _this.convertToPixel(_this.realValueToValue(_this.displayValueToRealValue(+value, { range: range }), { range: range }));
-            if (shouldFormatBigNumber) {
-                v = formatter.formatBigNumber(value);
-            }
-            v = decimalFold.format(thousandsSeparator.format(v));
-            var validYNumber = isNumber(validY);
-            if (y > textHeight &&
-                y < height - textHeight &&
-                ((validYNumber && (Math.abs(validY - y) > textHeight * 2)) || !validYNumber)) {
-                optimalTicks.push({ text: v, coord: y, value: value });
-                validY = y;
-            }
-        });
-        if (isFunction(this.createTicks)) {
-            return this.createTicks({
-                range: this.getRange(),
-                bounding: this.getBounding(),
-                defaultTicks: optimalTicks
-            });
-        }
-        return optimalTicks;
-    };
-    YAxisImp.prototype.getAutoSize = function () {
-        var _a, _b;
-        var pane = this.getParent();
-        var chart = pane.getChart();
-        var chartStore = chart.getChartStore();
-        var styles = chartStore.getStyles();
-        var yAxisStyles = styles.yAxis;
-        var width = yAxisStyles.size;
-        if (width !== 'auto') {
-            return width;
-        }
-        var yAxisWidth = 0;
-        if (yAxisStyles.show) {
-            if (yAxisStyles.axisLine.show) {
-                yAxisWidth += yAxisStyles.axisLine.size;
-            }
-            if (yAxisStyles.tickLine.show) {
-                yAxisWidth += yAxisStyles.tickLine.length;
-            }
-            if (yAxisStyles.tickText.show) {
-                var textWidth_1 = 0;
-                this.getTicks().forEach(function (tick) {
-                    textWidth_1 = Math.max(textWidth_1, calcTextWidth(tick.text, yAxisStyles.tickText.size, yAxisStyles.tickText.weight, yAxisStyles.tickText.family));
-                });
-                yAxisWidth += (yAxisStyles.tickText.marginStart + yAxisStyles.tickText.marginEnd + textWidth_1);
-            }
-        }
-        var priceMarkStyles = styles.candle.priceMark;
-        var lastPriceMarkTextVisible = priceMarkStyles.show && priceMarkStyles.last.show && priceMarkStyles.last.text.show;
-        var lastPriceTextWidth = 0;
-        var crosshairStyles = styles.crosshair;
-        var crosshairHorizontalTextVisible = crosshairStyles.show && crosshairStyles.horizontal.show && crosshairStyles.horizontal.text.show;
-        var crosshairHorizontalTextWidth = 0;
-        if (lastPriceMarkTextVisible || crosshairHorizontalTextVisible) {
-            var pricePrecision = (_b = (_a = chartStore.getSymbol()) === null || _a === void 0 ? void 0 : _a.pricePrecision) !== null && _b !== void 0 ? _b : SymbolDefaultPrecisionConstants.PRICE;
-            var max = this.getRange().displayTo;
-            if (lastPriceMarkTextVisible) {
-                var dataList = chartStore.getDataList();
-                var data_1 = dataList[dataList.length - 1];
-                if (isValid(data_1)) {
-                    var _c = priceMarkStyles.last.text, paddingLeft = _c.paddingLeft, paddingRight = _c.paddingRight, size = _c.size, family = _c.family, weight = _c.weight;
-                    lastPriceTextWidth = paddingLeft + calcTextWidth(formatPrecision(data_1.close, pricePrecision), size, weight, family) + paddingRight;
-                    var formatExtendText_1 = chartStore.getInnerFormatter().formatExtendText;
-                    priceMarkStyles.last.extendTexts.forEach(function (item, index) {
-                        var text = formatExtendText_1({ type: 'last_price', data: data_1, index: index });
-                        if (text.length > 0 && item.show) {
-                            lastPriceTextWidth = Math.max(lastPriceTextWidth, item.paddingLeft + calcTextWidth(text, item.size, item.weight, item.family) + item.paddingRight);
-                        }
-                    });
-                }
-            }
-            if (crosshairHorizontalTextVisible) {
-                var indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-                var indicatorPrecision_1 = 0;
-                var shouldFormatBigNumber_1 = false;
-                indicators.forEach(function (indicator) {
-                    indicatorPrecision_1 = Math.max(indicator.precision, indicatorPrecision_1);
-                    shouldFormatBigNumber_1 || (shouldFormatBigNumber_1 = indicator.shouldFormatBigNumber);
-                });
-                var precision = 2;
-                if (this.isInCandle()) {
-                    var lastValueMarkStyles = styles.indicator.lastValueMark;
-                    if (lastValueMarkStyles.show && lastValueMarkStyles.text.show) {
-                        precision = Math.max(indicatorPrecision_1, pricePrecision);
-                    }
-                    else {
-                        precision = pricePrecision;
-                    }
-                }
-                else {
-                    precision = indicatorPrecision_1;
-                }
-                var valueText = formatPrecision(max, precision);
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-                if (shouldFormatBigNumber_1) {
-                    valueText = chartStore.getInnerFormatter().formatBigNumber(valueText);
-                }
-                valueText = chartStore.getDecimalFold().format(valueText);
-                crosshairHorizontalTextWidth += (crosshairStyles.horizontal.text.paddingLeft +
-                    crosshairStyles.horizontal.text.paddingRight +
-                    crosshairStyles.horizontal.text.borderSize * 2 +
-                    calcTextWidth(valueText, crosshairStyles.horizontal.text.size, crosshairStyles.horizontal.text.weight, crosshairStyles.horizontal.text.family));
-            }
-        }
-        return Math.max(yAxisWidth, lastPriceTextWidth, crosshairHorizontalTextWidth);
-    };
-    YAxisImp.prototype.getBounding = function () {
-        return this.getParent().getYAxisWidget().getBounding();
-    };
-    YAxisImp.prototype.convertFromPixel = function (pixel) {
-        var height = this.getBounding().height;
-        var range = this.getRange();
-        var realFrom = range.realFrom, realRange = range.realRange;
-        var rate = this.reverse ? pixel / height : 1 - pixel / height;
-        var realValue = rate * realRange + realFrom;
-        return this.realValueToValue(realValue, { range: range });
-    };
-    YAxisImp.prototype.convertToPixel = function (value) {
-        var _a, _b;
-        var range = this.getRange();
-        var realValue = this.valueToRealValue(value, { range: range });
-        var height = (_b = (_a = this.getParent().getYAxisWidget()) === null || _a === void 0 ? void 0 : _a.getBounding().height) !== null && _b !== void 0 ? _b : 0;
-        var realFrom = range.realFrom, realRange = range.realRange;
-        var rate = (realValue - realFrom) / realRange;
-        return this.reverse ? Math.round(rate * height) : Math.round((1 - rate) * height);
-    };
-    YAxisImp.prototype.convertToNicePixel = function (value) {
-        var _a, _b;
-        var height = (_b = (_a = this.getParent().getYAxisWidget()) === null || _a === void 0 ? void 0 : _a.getBounding().height) !== null && _b !== void 0 ? _b : 0;
-        var pixel = this.convertToPixel(value);
-        return Math.round(Math.max(height * 0.05, Math.min(pixel, height * 0.98)));
-    };
-    YAxisImp.extend = function (template) {
-        var Custom = /** @class */ (function (_super) {
-            __extends(Custom, _super);
-            function Custom(parent) {
-                return _super.call(this, parent, template) || this;
-            }
-            return Custom;
-        }(YAxisImp));
-        return Custom;
-    };
-    return YAxisImp;
-}(AxisImp));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var normal$1 = {
-    name: 'normal'
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var percentage = {
-    name: 'percentage',
-    minSpan: function () { return Math.pow(10, -2); },
-    displayValueToText: function (value) { return "".concat(formatPrecision(value, 2), "%"); },
-    valueToRealValue: function (value, _a) {
-        var range = _a.range;
-        return (value - range.from) / range.range * range.realRange + range.realFrom;
-    },
-    realValueToValue: function (value, _a) {
-        var range = _a.range;
-        return (value - range.realFrom) / range.realRange * range.range + range.from;
-    },
-    createRange: function (_a) {
-        var chart = _a.chart, defaultRange = _a.defaultRange;
-        var kLineDataList = chart.getDataList();
-        var visibleRange = chart.getVisibleRange();
-        var kLineData = kLineDataList[visibleRange.from];
-        if (isValid(kLineData)) {
-            var from = defaultRange.from, to = defaultRange.to, range = defaultRange.range;
-            var realFrom = (defaultRange.from - kLineData.close) / kLineData.close * 100;
-            var realTo = (defaultRange.to - kLineData.close) / kLineData.close * 100;
-            var realRange = realTo - realFrom;
-            return {
-                from: from,
-                to: to,
-                range: range,
-                realFrom: realFrom,
-                realTo: realTo,
-                realRange: realRange,
-                displayFrom: realFrom,
-                displayTo: realTo,
-                displayRange: realRange
-            };
-        }
-        return defaultRange;
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var logarithm = {
-    name: 'logarithm',
-    minSpan: function (precision) { return 0.05 * index10(-precision); },
-    valueToRealValue: function (value) { return value < 0 ? -log10(Math.abs(value)) : log10(value); },
-    realValueToDisplayValue: function (value) { return value < 0 ? -index10(Math.abs(value)) : index10(value); },
-    displayValueToRealValue: function (value) { return value < 0 ? -log10(Math.abs(value)) : log10(value); },
-    realValueToValue: function (value) { return value < 0 ? -index10(Math.abs(value)) : index10(value); },
-    createRange: function (_a) {
-        var defaultRange = _a.defaultRange;
-        var from = defaultRange.from, to = defaultRange.to, range = defaultRange.range;
-        var realFrom = from < 0 ? -log10(Math.abs(from)) : log10(from);
-        var realTo = to < 0 ? -log10(Math.abs(to)) : log10(to);
-        return {
-            from: from,
-            to: to,
-            range: range,
-            realFrom: realFrom,
-            realTo: realTo,
-            realRange: realTo - realFrom,
-            displayFrom: from,
-            displayTo: to,
-            displayRange: range
-        };
-    }
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var yAxises = {
-    normal: YAxisImp.extend(normal$1),
-    percentage: YAxisImp.extend(percentage),
-    logarithm: YAxisImp.extend(logarithm)
-};
-function registerYAxis(axis) {
-    yAxises[axis.name] = YAxisImp.extend(axis);
-}
-function getYAxisClass(name) {
-    var _a;
-    return (_a = yAxises[name]) !== null && _a !== void 0 ? _a : yAxises.normal;
 }
 
 /**
@@ -12163,11 +11809,14 @@ function getYAxisClass(name) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Pane = /** @class */ (function () {
-    function Pane(chart, id) {
-        this._bounding = createDefaultBounding();
-        this._originalBounding = createDefaultBounding();
-        this._visible = true;
+class Pane {
+    _container;
+    _id;
+    _chart;
+    _bounding = createDefaultBounding();
+    _originalBounding = createDefaultBounding();
+    _visible = true;
+    constructor(chart, id) {
         this._chart = chart;
         this._id = id;
         this._container = createDom('div', {
@@ -12179,41 +11828,40 @@ var Pane = /** @class */ (function () {
             boxSizing: 'border-box'
         });
     }
-    Pane.prototype.getContainer = function () {
+    getContainer() {
         return this._container;
-    };
-    Pane.prototype.setVisible = function (visible) {
+    }
+    setVisible(visible) {
         if (this._visible !== visible) {
             this._container.style.display = visible ? 'block' : 'none';
             this._visible = visible;
         }
-    };
-    Pane.prototype.getVisible = function () {
+    }
+    getVisible() {
         return this._visible;
-    };
-    Pane.prototype.getId = function () {
+    }
+    getId() {
         return this._id;
-    };
-    Pane.prototype.getChart = function () {
+    }
+    getChart() {
         return this._chart;
-    };
-    Pane.prototype.getBounding = function () {
+    }
+    getBounding() {
         return this._bounding;
-    };
-    Pane.prototype.setOriginalBounding = function (bounding) {
+    }
+    setOriginalBounding(bounding) {
         merge(this._originalBounding, bounding);
-    };
-    Pane.prototype.getOriginalBounding = function () {
+    }
+    getOriginalBounding() {
         return this._originalBounding;
-    };
-    Pane.prototype.update = function (level) {
+    }
+    update(level) {
         if (this._bounding.height !== this._container.clientHeight) {
-            this._container.style.height = "".concat(this._bounding.height, "px");
+            this._container.style.height = `${this._bounding.height}px`;
         }
-        this.updateImp(level !== null && level !== void 0 ? level : 3 /* UpdateLevel.Drawer */, this._container, this._bounding);
-    };
-    return Pane;
-}());
+        this.updateImp(level ?? 3 /* UpdateLevel.Drawer */, this._container, this._bounding);
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12228,34 +11876,33 @@ var Pane = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var DrawPane = /** @class */ (function (_super) {
-    __extends(DrawPane, _super);
-    function DrawPane(chart, id, options) {
-        var _this = _super.call(this, chart, id) || this;
-        _this._yAxisWidget = null;
-        _this._options = {
-            id: '',
-            minHeight: PANE_MIN_HEIGHT,
-            dragEnabled: true,
-            order: 0,
-            height: PANE_DEFAULT_HEIGHT,
-            state: 'normal',
-            axis: { name: 'normal', scrollZoomEnabled: true }
-        };
-        var container = _this.getContainer();
-        _this._mainWidget = _this.createMainWidget(container);
-        _this._yAxisWidget = _this.createYAxisWidget(container);
-        _this.setOptions(options);
-        return _this;
+class DrawPane extends Pane {
+    _mainWidget;
+    _yAxisWidget = null;
+    _axis;
+    _options = {
+        id: '',
+        minHeight: PANE_MIN_HEIGHT,
+        dragEnabled: true,
+        order: 0,
+        height: PANE_DEFAULT_HEIGHT,
+        state: 'normal',
+        axis: { name: 'normal', scrollZoomEnabled: true }
+    };
+    constructor(chart, id, options) {
+        super(chart, id);
+        const container = this.getContainer();
+        this._mainWidget = this.createMainWidget(container);
+        this._yAxisWidget = this.createYAxisWidget(container);
+        this.setOptions(options);
     }
-    DrawPane.prototype.setOptions = function (options) {
-        var _a, _b, _c, _d, _e;
-        var paneId = this.getId();
+    setOptions(options) {
+        const paneId = this.getId();
         if (paneId === PaneIdConstants.CANDLE || paneId === PaneIdConstants.X_AXIS) {
-            var axisName = (_a = options.axis) === null || _a === void 0 ? void 0 : _a.name;
+            const axisName = options.axis?.name;
             if (!isValid(this._axis) ||
                 (isValid(axisName) && this._options.axis.name !== axisName)) {
-                this._axis = this.createAxisComponent(axisName !== null && axisName !== void 0 ? axisName : 'normal');
+                this._axis = this.createAxisComponent(axisName ?? 'normal');
             }
         }
         else {
@@ -12267,9 +11914,12 @@ var DrawPane = /** @class */ (function (_super) {
             this._axis.setAutoCalcTickFlag(true);
         }
         merge(this._options, options);
-        this._axis.override(__assign(__assign({}, this._options.axis), { name: (_c = (_b = options.axis) === null || _b === void 0 ? void 0 : _b.name) !== null && _c !== void 0 ? _c : 'normal' }));
-        var container = null;
-        var cursor = 'default';
+        this._axis.override({
+            ...this._options.axis,
+            name: options.axis?.name ?? 'normal'
+        });
+        let container = null;
+        let cursor = 'default';
         if (this.getId() === PaneIdConstants.X_AXIS) {
             container = this.getMainWidget().getContainer();
             cursor = 'ew-resize';
@@ -12278,22 +11928,21 @@ var DrawPane = /** @class */ (function (_super) {
             container = this.getYAxisWidget().getContainer();
             cursor = 'ns-resize';
         }
-        if ((_e = (_d = options.axis) === null || _d === void 0 ? void 0 : _d.scrollZoomEnabled) !== null && _e !== void 0 ? _e : true) {
+        if (options.axis?.scrollZoomEnabled ?? true) {
             container.style.cursor = cursor;
         }
         else {
             container.style.cursor = 'default';
         }
         return this;
-    };
-    DrawPane.prototype.getOptions = function () { return this._options; };
-    DrawPane.prototype.getAxisComponent = function () {
+    }
+    getOptions() { return this._options; }
+    getAxisComponent() {
         return this._axis;
-    };
-    DrawPane.prototype.setBounding = function (rootBounding, mainBounding, leftYAxisBounding, rightYAxisBounding) {
-        var _a, _b, _c, _d;
+    }
+    setBounding(rootBounding, mainBounding, leftYAxisBounding, rightYAxisBounding) {
         merge(this.getBounding(), rootBounding);
-        var contentBounding = {};
+        const contentBounding = {};
         if (isValid(rootBounding.height)) {
             contentBounding.height = rootBounding.height;
         }
@@ -12301,16 +11950,16 @@ var DrawPane = /** @class */ (function (_super) {
             contentBounding.top = rootBounding.top;
         }
         this._mainWidget.setBounding(contentBounding);
-        var mainBoundingValid = isValid(mainBounding);
+        const mainBoundingValid = isValid(mainBounding);
         if (mainBoundingValid) {
             this._mainWidget.setBounding(mainBounding);
         }
         if (isValid(this._yAxisWidget)) {
             this._yAxisWidget.setBounding(contentBounding);
-            var yAxis = this._axis;
+            const yAxis = this._axis;
             if (yAxis.position === 'left') {
                 if (isValid(leftYAxisBounding)) {
-                    this._yAxisWidget.setBounding(__assign(__assign({}, leftYAxisBounding), { left: 0 }));
+                    this._yAxisWidget.setBounding({ ...leftYAxisBounding, left: 0 });
                 }
             }
             else {
@@ -12318,52 +11967,49 @@ var DrawPane = /** @class */ (function (_super) {
                     this._yAxisWidget.setBounding(rightYAxisBounding);
                     if (mainBoundingValid) {
                         this._yAxisWidget.setBounding({
-                            left: ((_a = mainBounding.left) !== null && _a !== void 0 ? _a : 0) +
-                                ((_b = mainBounding.width) !== null && _b !== void 0 ? _b : 0) +
-                                ((_c = mainBounding.right) !== null && _c !== void 0 ? _c : 0) -
-                                ((_d = rightYAxisBounding.width) !== null && _d !== void 0 ? _d : 0)
+                            left: (mainBounding.left ?? 0) +
+                                (mainBounding.width ?? 0) +
+                                (mainBounding.right ?? 0) -
+                                (rightYAxisBounding.width ?? 0)
                         });
                     }
                 }
             }
         }
         return this;
-    };
-    DrawPane.prototype.getMainWidget = function () { return this._mainWidget; };
-    DrawPane.prototype.getYAxisWidget = function () { return this._yAxisWidget; };
-    DrawPane.prototype.updateImp = function (level) {
-        var _a;
+    }
+    getMainWidget() { return this._mainWidget; }
+    getYAxisWidget() { return this._yAxisWidget; }
+    updateImp(level) {
         this._mainWidget.update(level);
-        (_a = this._yAxisWidget) === null || _a === void 0 ? void 0 : _a.update(level);
-    };
-    DrawPane.prototype.destroy = function () {
-        var _a;
+        this._yAxisWidget?.update(level);
+    }
+    destroy() {
         this._mainWidget.destroy();
-        (_a = this._yAxisWidget) === null || _a === void 0 ? void 0 : _a.destroy();
-    };
-    DrawPane.prototype.getImage = function (includeOverlay) {
-        var _a = this.getBounding(), width = _a.width, height = _a.height;
-        var canvas = createDom('canvas', {
-            width: "".concat(width, "px"),
-            height: "".concat(height, "px"),
+        this._yAxisWidget?.destroy();
+    }
+    getImage(includeOverlay) {
+        const { width, height } = this.getBounding();
+        const canvas = createDom('canvas', {
+            width: `${width}px`,
+            height: `${height}px`,
             boxSizing: 'border-box'
         });
-        var ctx = canvas.getContext('2d');
-        var pixelRatio = getPixelRatio(canvas);
+        const ctx = canvas.getContext('2d');
+        const pixelRatio = getPixelRatio(canvas);
         canvas.width = width * pixelRatio;
         canvas.height = height * pixelRatio;
         ctx.scale(pixelRatio, pixelRatio);
-        var mainBounding = this._mainWidget.getBounding();
+        const mainBounding = this._mainWidget.getBounding();
         ctx.drawImage(this._mainWidget.getImage(includeOverlay), mainBounding.left, 0, mainBounding.width, mainBounding.height);
         if (this._yAxisWidget !== null) {
-            var yAxisBounding = this._yAxisWidget.getBounding();
+            const yAxisBounding = this._yAxisWidget.getBounding();
             ctx.drawImage(this._yAxisWidget.getImage(includeOverlay), yAxisBounding.left, 0, yAxisBounding.width, yAxisBounding.height);
         }
         return canvas;
-    };
-    DrawPane.prototype.createYAxisWidget = function (_container) { return null; };
-    return DrawPane;
-}(Pane));
+    }
+    createYAxisWidget(_container) { return null; }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12378,23 +12024,18 @@ var DrawPane = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var IndicatorPane = /** @class */ (function (_super) {
-    __extends(IndicatorPane, _super);
-    function IndicatorPane() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    IndicatorPane.prototype.createAxisComponent = function (name) {
-        var YAxisClass = getYAxisClass(name !== null && name !== void 0 ? name : 'default');
+class IndicatorPane extends DrawPane {
+    createAxisComponent(name) {
+        const YAxisClass = getYAxisClass(name ?? 'default');
         return new YAxisClass(this);
-    };
-    IndicatorPane.prototype.createMainWidget = function (container) {
+    }
+    createMainWidget(container) {
         return new IndicatorWidget(container, this);
-    };
-    IndicatorPane.prototype.createYAxisWidget = function (container) {
+    }
+    createYAxisWidget(container) {
         return new YAxisWidget(container, this);
-    };
-    return IndicatorPane;
-}(DrawPane));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12409,16 +12050,11 @@ var IndicatorPane = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CandlePane = /** @class */ (function (_super) {
-    __extends(CandlePane, _super);
-    function CandlePane() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CandlePane.prototype.createMainWidget = function (container) {
+class CandlePane extends IndicatorPane {
+    createMainWidget(container) {
         return new CandleWidget(container, this);
-    };
-    return CandlePane;
-}(IndicatorPane));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12433,46 +12069,41 @@ var CandlePane = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var XAxisView = /** @class */ (function (_super) {
-    __extends(XAxisView, _super);
-    function XAxisView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    XAxisView.prototype.getAxisStyles = function (styles) {
+class XAxisView extends AxisView {
+    getAxisStyles(styles) {
         return styles.xAxis;
-    };
-    XAxisView.prototype.createAxisLine = function (bounding) {
+    }
+    createAxisLine(bounding) {
         return {
             coordinates: [
                 { x: 0, y: 0 },
                 { x: bounding.width, y: 0 }
             ]
         };
-    };
-    XAxisView.prototype.createTickLines = function (ticks, _bounding, styles) {
-        var tickLineStyles = styles.tickLine;
-        var axisLineSize = styles.axisLine.size;
-        return ticks.map(function (tick) { return ({
+    }
+    createTickLines(ticks, _bounding, styles) {
+        const tickLineStyles = styles.tickLine;
+        const axisLineSize = styles.axisLine.size;
+        return ticks.map(tick => ({
             coordinates: [
                 { x: tick.coord, y: 0 },
                 { x: tick.coord, y: axisLineSize + tickLineStyles.length }
             ]
-        }); });
-    };
-    XAxisView.prototype.createTickTexts = function (ticks, _bounding, styles) {
-        var tickTickStyles = styles.tickText;
-        var axisLineSize = styles.axisLine.size;
-        var tickLineLength = styles.tickLine.length;
-        return ticks.map(function (tick) { return ({
+        }));
+    }
+    createTickTexts(ticks, _bounding, styles) {
+        const tickTickStyles = styles.tickText;
+        const axisLineSize = styles.axisLine.size;
+        const tickLineLength = styles.tickLine.length;
+        return ticks.map(tick => ({
             x: tick.coord,
             y: axisLineSize + tickLineLength + tickTickStyles.marginStart,
             text: tick.text,
             align: 'center',
             baseline: 'top'
-        }); });
-    };
-    return XAxisView;
-}(AxisView));
+        }));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12487,61 +12118,53 @@ var XAxisView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var OverlayXAxisView = /** @class */ (function (_super) {
-    __extends(OverlayXAxisView, _super);
-    function OverlayXAxisView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    OverlayXAxisView.prototype.coordinateToPointTimestampDataIndexFlag = function () {
+class OverlayXAxisView extends OverlayYAxisView {
+    coordinateToPointTimestampDataIndexFlag() {
         return true;
-    };
-    OverlayXAxisView.prototype.coordinateToPointValueFlag = function () {
+    }
+    coordinateToPointValueFlag() {
         return false;
-    };
-    OverlayXAxisView.prototype.getCompleteOverlays = function () {
+    }
+    getCompleteOverlays() {
         return this.getWidget().getPane().getChart().getChartStore().getOverlaysByPaneId();
-    };
-    OverlayXAxisView.prototype.getProgressOverlay = function () {
-        var _a, _b;
-        return (_b = (_a = this.getWidget().getPane().getChart().getChartStore().getProgressOverlayInfo()) === null || _a === void 0 ? void 0 : _a.overlay) !== null && _b !== void 0 ? _b : null;
-    };
-    OverlayXAxisView.prototype.getDefaultFigures = function (overlay, coordinates) {
-        var _a;
-        var figures = [];
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chartStore = pane.getChart().getChartStore();
-        var clickOverlayInfo = chartStore.getClickOverlayInfo();
-        if (overlay.needDefaultXAxisFigure && overlay.id === ((_a = clickOverlayInfo.overlay) === null || _a === void 0 ? void 0 : _a.id)) {
-            var leftX_1 = Number.MAX_SAFE_INTEGER;
-            var rightX_1 = Number.MIN_SAFE_INTEGER;
-            coordinates.forEach(function (coordinate, index) {
-                leftX_1 = Math.min(leftX_1, coordinate.x);
-                rightX_1 = Math.max(rightX_1, coordinate.x);
-                var point = overlay.points[index];
+    }
+    getProgressOverlay() {
+        return this.getWidget().getPane().getChart().getChartStore().getProgressOverlayInfo()?.overlay ?? null;
+    }
+    getDefaultFigures(overlay, coordinates) {
+        const figures = [];
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chartStore = pane.getChart().getChartStore();
+        const clickOverlayInfo = chartStore.getClickOverlayInfo();
+        if (overlay.needDefaultXAxisFigure && overlay.id === clickOverlayInfo.overlay?.id) {
+            let leftX = Number.MAX_SAFE_INTEGER;
+            let rightX = Number.MIN_SAFE_INTEGER;
+            coordinates.forEach((coordinate, index) => {
+                leftX = Math.min(leftX, coordinate.x);
+                rightX = Math.max(rightX, coordinate.x);
+                const point = overlay.points[index];
                 if (isNumber(point.timestamp)) {
-                    var text = chartStore.getInnerFormatter().formatDate(point.timestamp, 'YYYY-MM-DD HH:mm', 'crosshair');
-                    figures.push({ type: 'text', attrs: { x: coordinate.x, y: 0, text: text, align: 'center' }, ignoreEvent: true });
+                    const text = chartStore.getInnerFormatter().formatDate(point.timestamp, 'YYYY-MM-DD HH:mm', 'crosshair');
+                    figures.push({ type: 'text', attrs: { x: coordinate.x, y: 0, text, align: 'center' }, ignoreEvent: true });
                 }
             });
             if (coordinates.length > 1) {
-                figures.unshift({ type: 'rect', attrs: { x: leftX_1, y: 0, width: rightX_1 - leftX_1, height: widget.getBounding().height }, ignoreEvent: true });
+                figures.unshift({ type: 'rect', attrs: { x: leftX, y: 0, width: rightX - leftX, height: widget.getBounding().height }, ignoreEvent: true });
             }
         }
         return figures;
-    };
-    OverlayXAxisView.prototype.getFigures = function (o, coordinates) {
-        var _a, _b;
-        var widget = this.getWidget();
-        var pane = widget.getPane();
-        var chart = pane.getChart();
-        var yAxis = pane.getAxisComponent();
-        var xAxis = chart.getXAxisPane().getAxisComponent();
-        var bounding = widget.getBounding();
-        return (_b = (_a = o.createXAxisFigures) === null || _a === void 0 ? void 0 : _a.call(o, { chart: chart, overlay: o, coordinates: coordinates, bounding: bounding, xAxis: xAxis, yAxis: yAxis })) !== null && _b !== void 0 ? _b : [];
-    };
-    return OverlayXAxisView;
-}(OverlayYAxisView));
+    }
+    getFigures(o, coordinates) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const chart = pane.getChart();
+        const yAxis = pane.getAxisComponent();
+        const xAxis = chart.getXAxisPane().getAxisComponent();
+        const bounding = widget.getBounding();
+        return o.createXAxisFigures?.({ chart, overlay: o, coordinates, bounding, xAxis, yAxis }) ?? [];
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12556,26 +12179,21 @@ var OverlayXAxisView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var CrosshairVerticalLabelView = /** @class */ (function (_super) {
-    __extends(CrosshairVerticalLabelView, _super);
-    function CrosshairVerticalLabelView() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    CrosshairVerticalLabelView.prototype.compare = function (crosshair) {
+class CrosshairVerticalLabelView extends CrosshairHorizontalLabelView {
+    compare(crosshair) {
         return isValid(crosshair.timestamp);
-    };
-    CrosshairVerticalLabelView.prototype.getDirectionStyles = function (styles) {
+    }
+    getDirectionStyles(styles) {
         return styles.vertical;
-    };
-    CrosshairVerticalLabelView.prototype.getText = function (crosshair, chartStore) {
-        var _a, _b;
-        var timestamp = crosshair.timestamp;
-        return chartStore.getInnerFormatter().formatDate(timestamp, PeriodTypeCrosshairTooltipFormat[(_b = (_a = chartStore.getPeriod()) === null || _a === void 0 ? void 0 : _a.type) !== null && _b !== void 0 ? _b : 'day'], 'crosshair');
-    };
-    CrosshairVerticalLabelView.prototype.getTextAttrs = function (text, textWidth, crosshair, bounding, _axis, styles) {
-        var x = crosshair.realX;
-        var optimalX = 0;
-        var align = 'center';
+    }
+    getText(crosshair, chartStore) {
+        const timestamp = crosshair.timestamp;
+        return chartStore.getInnerFormatter().formatDate(timestamp, PeriodTypeCrosshairTooltipFormat[chartStore.getPeriod()?.type ?? 'day'], 'crosshair');
+    }
+    getTextAttrs(text, textWidth, crosshair, bounding, _axis, styles) {
+        const x = crosshair.realX;
+        let optimalX = 0;
+        let align = 'center';
         if (x - textWidth / 2 - styles.paddingLeft < 0) {
             optimalX = 0;
             align = 'left';
@@ -12587,10 +12205,9 @@ var CrosshairVerticalLabelView = /** @class */ (function (_super) {
         else {
             optimalX = x;
         }
-        return { x: optimalX, y: 0, text: text, align: align, baseline: 'top' };
-    };
-    return CrosshairVerticalLabelView;
-}(CrosshairHorizontalLabelView));
+        return { x: optimalX, y: 0, text, align, baseline: 'top' };
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12605,216 +12222,25 @@ var CrosshairVerticalLabelView = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var XAxisWidget = /** @class */ (function (_super) {
-    __extends(XAxisWidget, _super);
-    function XAxisWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._xAxisView = new XAxisView(_this);
-        _this._overlayXAxisView = new OverlayXAxisView(_this);
-        _this._crosshairVerticalLabelView = new CrosshairVerticalLabelView(_this);
-        _this.setCursor('ew-resize');
-        _this.addChild(_this._overlayXAxisView);
-        return _this;
+class XAxisWidget extends DrawWidget {
+    _xAxisView = new XAxisView(this);
+    _overlayXAxisView = new OverlayXAxisView(this);
+    _crosshairVerticalLabelView = new CrosshairVerticalLabelView(this);
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
+        this.setCursor('ew-resize');
+        this.addChild(this._overlayXAxisView);
     }
-    XAxisWidget.prototype.getName = function () {
+    getName() {
         return WidgetNameConstants.X_AXIS;
-    };
-    XAxisWidget.prototype.updateMain = function (ctx) {
+    }
+    updateMain(ctx) {
         this._xAxisView.draw(ctx);
-    };
-    XAxisWidget.prototype.updateOverlay = function (ctx) {
+    }
+    updateOverlay(ctx) {
         this._overlayXAxisView.draw(ctx);
         this._crosshairVerticalLabelView.draw(ctx);
-    };
-    return XAxisWidget;
-}(DrawWidget));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var XAxisImp = /** @class */ (function (_super) {
-    __extends(XAxisImp, _super);
-    function XAxisImp(parent, xAxis) {
-        var _this = _super.call(this, parent) || this;
-        _this.override(xAxis);
-        return _this;
     }
-    XAxisImp.prototype.override = function (xAxis) {
-        var name = xAxis.name, scrollZoomEnabled = xAxis.scrollZoomEnabled, createTicks = xAxis.createTicks;
-        if (!isString(this.name)) {
-            this.name = name;
-        }
-        this.scrollZoomEnabled = scrollZoomEnabled !== null && scrollZoomEnabled !== void 0 ? scrollZoomEnabled : this.scrollZoomEnabled;
-        this.createTicks = createTicks !== null && createTicks !== void 0 ? createTicks : this.createTicks;
-    };
-    XAxisImp.prototype.createRangeImp = function () {
-        var chartStore = this.getParent().getChart().getChartStore();
-        var visibleDataRange = chartStore.getVisibleRange();
-        var realFrom = visibleDataRange.realFrom, realTo = visibleDataRange.realTo;
-        var af = realFrom;
-        var at = realTo;
-        var diff = realTo - realFrom + 1;
-        var range = {
-            from: af,
-            to: at,
-            range: diff,
-            realFrom: af,
-            realTo: at,
-            realRange: diff,
-            displayFrom: af,
-            displayTo: at,
-            displayRange: diff
-        };
-        return range;
-    };
-    XAxisImp.prototype.createTicksImp = function () {
-        var _a;
-        var _b = this.getRange(), realFrom = _b.realFrom, realTo = _b.realTo, from = _b.from;
-        var chartStore = this.getParent().getChart().getChartStore();
-        var formatDate = chartStore.getInnerFormatter().formatDate;
-        var period = chartStore.getPeriod();
-        var ticks = [];
-        var barSpace = chartStore.getBarSpace().bar;
-        var textStyles = chartStore.getStyles().xAxis.tickText;
-        var tickTextWidth = Math.max(calcTextWidth('YYYY-MM-DD HH:mm:ss', textStyles.size, textStyles.weight, textStyles.family), this.getBounding().width / 8);
-        var tickBetweenBarCount = Math.ceil(tickTextWidth / barSpace);
-        if (tickBetweenBarCount % 2 !== 0) {
-            tickBetweenBarCount += 1;
-        }
-        var startDataIndex = Math.max(0, Math.floor(realFrom / tickBetweenBarCount) * tickBetweenBarCount);
-        for (var i = startDataIndex; i < realTo; i += tickBetweenBarCount) {
-            if (i >= from) {
-                var timestamp = chartStore.dataIndexToTimestamp(i);
-                if (isNumber(timestamp)) {
-                    ticks.push({
-                        coord: this.convertToPixel(i),
-                        value: timestamp,
-                        text: formatDate(timestamp, PeriodTypeXAxisFormat[(_a = period === null || period === void 0 ? void 0 : period.type) !== null && _a !== void 0 ? _a : 'day'], 'xAxis')
-                    });
-                }
-            }
-        }
-        if (isFunction(this.createTicks)) {
-            return this.createTicks({
-                range: this.getRange(),
-                bounding: this.getBounding(),
-                defaultTicks: ticks
-            });
-        }
-        return ticks;
-    };
-    XAxisImp.prototype.getAutoSize = function () {
-        var styles = this.getParent().getChart().getStyles();
-        var xAxisStyles = styles.xAxis;
-        var height = xAxisStyles.size;
-        if (height !== 'auto') {
-            return height;
-        }
-        var crosshairStyles = styles.crosshair;
-        var xAxisHeight = 0;
-        if (xAxisStyles.show) {
-            if (xAxisStyles.axisLine.show) {
-                xAxisHeight += xAxisStyles.axisLine.size;
-            }
-            if (xAxisStyles.tickLine.show) {
-                xAxisHeight += xAxisStyles.tickLine.length;
-            }
-            if (xAxisStyles.tickText.show) {
-                xAxisHeight += (xAxisStyles.tickText.marginStart + xAxisStyles.tickText.marginEnd + xAxisStyles.tickText.size);
-            }
-        }
-        var crosshairVerticalTextHeight = 0;
-        if (crosshairStyles.show &&
-            crosshairStyles.vertical.show &&
-            crosshairStyles.vertical.text.show) {
-            crosshairVerticalTextHeight += (crosshairStyles.vertical.text.paddingTop +
-                crosshairStyles.vertical.text.paddingBottom +
-                crosshairStyles.vertical.text.borderSize * 2 +
-                crosshairStyles.vertical.text.size);
-        }
-        return Math.max(xAxisHeight, crosshairVerticalTextHeight);
-    };
-    XAxisImp.prototype.getBounding = function () {
-        return this.getParent().getMainWidget().getBounding();
-    };
-    XAxisImp.prototype.convertTimestampFromPixel = function (pixel) {
-        var chartStore = this.getParent().getChart().getChartStore();
-        var dataIndex = chartStore.coordinateToDataIndex(pixel);
-        return chartStore.dataIndexToTimestamp(dataIndex);
-    };
-    XAxisImp.prototype.convertTimestampToPixel = function (timestamp) {
-        var chartStore = this.getParent().getChart().getChartStore();
-        var dataIndex = chartStore.timestampToDataIndex(timestamp);
-        return chartStore.dataIndexToCoordinate(dataIndex);
-    };
-    XAxisImp.prototype.convertFromPixel = function (pixel) {
-        return this.getParent().getChart().getChartStore().coordinateToDataIndex(pixel);
-    };
-    XAxisImp.prototype.convertToPixel = function (value) {
-        return this.getParent().getChart().getChartStore().dataIndexToCoordinate(value);
-    };
-    XAxisImp.extend = function (template) {
-        var Custom = /** @class */ (function (_super) {
-            __extends(Custom, _super);
-            function Custom(parent) {
-                return _super.call(this, parent, template) || this;
-            }
-            return Custom;
-        }(XAxisImp));
-        return Custom;
-    };
-    return XAxisImp;
-}(AxisImp));
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var normal = {
-    name: 'normal'
-};
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var xAxises = {
-    normal: XAxisImp.extend(normal)
-};
-function registerXAxis(axis) {
-    xAxises[axis.name] = XAxisImp.extend(axis);
-}
-function getXAxisClass(name) {
-    var _a;
-    return (_a = xAxises[name]) !== null && _a !== void 0 ? _a : xAxises.normal;
 }
 
 /**
@@ -12830,20 +12256,15 @@ function getXAxisClass(name) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var XAxisPane = /** @class */ (function (_super) {
-    __extends(XAxisPane, _super);
-    function XAxisPane() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    XAxisPane.prototype.createAxisComponent = function (name) {
-        var XAxisClass = getXAxisClass(name);
+class XAxisPane extends DrawPane {
+    createAxisComponent(name) {
+        const XAxisClass = getXAxisClass(name);
         return new XAxisClass(this);
-    };
-    XAxisPane.prototype.createMainWidget = function (container) {
+    }
+    createMainWidget(container) {
         return new XAxisWidget(container, this);
-    };
-    return XAxisPane;
-}(DrawPane));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12859,10 +12280,10 @@ var XAxisPane = /** @class */ (function (_super) {
  * limitations under the License.
  */
 function throttle(func, wait) {
-    var previous = 0;
+    let previous = 0;
     return function () {
-        var now = Date.now();
-        if (now - previous > (wait )) {
+        const now = Date.now();
+        if (now - previous > (wait)) {
             func.apply(this, arguments);
             previous = now;
         }
@@ -12902,64 +12323,59 @@ function throttle(func, wait) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var SeparatorWidget = /** @class */ (function (_super) {
-    __extends(SeparatorWidget, _super);
-    function SeparatorWidget(rootContainer, pane) {
-        var _this = _super.call(this, rootContainer, pane) || this;
-        _this._dragFlag = false;
-        _this._dragStartY = 0;
-        _this._topPaneHeight = 0;
-        _this._bottomPaneHeight = 0;
-        _this._topPane = null;
-        _this._bottomPane = null;
-        // eslint-disable-next-line @typescript-eslint/unbound-method -- ignore
-        _this._pressedMouseMoveEvent = throttle(_this._pressedTouchMouseMoveEvent, 20);
+class SeparatorWidget extends Widget {
+    _dragFlag = false;
+    _dragStartY = 0;
+    _topPaneHeight = 0;
+    _bottomPaneHeight = 0;
+    _topPane = null;
+    _bottomPane = null;
+    constructor(rootContainer, pane) {
+        super(rootContainer, pane);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-        _this.registerEvent('touchStartEvent', _this._mouseDownEvent.bind(_this))
+        this.registerEvent('touchStartEvent', this._mouseDownEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('touchMoveEvent', _this._pressedMouseMoveEvent.bind(_this))
+            .registerEvent('touchMoveEvent', this._pressedMouseMoveEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('touchEndEvent', _this._mouseUpEvent.bind(_this))
+            .registerEvent('touchEndEvent', this._mouseUpEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('mouseDownEvent', _this._mouseDownEvent.bind(_this))
+            .registerEvent('mouseDownEvent', this._mouseDownEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('mouseUpEvent', _this._mouseUpEvent.bind(_this))
+            .registerEvent('mouseUpEvent', this._mouseUpEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('pressedMouseMoveEvent', _this._pressedMouseMoveEvent.bind(_this))
+            .registerEvent('pressedMouseMoveEvent', this._pressedMouseMoveEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('mouseEnterEvent', _this._mouseEnterEvent.bind(_this))
+            .registerEvent('mouseEnterEvent', this._mouseEnterEvent.bind(this))
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- ignore
-            .registerEvent('mouseLeaveEvent', _this._mouseLeaveEvent.bind(_this));
-        return _this;
+            .registerEvent('mouseLeaveEvent', this._mouseLeaveEvent.bind(this));
     }
-    SeparatorWidget.prototype.getName = function () {
+    getName() {
         return WidgetNameConstants.SEPARATOR;
-    };
-    SeparatorWidget.prototype._mouseDownEvent = function (event) {
-        var _this = this;
+    }
+    _mouseDownEvent(event) {
         this._dragFlag = true;
         this._dragStartY = event.pageY;
-        var pane = this.getPane();
-        var chart = pane.getChart();
+        const pane = this.getPane();
+        const chart = pane.getChart();
         this._topPane = pane.getTopPane();
         this._bottomPane = pane.getBottomPane();
-        var drawPanes = chart.getDrawPanes();
+        const drawPanes = chart.getDrawPanes();
         if (this._topPane.getOptions().state === 'minimize') {
-            var index = drawPanes.findIndex(function (pane) { var _a; return pane.getId() === ((_a = _this._topPane) === null || _a === void 0 ? void 0 : _a.getId()); });
-            for (var i = index - 1; i > -1; i--) {
-                var pane_1 = drawPanes[i];
-                if (pane_1.getOptions().state !== 'minimize') {
-                    this._topPane = pane_1;
+            const index = drawPanes.findIndex(pane => pane.getId() === this._topPane?.getId());
+            for (let i = index - 1; i > -1; i--) {
+                const pane = drawPanes[i];
+                if (pane.getOptions().state !== 'minimize') {
+                    this._topPane = pane;
                     break;
                 }
             }
         }
         if (this._bottomPane.getOptions().state === 'minimize') {
-            var index = drawPanes.findIndex(function (pane) { var _a; return pane.getId() === ((_a = _this._bottomPane) === null || _a === void 0 ? void 0 : _a.getId()); });
-            for (var i = index + 1; i < drawPanes.length; i++) {
-                var pane_2 = drawPanes[i];
-                if (pane_2.getOptions().state !== 'minimize') {
-                    this._bottomPane = pane_2;
+            const index = drawPanes.findIndex(pane => pane.getId() === this._bottomPane?.getId());
+            for (let i = index + 1; i < drawPanes.length; i++) {
+                const pane = drawPanes[i];
+                if (pane.getOptions().state !== 'minimize') {
+                    this._bottomPane = pane;
                     break;
                 }
             }
@@ -12967,27 +12383,29 @@ var SeparatorWidget = /** @class */ (function (_super) {
         this._topPaneHeight = this._topPane.getBounding().height;
         this._bottomPaneHeight = this._bottomPane.getBounding().height;
         return true;
-    };
-    SeparatorWidget.prototype._mouseUpEvent = function () {
+    }
+    _mouseUpEvent() {
         this._dragFlag = false;
         this._topPane = null;
         this._bottomPane = null;
         this._topPaneHeight = 0;
         this._bottomPaneHeight = 0;
         return this._mouseLeaveEvent();
-    };
-    SeparatorWidget.prototype._pressedTouchMouseMoveEvent = function (event) {
-        var dragDistance = event.pageY - this._dragStartY;
-        var isUpDrag = dragDistance < 0;
+    }
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- ignore
+    _pressedMouseMoveEvent = throttle(this._pressedTouchMouseMoveEvent, 20);
+    _pressedTouchMouseMoveEvent(event) {
+        const dragDistance = event.pageY - this._dragStartY;
+        const isUpDrag = dragDistance < 0;
         if (isValid(this._topPane) && isValid(this._bottomPane)) {
-            var bottomPaneOptions = this._bottomPane.getOptions();
+            const bottomPaneOptions = this._bottomPane.getOptions();
             if (this._topPane.getOptions().state !== 'minimize' &&
                 bottomPaneOptions.state !== 'minimize' &&
                 bottomPaneOptions.dragEnabled) {
-                var reducedPane = null;
-                var increasedPane = null;
-                var startDragReducedPaneHeight = 0;
-                var startDragIncreasedPaneHeight = 0;
+                let reducedPane = null;
+                let increasedPane = null;
+                let startDragReducedPaneHeight = 0;
+                let startDragIncreasedPaneHeight = 0;
                 if (isUpDrag) {
                     reducedPane = this._topPane;
                     increasedPane = this._bottomPane;
@@ -13000,14 +12418,14 @@ var SeparatorWidget = /** @class */ (function (_super) {
                     startDragReducedPaneHeight = this._bottomPaneHeight;
                     startDragIncreasedPaneHeight = this._topPaneHeight;
                 }
-                var reducedPaneMinHeight = reducedPane.getOptions().minHeight;
+                const reducedPaneMinHeight = reducedPane.getOptions().minHeight;
                 if (startDragReducedPaneHeight > reducedPaneMinHeight) {
-                    var reducedPaneHeight = Math.max(startDragReducedPaneHeight - Math.abs(dragDistance), reducedPaneMinHeight);
-                    var diffHeight = startDragReducedPaneHeight - reducedPaneHeight;
+                    const reducedPaneHeight = Math.max(startDragReducedPaneHeight - Math.abs(dragDistance), reducedPaneMinHeight);
+                    const diffHeight = startDragReducedPaneHeight - reducedPaneHeight;
                     reducedPane.setBounding({ height: reducedPaneHeight });
                     increasedPane.setBounding({ height: startDragIncreasedPaneHeight + diffHeight });
-                    var currentPane = this.getPane();
-                    var chart = currentPane.getChart();
+                    const currentPane = this.getPane();
+                    const chart = currentPane.getChart();
                     chart.getChartStore().executeAction('onPaneDrag', { paneId: currentPane.getId() });
                     chart.layout({
                         measureHeight: true,
@@ -13020,29 +12438,29 @@ var SeparatorWidget = /** @class */ (function (_super) {
             }
         }
         return true;
-    };
-    SeparatorWidget.prototype._mouseEnterEvent = function () {
-        var pane = this.getPane();
-        var bottomPane = pane.getBottomPane();
+    }
+    _mouseEnterEvent() {
+        const pane = this.getPane();
+        const bottomPane = pane.getBottomPane();
         if (bottomPane.getOptions().dragEnabled) {
-            var chart = pane.getChart();
-            var styles = chart.getStyles().separator;
+            const chart = pane.getChart();
+            const styles = chart.getStyles().separator;
             this.getContainer().style.background = styles.activeBackgroundColor;
             return true;
         }
         return false;
-    };
-    SeparatorWidget.prototype._mouseLeaveEvent = function () {
+    }
+    _mouseLeaveEvent() {
         if (!this._dragFlag) {
             this.getContainer().style.background = 'transparent';
             return true;
         }
         return false;
-    };
-    SeparatorWidget.prototype.createContainer = function () {
+    }
+    createContainer() {
         return createDom('div', {
             width: '100%',
-            height: "".concat(REAL_SEPARATOR_HEIGHT, "px"),
+            height: `${REAL_SEPARATOR_HEIGHT}px`,
             margin: '0',
             padding: '0',
             position: 'absolute',
@@ -13051,16 +12469,15 @@ var SeparatorWidget = /** @class */ (function (_super) {
             boxSizing: 'border-box',
             cursor: 'ns-resize'
         });
-    };
-    SeparatorWidget.prototype.updateImp = function (container, _bounding, level) {
+    }
+    updateImp(container, _bounding, level) {
         if (level === 4 /* UpdateLevel.All */ || level === 2 /* UpdateLevel.Separator */) {
-            var styles = this.getPane().getChart().getStyles().separator;
-            container.style.top = "".concat(-Math.floor((REAL_SEPARATOR_HEIGHT - styles.size) / 2), "px");
-            container.style.height = "".concat(REAL_SEPARATOR_HEIGHT, "px");
+            const styles = this.getPane().getChart().getStyles().separator;
+            container.style.top = `${-Math.floor((REAL_SEPARATOR_HEIGHT - styles.size) / 2)}px`;
+            container.style.height = `${REAL_SEPARATOR_HEIGHT}px`;
         }
-    };
-    return SeparatorWidget;
-}(Widget));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13075,64 +12492,64 @@ var SeparatorWidget = /** @class */ (function (_super) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var SeparatorPane = /** @class */ (function (_super) {
-    __extends(SeparatorPane, _super);
-    function SeparatorPane(chart, id, topPane, bottomPane) {
-        var _this = _super.call(this, chart, id) || this;
-        _this.getContainer().style.overflow = '';
-        _this._topPane = topPane;
-        _this._bottomPane = bottomPane;
-        _this._separatorWidget = new SeparatorWidget(_this.getContainer(), _this);
-        return _this;
+class SeparatorPane extends Pane {
+    _topPane;
+    _bottomPane;
+    _separatorWidget;
+    constructor(chart, id, topPane, bottomPane) {
+        super(chart, id);
+        this.getContainer().style.overflow = '';
+        this._topPane = topPane;
+        this._bottomPane = bottomPane;
+        this._separatorWidget = new SeparatorWidget(this.getContainer(), this);
     }
-    SeparatorPane.prototype.setBounding = function (rootBounding) {
+    setBounding(rootBounding) {
         merge(this.getBounding(), rootBounding);
         return this;
-    };
-    SeparatorPane.prototype.getTopPane = function () {
+    }
+    getTopPane() {
         return this._topPane;
-    };
-    SeparatorPane.prototype.setTopPane = function (pane) {
+    }
+    setTopPane(pane) {
         this._topPane = pane;
         return this;
-    };
-    SeparatorPane.prototype.getBottomPane = function () {
+    }
+    getBottomPane() {
         return this._bottomPane;
-    };
-    SeparatorPane.prototype.setBottomPane = function (pane) {
+    }
+    setBottomPane(pane) {
         this._bottomPane = pane;
         return this;
-    };
-    SeparatorPane.prototype.getWidget = function () { return this._separatorWidget; };
-    SeparatorPane.prototype.getImage = function (_includeOverlay) {
-        var _a = this.getBounding(), width = _a.width, height = _a.height;
-        var styles = this.getChart().getStyles().separator;
-        var canvas = createDom('canvas', {
-            width: "".concat(width, "px"),
-            height: "".concat(height, "px"),
+    }
+    getWidget() { return this._separatorWidget; }
+    getImage(_includeOverlay) {
+        const { width, height } = this.getBounding();
+        const styles = this.getChart().getStyles().separator;
+        const canvas = createDom('canvas', {
+            width: `${width}px`,
+            height: `${height}px`,
             boxSizing: 'border-box'
         });
-        var ctx = canvas.getContext('2d');
-        var pixelRatio = getPixelRatio(canvas);
+        const ctx = canvas.getContext('2d');
+        const pixelRatio = getPixelRatio(canvas);
         canvas.width = width * pixelRatio;
         canvas.height = height * pixelRatio;
         ctx.scale(pixelRatio, pixelRatio);
         ctx.fillStyle = styles.color;
         ctx.fillRect(0, 0, width, height);
         return canvas;
-    };
-    SeparatorPane.prototype.updateImp = function (level, container, bounding) {
+    }
+    updateImp(level, container, bounding) {
         if (level === 4 /* UpdateLevel.All */ || level === 2 /* UpdateLevel.Separator */) {
-            var styles = this.getChart().getStyles().separator;
+            const styles = this.getChart().getStyles().separator;
             container.style.backgroundColor = styles.color;
-            container.style.height = "".concat(bounding.height, "px");
-            container.style.marginLeft = "".concat(bounding.left, "px");
-            container.style.width = "".concat(bounding.width, "px");
+            container.style.height = `${bounding.height}px`;
+            container.style.marginLeft = `${bounding.left}px`;
+            container.style.width = `${bounding.width}px`;
             this._separatorWidget.update(level);
         }
-    };
-    return SeparatorPane;
-}(Pane));
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13163,103 +12580,68 @@ function isIOS() {
 /* eslint-disable eslint-comments/require-description -- ignore */
 // we can use `const name = 500;` but with `const enum` this values will be inlined into code
 // so we do not need to have it as variables
-var Delay = {
+const Delay = {
     ResetClick: 500,
     LongTap: 500,
     PreventFiresTouchEvents: 500
 };
-var ManhattanDistance = {
+const ManhattanDistance = {
     CancelClick: 5,
     CancelTap: 5,
     DoubleClick: 5,
     DoubleTap: 30
 };
-var MouseEventButton = {
+const MouseEventButton = {
     Left: 0,
     Middle: 1,
     Right: 2
 };
-var TOUCH_MIN_RADIUS = 10;
+const TOUCH_MIN_RADIUS = 10;
 // TODO: get rid of a lot of boolean flags, probably we should replace it with some enum
-var EventHandlerImp = /** @class */ (function () {
-    function EventHandlerImp(target, handler, options) {
-        var _this = this;
-        this._clickCount = 0;
-        this._clickTimeoutId = null;
-        this._clickCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
-        this._tapCount = 0;
-        this._tapTimeoutId = null;
-        this._tapCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
-        this._longTapTimeoutId = null;
-        this._longTapActive = false;
-        this._mouseMoveStartCoordinate = null;
-        this._touchMoveStartCoordinate = null;
-        this._touchMoveExceededManhattanDistance = false;
-        this._cancelClick = false;
-        this._cancelTap = false;
-        this._unsubscribeOutsideMouseEvents = null;
-        this._unsubscribeOutsideTouchEvents = null;
-        this._unsubscribeMobileSafariEvents = null;
-        this._unsubscribeMousemove = null;
-        this._unsubscribeMouseWheel = null;
-        this._unsubscribeContextMenu = null;
-        this._unsubscribeRootMouseEvents = null;
-        this._unsubscribeRootTouchEvents = null;
-        this._startPinchMiddleCoordinate = null;
-        this._startPinchDistance = 0;
-        this._pinchPrevented = false;
-        this._preventTouchDragProcess = false;
-        this._mousePressed = false;
-        this._lastTouchEventTimeStamp = 0;
-        // for touchstart/touchmove/touchend events we handle only first touch
-        // i.e. we don't support several active touches at the same time (except pinch event)
-        this._activeTouchId = null;
-        // accept all mouse leave events if it's not an iOS device
-        // see _mouseEnterHandler, _mouseMoveHandler, _mouseLeaveHandler
-        this._acceptMouseLeave = !isIOS();
-        /**
-         * In Firefox mouse events dont't fire if the mouse position is outside of the browser's border.
-         * To prevent the mouse from hanging while pressed we're subscribing on the mouseleave event of the document element.
-         * We're subscribing on mouseleave, but this event is actually fired on mouseup outside of the browser's border.
-         */
-        this._onFirefoxOutsideMouseUp = function (mouseUpEvent) {
-            _this._mouseUpHandler(mouseUpEvent);
-        };
-        /**
-         * Safari doesn't fire touchstart/mousedown events on double tap since iOS 13.
-         * There are two possible solutions:
-         * 1) Call preventDefault in touchEnd handler. But it also prevents click event from firing.
-         * 2) Add listener on dblclick event that fires with the preceding mousedown/mouseup.
-         * https://developer.apple.com/forums/thread/125073
-         */
-        this._onMobileSafariDoubleClick = function (dblClickEvent) {
-            if (_this._firesTouchEvents(dblClickEvent)) {
-                ++_this._tapCount;
-                if (_this._tapTimeoutId !== null && _this._tapCount > 1) {
-                    var manhattanDistance = _this._mouseTouchMoveWithDownInfo(_this._getCoordinate(dblClickEvent), _this._tapCoordinate).manhattanDistance;
-                    if (manhattanDistance < ManhattanDistance.DoubleTap && !_this._cancelTap) {
-                        _this._processEvent(_this._makeCompatEvent(dblClickEvent), _this._handler.doubleTapEvent);
-                    }
-                    _this._resetTapTimeout();
-                }
-            }
-            else {
-                ++_this._clickCount;
-                if (_this._clickTimeoutId !== null && _this._clickCount > 1) {
-                    var manhattanDistance = _this._mouseTouchMoveWithDownInfo(_this._getCoordinate(dblClickEvent), _this._clickCoordinate).manhattanDistance;
-                    if (manhattanDistance < ManhattanDistance.DoubleClick && !_this._cancelClick) {
-                        _this._processEvent(_this._makeCompatEvent(dblClickEvent), _this._handler.mouseDoubleClickEvent);
-                    }
-                    _this._resetClickTimeout();
-                }
-            }
-        };
+class EventHandlerImp {
+    _target;
+    _handler;
+    _options;
+    _clickCount = 0;
+    _clickTimeoutId = null;
+    _clickCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
+    _tapCount = 0;
+    _tapTimeoutId = null;
+    _tapCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
+    _longTapTimeoutId = null;
+    _longTapActive = false;
+    _mouseMoveStartCoordinate = null;
+    _touchMoveStartCoordinate = null;
+    _touchMoveExceededManhattanDistance = false;
+    _cancelClick = false;
+    _cancelTap = false;
+    _unsubscribeOutsideMouseEvents = null;
+    _unsubscribeOutsideTouchEvents = null;
+    _unsubscribeMobileSafariEvents = null;
+    _unsubscribeMousemove = null;
+    _unsubscribeMouseWheel = null;
+    _unsubscribeContextMenu = null;
+    _unsubscribeRootMouseEvents = null;
+    _unsubscribeRootTouchEvents = null;
+    _startPinchMiddleCoordinate = null;
+    _startPinchDistance = 0;
+    _pinchPrevented = false;
+    _preventTouchDragProcess = false;
+    _mousePressed = false;
+    _lastTouchEventTimeStamp = 0;
+    // for touchstart/touchmove/touchend events we handle only first touch
+    // i.e. we don't support several active touches at the same time (except pinch event)
+    _activeTouchId = null;
+    // accept all mouse leave events if it's not an iOS device
+    // see _mouseEnterHandler, _mouseMoveHandler, _mouseLeaveHandler
+    _acceptMouseLeave = !isIOS();
+    constructor(target, handler, options) {
         this._target = target;
         this._handler = handler;
         this._options = options;
         this._init();
     }
-    EventHandlerImp.prototype.destroy = function () {
+    destroy() {
         if (this._unsubscribeOutsideMouseEvents !== null) {
             this._unsubscribeOutsideMouseEvents();
             this._unsubscribeOutsideMouseEvents = null;
@@ -13294,34 +12676,32 @@ var EventHandlerImp = /** @class */ (function () {
         }
         this._clearLongTapTimeout();
         this._resetClickTimeout();
-    };
-    EventHandlerImp.prototype._mouseEnterHandler = function (enterEvent) {
-        var _this = this;
-        var _a, _b, _c;
-        (_a = this._unsubscribeMousemove) === null || _a === void 0 ? void 0 : _a.call(this);
-        (_b = this._unsubscribeMouseWheel) === null || _b === void 0 ? void 0 : _b.call(this);
-        (_c = this._unsubscribeContextMenu) === null || _c === void 0 ? void 0 : _c.call(this);
+    }
+    _mouseEnterHandler(enterEvent) {
+        this._unsubscribeMousemove?.();
+        this._unsubscribeMouseWheel?.();
+        this._unsubscribeContextMenu?.();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        var boundMouseMoveHandler = this._mouseMoveHandler.bind(this);
-        this._unsubscribeMousemove = function () {
+        const boundMouseMoveHandler = this._mouseMoveHandler.bind(this);
+        this._unsubscribeMousemove = () => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            _this._target.removeEventListener('mousemove', boundMouseMoveHandler);
+            this._target.removeEventListener('mousemove', boundMouseMoveHandler);
         };
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('mousemove', boundMouseMoveHandler);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        var boundMouseWheel = this._mouseWheelHandler.bind(this);
-        this._unsubscribeMouseWheel = function () {
+        const boundMouseWheel = this._mouseWheelHandler.bind(this);
+        this._unsubscribeMouseWheel = () => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            _this._target.removeEventListener('wheel', boundMouseWheel);
+            this._target.removeEventListener('wheel', boundMouseWheel);
         };
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('wheel', boundMouseWheel, { passive: false });
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        var boundContextMenu = this._contextMenuHandler.bind(this);
-        this._unsubscribeContextMenu = function () {
+        const boundContextMenu = this._contextMenuHandler.bind(this);
+        this._unsubscribeContextMenu = () => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            _this._target.removeEventListener('contextmenu', boundContextMenu);
+            this._target.removeEventListener('contextmenu', boundContextMenu);
         };
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('contextmenu', boundContextMenu, { passive: false });
@@ -13330,24 +12710,24 @@ var EventHandlerImp = /** @class */ (function () {
         }
         this._processEvent(this._makeCompatEvent(enterEvent), this._handler.mouseEnterEvent);
         this._acceptMouseLeave = true;
-    };
-    EventHandlerImp.prototype._resetClickTimeout = function () {
+    }
+    _resetClickTimeout() {
         if (this._clickTimeoutId !== null) {
             clearTimeout(this._clickTimeoutId);
         }
         this._clickCount = 0;
         this._clickTimeoutId = null;
         this._clickCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
-    };
-    EventHandlerImp.prototype._resetTapTimeout = function () {
+    }
+    _resetTapTimeout() {
         if (this._tapTimeoutId !== null) {
             clearTimeout(this._tapTimeoutId);
         }
         this._tapCount = 0;
         this._tapTimeoutId = null;
         this._tapCoordinate = { x: Number.NEGATIVE_INFINITY, y: Number.POSITIVE_INFINITY };
-    };
-    EventHandlerImp.prototype._mouseMoveHandler = function (moveEvent) {
+    }
+    _mouseMoveHandler(moveEvent) {
         if (this._mousePressed || this._touchMoveStartCoordinate !== null) {
             return;
         }
@@ -13356,17 +12736,17 @@ var EventHandlerImp = /** @class */ (function () {
         }
         this._processEvent(this._makeCompatEvent(moveEvent), this._handler.mouseMoveEvent);
         this._acceptMouseLeave = true;
-    };
-    EventHandlerImp.prototype._mouseWheelHandler = function (wheelEvent) {
+    }
+    _mouseWheelHandler(wheelEvent) {
         this._preventDefault(wheelEvent);
-        var evt = this._makeCompatEvent(wheelEvent);
+        const evt = this._makeCompatEvent(wheelEvent);
         // Handle horizontal pan (deltaX)
         if (Math.abs(wheelEvent.deltaX) > 0 && isValid(this._handler.mouseWheelHortEvent)) {
             this._handler.mouseWheelHortEvent(evt, -wheelEvent.deltaX);
         }
         // Handle vertical zoom (deltaY) — both axes fire from same event
         if (isValid(this._handler.mouseWheelVertEvent)) {
-            var deltaY = -(wheelEvent.deltaY / 100);
+            let deltaY = -(wheelEvent.deltaY / 100);
             if (deltaY !== 0) {
                 switch (wheelEvent.deltaMode) {
                     case wheelEvent.DOM_DELTA_PAGE: {
@@ -13379,17 +12759,17 @@ var EventHandlerImp = /** @class */ (function () {
                     }
                 }
                 if (deltaY !== 0) {
-                    var scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY));
+                    const scale = Math.sign(deltaY) * Math.min(1, Math.abs(deltaY));
                     this._handler.mouseWheelVertEvent(evt, scale);
                 }
             }
         }
-    };
-    EventHandlerImp.prototype._contextMenuHandler = function (mouseEvent) {
+    }
+    _contextMenuHandler(mouseEvent) {
         this._preventDefault(mouseEvent);
-    };
-    EventHandlerImp.prototype._touchMoveHandler = function (moveEvent) {
-        var touch = this._touchWithId(moveEvent.changedTouches, this._activeTouchId);
+    }
+    _touchMoveHandler(moveEvent) {
+        const touch = this._touchWithId(moveEvent.changedTouches, this._activeTouchId);
         if (touch === null) {
             return;
         }
@@ -13402,8 +12782,8 @@ var EventHandlerImp = /** @class */ (function () {
         }
         // prevent pinch if move event comes faster than the second touch
         this._pinchPrevented = true;
-        var moveInfo = this._mouseTouchMoveWithDownInfo(this._getCoordinate(touch), this._touchMoveStartCoordinate);
-        var xOffset = moveInfo.xOffset, yOffset = moveInfo.yOffset, manhattanDistance = moveInfo.manhattanDistance;
+        const moveInfo = this._mouseTouchMoveWithDownInfo(this._getCoordinate(touch), this._touchMoveStartCoordinate);
+        const { xOffset, yOffset, manhattanDistance } = moveInfo;
         if (!this._touchMoveExceededManhattanDistance && manhattanDistance < ManhattanDistance.CancelTap) {
             return;
         }
@@ -13411,10 +12791,10 @@ var EventHandlerImp = /** @class */ (function () {
             // first time when current position exceeded manhattan distance
             // vertical drag is more important than horizontal drag
             // because we scroll the page vertically often than horizontally
-            var correctedXOffset = xOffset * 0.5;
+            const correctedXOffset = xOffset * 0.5;
             // a drag can be only if touch page scroll isn't allowed
-            var isVertDrag = yOffset >= correctedXOffset && !this._options.treatVertDragAsPageScroll();
-            var isHorzDrag = correctedXOffset > yOffset && !this._options.treatHorzDragAsPageScroll();
+            const isVertDrag = yOffset >= correctedXOffset && !this._options.treatVertDragAsPageScroll();
+            const isHorzDrag = correctedXOffset > yOffset && !this._options.treatHorzDragAsPageScroll();
             // if drag event happened then we should revert preventDefault state to original one
             // and try to process the drag event
             // else we shouldn't prevent default of the event and ignore processing the drag event
@@ -13433,13 +12813,13 @@ var EventHandlerImp = /** @class */ (function () {
             // to prevent scroll of the page
             // preventDefault(moveEvent)
         }
-    };
-    EventHandlerImp.prototype._mouseMoveWithDownHandler = function (moveEvent) {
+    }
+    _mouseMoveWithDownHandler(moveEvent) {
         if (moveEvent.button !== MouseEventButton.Left) {
             return;
         }
-        var moveInfo = this._mouseTouchMoveWithDownInfo(this._getCoordinate(moveEvent), this._mouseMoveStartCoordinate);
-        var manhattanDistance = moveInfo.manhattanDistance;
+        const moveInfo = this._mouseTouchMoveWithDownInfo(this._getCoordinate(moveEvent), this._mouseMoveStartCoordinate);
+        const { manhattanDistance } = moveInfo;
         if (manhattanDistance >= ManhattanDistance.CancelClick) {
             // if manhattan distance is more that 5 - we should cancel click event
             this._cancelClick = true;
@@ -13449,15 +12829,52 @@ var EventHandlerImp = /** @class */ (function () {
             // if this._cancelClick is true, that means that minimum manhattan distance is already exceeded
             this._processEvent(this._makeCompatEvent(moveEvent), this._handler.pressedMouseMoveEvent);
         }
+    }
+    _mouseTouchMoveWithDownInfo(currentCoordinate, startCoordinate) {
+        const xOffset = Math.abs(startCoordinate.x - currentCoordinate.x);
+        const yOffset = Math.abs(startCoordinate.y - currentCoordinate.y);
+        const manhattanDistance = xOffset + yOffset;
+        return { xOffset, yOffset, manhattanDistance };
+    }
+    /**
+     * In Firefox mouse events dont't fire if the mouse position is outside of the browser's border.
+     * To prevent the mouse from hanging while pressed we're subscribing on the mouseleave event of the document element.
+     * We're subscribing on mouseleave, but this event is actually fired on mouseup outside of the browser's border.
+     */
+    _onFirefoxOutsideMouseUp = (mouseUpEvent) => {
+        this._mouseUpHandler(mouseUpEvent);
     };
-    EventHandlerImp.prototype._mouseTouchMoveWithDownInfo = function (currentCoordinate, startCoordinate) {
-        var xOffset = Math.abs(startCoordinate.x - currentCoordinate.x);
-        var yOffset = Math.abs(startCoordinate.y - currentCoordinate.y);
-        var manhattanDistance = xOffset + yOffset;
-        return { xOffset: xOffset, yOffset: yOffset, manhattanDistance: manhattanDistance };
+    /**
+     * Safari doesn't fire touchstart/mousedown events on double tap since iOS 13.
+     * There are two possible solutions:
+     * 1) Call preventDefault in touchEnd handler. But it also prevents click event from firing.
+     * 2) Add listener on dblclick event that fires with the preceding mousedown/mouseup.
+     * https://developer.apple.com/forums/thread/125073
+     */
+    _onMobileSafariDoubleClick = (dblClickEvent) => {
+        if (this._firesTouchEvents(dblClickEvent)) {
+            ++this._tapCount;
+            if (this._tapTimeoutId !== null && this._tapCount > 1) {
+                const { manhattanDistance } = this._mouseTouchMoveWithDownInfo(this._getCoordinate(dblClickEvent), this._tapCoordinate);
+                if (manhattanDistance < ManhattanDistance.DoubleTap && !this._cancelTap) {
+                    this._processEvent(this._makeCompatEvent(dblClickEvent), this._handler.doubleTapEvent);
+                }
+                this._resetTapTimeout();
+            }
+        }
+        else {
+            ++this._clickCount;
+            if (this._clickTimeoutId !== null && this._clickCount > 1) {
+                const { manhattanDistance } = this._mouseTouchMoveWithDownInfo(this._getCoordinate(dblClickEvent), this._clickCoordinate);
+                if (manhattanDistance < ManhattanDistance.DoubleClick && !this._cancelClick) {
+                    this._processEvent(this._makeCompatEvent(dblClickEvent), this._handler.mouseDoubleClickEvent);
+                }
+                this._resetClickTimeout();
+            }
+        }
     };
-    EventHandlerImp.prototype._touchEndHandler = function (touchEndEvent) {
-        var touch = this._touchWithId(touchEndEvent.changedTouches, this._activeTouchId);
+    _touchEndHandler(touchEndEvent) {
+        let touch = this._touchWithId(touchEndEvent.changedTouches, this._activeTouchId);
         if (touch === null && touchEndEvent.touches.length === 0) {
             // something went wrong, somehow we missed the required touchend event
             // probably the browser has not sent this event
@@ -13474,12 +12891,12 @@ var EventHandlerImp = /** @class */ (function () {
             this._unsubscribeRootTouchEvents();
             this._unsubscribeRootTouchEvents = null;
         }
-        var compatEvent = this._makeCompatEvent(touchEndEvent, touch);
+        const compatEvent = this._makeCompatEvent(touchEndEvent, touch);
         this._processEvent(compatEvent, this._handler.touchEndEvent);
         ++this._tapCount;
         if (this._tapTimeoutId !== null && this._tapCount > 1) {
             // check that both clicks are near enough
-            var manhattanDistance = this._mouseTouchMoveWithDownInfo(this._getCoordinate(touch), this._tapCoordinate).manhattanDistance;
+            const { manhattanDistance } = this._mouseTouchMoveWithDownInfo(this._getCoordinate(touch), this._tapCoordinate);
             if (manhattanDistance < ManhattanDistance.DoubleTap && !this._cancelTap) {
                 this._processEvent(compatEvent, this._handler.doubleTapEvent);
             }
@@ -13507,12 +12924,12 @@ var EventHandlerImp = /** @class */ (function () {
                 this._preventDefault(touchEndEvent);
             }
         }
-    };
-    EventHandlerImp.prototype._mouseUpHandler = function (mouseUpEvent) {
+    }
+    _mouseUpHandler(mouseUpEvent) {
         if (mouseUpEvent.button !== MouseEventButton.Left) {
             return;
         }
-        var compatEvent = this._makeCompatEvent(mouseUpEvent);
+        const compatEvent = this._makeCompatEvent(mouseUpEvent);
         this._mouseMoveStartCoordinate = null;
         this._mousePressed = false;
         if (this._unsubscribeRootMouseEvents !== null) {
@@ -13520,7 +12937,7 @@ var EventHandlerImp = /** @class */ (function () {
             this._unsubscribeRootMouseEvents = null;
         }
         if (isFF()) {
-            var rootElement = this._target.ownerDocument.documentElement;
+            const rootElement = this._target.ownerDocument.documentElement;
             rootElement.removeEventListener('mouseleave', this._onFirefoxOutsideMouseUp);
         }
         if (this._firesTouchEvents(mouseUpEvent)) {
@@ -13530,7 +12947,7 @@ var EventHandlerImp = /** @class */ (function () {
         ++this._clickCount;
         if (this._clickTimeoutId !== null && this._clickCount > 1) {
             // check that both clicks are near enough
-            var manhattanDistance = this._mouseTouchMoveWithDownInfo(this._getCoordinate(mouseUpEvent), this._clickCoordinate).manhattanDistance;
+            const { manhattanDistance } = this._mouseTouchMoveWithDownInfo(this._getCoordinate(mouseUpEvent), this._clickCoordinate);
             if (manhattanDistance < ManhattanDistance.DoubleClick && !this._cancelClick) {
                 this._processEvent(compatEvent, this._handler.mouseDoubleClickEvent);
             }
@@ -13541,22 +12958,22 @@ var EventHandlerImp = /** @class */ (function () {
                 this._processEvent(compatEvent, this._handler.mouseClickEvent);
             }
         }
-    };
-    EventHandlerImp.prototype._clearLongTapTimeout = function () {
+    }
+    _clearLongTapTimeout() {
         if (this._longTapTimeoutId === null) {
             return;
         }
         clearTimeout(this._longTapTimeoutId);
         this._longTapTimeoutId = null;
-    };
-    EventHandlerImp.prototype._touchStartHandler = function (downEvent) {
+    }
+    _touchStartHandler(downEvent) {
         if (this._activeTouchId !== null) {
             return;
         }
-        var touch = downEvent.changedTouches[0];
+        const touch = downEvent.changedTouches[0];
         this._activeTouchId = touch.identifier;
         this._lastTouchEventTimeStamp = this._eventTimeStamp(downEvent);
-        var rootElement = this._target.ownerDocument.documentElement;
+        const rootElement = this._target.ownerDocument.documentElement;
         this._cancelTap = false;
         this._touchMoveExceededManhattanDistance = false;
         this._preventTouchDragProcess = false;
@@ -13567,19 +12984,19 @@ var EventHandlerImp = /** @class */ (function () {
         }
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            var boundTouchMoveWithDownHandler_1 = this._touchMoveHandler.bind(this);
+            const boundTouchMoveWithDownHandler = this._touchMoveHandler.bind(this);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            var boundTouchEndHandler_1 = this._touchEndHandler.bind(this);
-            this._unsubscribeRootTouchEvents = function () {
+            const boundTouchEndHandler = this._touchEndHandler.bind(this);
+            this._unsubscribeRootTouchEvents = () => {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                rootElement.removeEventListener('touchmove', boundTouchMoveWithDownHandler_1);
+                rootElement.removeEventListener('touchmove', boundTouchMoveWithDownHandler);
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                rootElement.removeEventListener('touchend', boundTouchEndHandler_1);
+                rootElement.removeEventListener('touchend', boundTouchEndHandler);
             };
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            rootElement.addEventListener('touchmove', boundTouchMoveWithDownHandler_1, { passive: false });
+            rootElement.addEventListener('touchmove', boundTouchMoveWithDownHandler, { passive: false });
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            rootElement.addEventListener('touchend', boundTouchEndHandler_1, { passive: false });
+            rootElement.addEventListener('touchend', boundTouchEndHandler, { passive: false });
             this._clearLongTapTimeout();
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             this._longTapTimeoutId = setTimeout(this._longTapHandler.bind(this, downEvent), Delay.LongTap);
@@ -13591,8 +13008,8 @@ var EventHandlerImp = /** @class */ (function () {
             this._tapTimeoutId = setTimeout(this._resetTapTimeout.bind(this), Delay.ResetClick);
             this._tapCoordinate = this._getCoordinate(touch);
         }
-    };
-    EventHandlerImp.prototype._mouseDownHandler = function (downEvent) {
+    }
+    _mouseDownHandler(downEvent) {
         if (downEvent.button === MouseEventButton.Right) {
             this._preventDefault(downEvent);
             this._processEvent(this._makeCompatEvent(downEvent), this._handler.mouseRightClickEvent);
@@ -13601,7 +13018,7 @@ var EventHandlerImp = /** @class */ (function () {
         if (downEvent.button !== MouseEventButton.Left) {
             return;
         }
-        var rootElement = this._target.ownerDocument.documentElement;
+        const rootElement = this._target.ownerDocument.documentElement;
         if (isFF()) {
             rootElement.addEventListener('mouseleave', this._onFirefoxOutsideMouseUp);
         }
@@ -13613,19 +13030,19 @@ var EventHandlerImp = /** @class */ (function () {
         }
         {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            var boundMouseMoveWithDownHandler_1 = this._mouseMoveWithDownHandler.bind(this);
+            const boundMouseMoveWithDownHandler = this._mouseMoveWithDownHandler.bind(this);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            var boundMouseUpHandler_1 = this._mouseUpHandler.bind(this);
-            this._unsubscribeRootMouseEvents = function () {
+            const boundMouseUpHandler = this._mouseUpHandler.bind(this);
+            this._unsubscribeRootMouseEvents = () => {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                rootElement.removeEventListener('mousemove', boundMouseMoveWithDownHandler_1);
+                rootElement.removeEventListener('mousemove', boundMouseMoveWithDownHandler);
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                rootElement.removeEventListener('mouseup', boundMouseUpHandler_1);
+                rootElement.removeEventListener('mouseup', boundMouseUpHandler);
             };
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            rootElement.addEventListener('mousemove', boundMouseMoveWithDownHandler_1);
+            rootElement.addEventListener('mousemove', boundMouseMoveWithDownHandler);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            rootElement.addEventListener('mouseup', boundMouseUpHandler_1);
+            rootElement.addEventListener('mouseup', boundMouseUpHandler);
         }
         this._mousePressed = true;
         if (this._firesTouchEvents(downEvent)) {
@@ -13638,40 +13055,39 @@ var EventHandlerImp = /** @class */ (function () {
             this._clickTimeoutId = setTimeout(this._resetClickTimeout.bind(this), Delay.ResetClick);
             this._clickCoordinate = this._getCoordinate(downEvent);
         }
-    };
-    EventHandlerImp.prototype._init = function () {
-        var _this = this;
+    }
+    _init() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('mouseenter', this._mouseEnterHandler.bind(this));
         // Do not show context menu when something went wrong
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('touchcancel', this._clearLongTapTimeout.bind(this));
         {
-            var doc_1 = this._target.ownerDocument;
-            var outsideHandler_1 = function (event) {
-                if (_this._handler.mouseDownOutsideEvent == null) {
+            const doc = this._target.ownerDocument;
+            const outsideHandler = (event) => {
+                if (this._handler.mouseDownOutsideEvent == null) {
                     return;
                 }
-                if (event.composed && _this._target.contains(event.composedPath()[0])) {
+                if (event.composed && this._target.contains(event.composedPath()[0])) {
                     return;
                 }
-                if ((event.target !== null) && _this._target.contains(event.target)) {
+                if ((event.target !== null) && this._target.contains(event.target)) {
                     return;
                 }
-                _this._handler.mouseDownOutsideEvent({ x: 0, y: 0, pageX: 0, pageY: 0 });
+                this._handler.mouseDownOutsideEvent({ x: 0, y: 0, pageX: 0, pageY: 0 });
             };
-            this._unsubscribeOutsideTouchEvents = function () {
-                doc_1.removeEventListener('touchstart', outsideHandler_1);
+            this._unsubscribeOutsideTouchEvents = () => {
+                doc.removeEventListener('touchstart', outsideHandler);
             };
-            this._unsubscribeOutsideMouseEvents = function () {
-                doc_1.removeEventListener('mousedown', outsideHandler_1);
+            this._unsubscribeOutsideMouseEvents = () => {
+                doc.removeEventListener('mousedown', outsideHandler);
             };
-            doc_1.addEventListener('mousedown', outsideHandler_1);
-            doc_1.addEventListener('touchstart', outsideHandler_1, { passive: true });
+            doc.addEventListener('mousedown', outsideHandler);
+            doc.addEventListener('touchstart', outsideHandler, { passive: true });
         }
         if (isIOS()) {
-            this._unsubscribeMobileSafariEvents = function () {
-                _this._target.removeEventListener('dblclick', _this._onMobileSafariDoubleClick);
+            this._unsubscribeMobileSafariEvents = () => {
+                this._target.removeEventListener('dblclick', this._onMobileSafariDoubleClick);
             };
             this._target.addEventListener('dblclick', this._onMobileSafariDoubleClick);
         }
@@ -13679,7 +13095,7 @@ var EventHandlerImp = /** @class */ (function () {
         this._target.addEventListener('mouseleave', this._mouseLeaveHandler.bind(this));
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this._target.addEventListener('touchstart', this._touchStartHandler.bind(this), { passive: true });
-        this._target.addEventListener('mousedown', function (e) {
+        this._target.addEventListener('mousedown', (e) => {
             if (e.button === MouseEventButton.Middle) {
                 // prevent incorrect scrolling event
                 e.preventDefault();
@@ -13696,32 +13112,31 @@ var EventHandlerImp = /** @class */ (function () {
         // so we can't prevent them (as soon we subscribe on touchmove inside touchstart's handler).
         // And we'll get scroll of the page along with chart's one instead of only chart's scroll.
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        this._target.addEventListener('touchmove', function () { }, { passive: false });
-    };
-    EventHandlerImp.prototype._initPinch = function () {
-        var _this = this;
+        this._target.addEventListener('touchmove', () => { }, { passive: false });
+    }
+    _initPinch() {
         if (!isValid(this._handler.pinchStartEvent) &&
             !isValid(this._handler.pinchEvent) &&
             !isValid(this._handler.pinchEndEvent)) {
             return;
         }
-        this._target.addEventListener('touchstart', function (event) { _this._checkPinchState(event.touches); }, { passive: true });
-        this._target.addEventListener('touchmove', function (event) {
-            if (event.touches.length !== 2 || _this._startPinchMiddleCoordinate === null) {
+        this._target.addEventListener('touchstart', (event) => { this._checkPinchState(event.touches); }, { passive: true });
+        this._target.addEventListener('touchmove', (event) => {
+            if (event.touches.length !== 2 || this._startPinchMiddleCoordinate === null) {
                 return;
             }
-            if (isValid(_this._handler.pinchEvent)) {
-                var currentDistance = _this._getTouchDistance(event.touches[0], event.touches[1]);
-                var scale = currentDistance / _this._startPinchDistance;
-                _this._handler.pinchEvent(__assign(__assign({}, _this._startPinchMiddleCoordinate), { pageX: 0, pageY: 0 }), scale);
-                _this._preventDefault(event);
+            if (isValid(this._handler.pinchEvent)) {
+                const currentDistance = this._getTouchDistance(event.touches[0], event.touches[1]);
+                const scale = currentDistance / this._startPinchDistance;
+                this._handler.pinchEvent({ ...this._startPinchMiddleCoordinate, pageX: 0, pageY: 0 }, scale);
+                this._preventDefault(event);
             }
         }, { passive: false });
-        this._target.addEventListener('touchend', function (event) {
-            _this._checkPinchState(event.touches);
+        this._target.addEventListener('touchend', (event) => {
+            this._checkPinchState(event.touches);
         });
-    };
-    EventHandlerImp.prototype._checkPinchState = function (touches) {
+    }
+    _checkPinchState(touches) {
         if (touches.length === 1) {
             this._pinchPrevented = false;
         }
@@ -13731,9 +13146,9 @@ var EventHandlerImp = /** @class */ (function () {
         else {
             this._startPinch(touches);
         }
-    };
-    EventHandlerImp.prototype._startPinch = function (touches) {
-        var box = this._target.getBoundingClientRect();
+    }
+    _startPinch(touches) {
+        const box = this._target.getBoundingClientRect();
         this._startPinchMiddleCoordinate = {
             x: ((touches[0].clientX - box.left) + (touches[1].clientX - box.left)) / 2,
             y: ((touches[0].clientY - box.top) + (touches[1].clientY - box.top)) / 2
@@ -13743,8 +13158,8 @@ var EventHandlerImp = /** @class */ (function () {
             this._handler.pinchStartEvent({ x: 0, y: 0, pageX: 0, pageY: 0 });
         }
         this._clearLongTapTimeout();
-    };
-    EventHandlerImp.prototype._stopPinch = function () {
+    }
+    _stopPinch() {
         if (this._startPinchMiddleCoordinate === null) {
             return;
         }
@@ -13752,12 +13167,11 @@ var EventHandlerImp = /** @class */ (function () {
         if (isValid(this._handler.pinchEndEvent)) {
             this._handler.pinchEndEvent({ x: 0, y: 0, pageX: 0, pageY: 0 });
         }
-    };
-    EventHandlerImp.prototype._mouseLeaveHandler = function (event) {
-        var _a, _b, _c;
-        (_a = this._unsubscribeMousemove) === null || _a === void 0 ? void 0 : _a.call(this);
-        (_b = this._unsubscribeMouseWheel) === null || _b === void 0 ? void 0 : _b.call(this);
-        (_c = this._unsubscribeContextMenu) === null || _c === void 0 ? void 0 : _c.call(this);
+    }
+    _mouseLeaveHandler(event) {
+        this._unsubscribeMousemove?.();
+        this._unsubscribeMouseWheel?.();
+        this._unsubscribeContextMenu?.();
         if (this._firesTouchEvents(event)) {
             return;
         }
@@ -13769,9 +13183,9 @@ var EventHandlerImp = /** @class */ (function () {
         this._processEvent(this._makeCompatEvent(event), this._handler.mouseLeaveEvent);
         // accept all mouse leave events if it's not an iOS device
         this._acceptMouseLeave = !isIOS();
-    };
-    EventHandlerImp.prototype._longTapHandler = function (event) {
-        var touch = this._touchWithId(event.touches, this._activeTouchId);
+    }
+    _longTapHandler(event) {
+        const touch = this._touchWithId(event.touches, this._activeTouchId);
         if (touch === null) {
             return;
         }
@@ -13779,76 +13193,72 @@ var EventHandlerImp = /** @class */ (function () {
         this._cancelTap = true;
         // long tap is active until touchend event with 0 touches occurred
         this._longTapActive = true;
-    };
-    EventHandlerImp.prototype._firesTouchEvents = function (e) {
-        var _a;
+    }
+    _firesTouchEvents(e) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (isValid((_a = e.sourceCapabilities) === null || _a === void 0 ? void 0 : _a.firesTouchEvents)) {
+        if (isValid(e.sourceCapabilities?.firesTouchEvents)) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
             return e.sourceCapabilities.firesTouchEvents;
         }
         return this._eventTimeStamp(e) < this._lastTouchEventTimeStamp + Delay.PreventFiresTouchEvents;
-    };
-    EventHandlerImp.prototype._processEvent = function (event, callback) {
-        callback === null || callback === void 0 ? void 0 : callback.call(this._handler, event);
-    };
-    EventHandlerImp.prototype._makeCompatEvent = function (event, touch) {
-        var _this = this;
+    }
+    _processEvent(event, callback) {
+        callback?.call(this._handler, event);
+    }
+    _makeCompatEvent(event, touch) {
         // TouchEvent has no clientX/Y coordinates:
         // We have to use the last Touch instead
-        var eventLike = touch !== null && touch !== void 0 ? touch : event;
-        var box = this._target.getBoundingClientRect();
+        const eventLike = touch ?? event;
+        const box = this._target.getBoundingClientRect();
         return {
             x: eventLike.clientX - box.left,
             y: eventLike.clientY - box.top,
             pageX: eventLike.pageX,
             pageY: eventLike.pageY,
             isTouch: !event.type.startsWith('mouse') && event.type !== 'contextmenu' && event.type !== 'click' && event.type !== 'wheel',
-            preventDefault: function () {
+            preventDefault: () => {
                 if (event.type !== 'touchstart') {
                     // touchstart is passive and cannot be prevented
-                    _this._preventDefault(event);
+                    this._preventDefault(event);
                 }
             }
         };
-    };
-    EventHandlerImp.prototype._getTouchDistance = function (p1, p2) {
-        var xDiff = p1.clientX - p2.clientX;
-        var yDiff = p1.clientY - p2.clientY;
+    }
+    _getTouchDistance(p1, p2) {
+        const xDiff = p1.clientX - p2.clientX;
+        const yDiff = p1.clientY - p2.clientY;
         return Math.sqrt(xDiff * xDiff + yDiff * yDiff);
-    };
-    EventHandlerImp.prototype._preventDefault = function (event) {
+    }
+    _preventDefault(event) {
         if (event.cancelable) {
             event.preventDefault();
         }
-    };
-    EventHandlerImp.prototype._getCoordinate = function (eventLike) {
+    }
+    _getCoordinate(eventLike) {
         return {
             x: eventLike.pageX,
             y: eventLike.pageY
         };
-    };
-    EventHandlerImp.prototype._eventTimeStamp = function (e) {
-        var _a;
+    }
+    _eventTimeStamp(e) {
         // for some reason e.timestamp is always 0 on iPad with magic mouse, so we use performance.now() as a fallback
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return (_a = e.timeStamp) !== null && _a !== void 0 ? _a : performance.now();
-    };
-    EventHandlerImp.prototype._touchWithId = function (touches, id) {
+        return e.timeStamp ?? performance.now();
+    }
+    _touchWithId(touches, id) {
         // eslint-disable-next-line @typescript-eslint/prefer-for-of
-        for (var i = 0; i < touches.length; ++i) {
+        for (let i = 0; i < touches.length; ++i) {
             if (touches[i].identifier === id) {
                 return touches[i];
             }
         }
         return null;
-    };
-    return EventHandlerImp;
-}());
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13863,142 +13273,143 @@ var EventHandlerImp = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Event = /** @class */ (function () {
-    function Event(container, chart) {
-        var _this = this;
-        // 惯性滚动开始时间
-        this._flingStartTime = new Date().getTime();
-        // 惯性滚动定时器
-        this._flingScrollRequestId = null;
-        // 开始滚动时坐标点
-        this._startScrollCoordinate = null;
-        // 开始触摸时坐标
-        this._touchCoordinate = null;
-        // 是否是取消了十字光标
-        this._touchCancelCrosshair = false;
-        // 是否缩放过
-        this._touchZoomed = false;
-        // 用来记录捏合缩放的尺寸
-        this._pinchScale = 1;
-        this._mouseDownWidget = null;
-        this._prevYAxisRange = null;
-        this._xAxisStartScaleCoordinate = null;
-        this._xAxisStartScaleDistance = 0;
-        this._xAxisScale = 1;
-        this._yAxisStartScaleDistance = 0;
-        this._mouseMoveTriggerWidgetInfo = { pane: null, widget: null };
-        this._boundKeyBoardDownEvent = function (event) {
-            if (event.shiftKey) {
-                switch (event.code) {
-                    case 'Equal': {
-                        _this._chart.getChartStore().zoom(0.5, null, 'main');
-                        break;
-                    }
-                    case 'Minus': {
-                        _this._chart.getChartStore().zoom(-0.5, null, 'main');
-                        break;
-                    }
-                    case 'ArrowLeft': {
-                        var store = _this._chart.getChartStore();
-                        store.startScroll();
-                        store.scroll(-3 * store.getBarSpace().bar);
-                        break;
-                    }
-                    case 'ArrowRight': {
-                        var store = _this._chart.getChartStore();
-                        store.startScroll();
-                        store.scroll(3 * store.getBarSpace().bar);
-                        break;
-                    }
+class Event {
+    _container;
+    _chart;
+    _event;
+    // 惯性滚动开始时间
+    _flingStartTime = new Date().getTime();
+    // 惯性滚动定时器
+    _flingScrollRequestId = null;
+    // 开始滚动时坐标点
+    _startScrollCoordinate = null;
+    // 开始触摸时坐标
+    _touchCoordinate = null;
+    // 是否是取消了十字光标
+    _touchCancelCrosshair = false;
+    // 是否缩放过
+    _touchZoomed = false;
+    // 用来记录捏合缩放的尺寸
+    _pinchScale = 1;
+    _mouseDownWidget = null;
+    _prevYAxisRange = null;
+    _xAxisStartScaleCoordinate = null;
+    _xAxisStartScaleDistance = 0;
+    _xAxisScale = 1;
+    _yAxisStartScaleDistance = 0;
+    _mouseMoveTriggerWidgetInfo = { pane: null, widget: null };
+    _boundKeyBoardDownEvent = (event) => {
+        if (event.shiftKey) {
+            switch (event.code) {
+                case 'Equal': {
+                    this._chart.getChartStore().zoom(0.5, null, 'main');
+                    break;
+                }
+                case 'Minus': {
+                    this._chart.getChartStore().zoom(-0.5, null, 'main');
+                    break;
+                }
+                case 'ArrowLeft': {
+                    const store = this._chart.getChartStore();
+                    store.startScroll();
+                    store.scroll(-3 * store.getBarSpace().bar);
+                    break;
+                }
+                case 'ArrowRight': {
+                    const store = this._chart.getChartStore();
+                    store.startScroll();
+                    store.scroll(3 * store.getBarSpace().bar);
+                    break;
                 }
             }
-        };
+        }
+    };
+    constructor(container, chart) {
         this._container = container;
         this._chart = chart;
         this._event = new EventHandlerImp(container, this, {
-            treatVertDragAsPageScroll: function () { return false; },
-            treatHorzDragAsPageScroll: function () { return false; }
+            treatVertDragAsPageScroll: () => false,
+            treatHorzDragAsPageScroll: () => false
         });
         container.addEventListener('keydown', this._boundKeyBoardDownEvent);
     }
-    Event.prototype.pinchStartEvent = function () {
+    pinchStartEvent() {
         this._touchZoomed = true;
         this._pinchScale = 1;
         return true;
-    };
-    Event.prototype.pinchEvent = function (e, scale) {
-        var _a = this._findWidgetByEvent(e), pane = _a.pane, widget = _a.widget;
-        if ((pane === null || pane === void 0 ? void 0 : pane.getId()) !== PaneIdConstants.X_AXIS && (widget === null || widget === void 0 ? void 0 : widget.getName()) === WidgetNameConstants.MAIN) {
-            var event_1 = this._makeWidgetEvent(e, widget);
-            var zoomScale = (scale - this._pinchScale) * 5;
+    }
+    pinchEvent(e, scale) {
+        const { pane, widget } = this._findWidgetByEvent(e);
+        if (pane?.getId() !== PaneIdConstants.X_AXIS && widget?.getName() === WidgetNameConstants.MAIN) {
+            const event = this._makeWidgetEvent(e, widget);
+            const zoomScale = (scale - this._pinchScale) * 5;
             this._pinchScale = scale;
-            this._chart.getChartStore().zoom(zoomScale, { x: event_1.x, y: event_1.y }, 'main');
+            this._chart.getChartStore().zoom(zoomScale, { x: event.x, y: event.y }, 'main');
             return true;
         }
         return false;
-    };
-    Event.prototype.mouseWheelHortEvent = function (_, distance) {
-        var store = this._chart.getChartStore();
+    }
+    mouseWheelHortEvent(_, distance) {
+        const store = this._chart.getChartStore();
         store.startScroll();
         store.scroll(distance);
         return true;
-    };
-    Event.prototype.mouseWheelVertEvent = function (e, scale) {
-        var widget = this._findWidgetByEvent(e).widget;
-        var event = this._makeWidgetEvent(e, widget);
-        var name = widget === null || widget === void 0 ? void 0 : widget.getName();
+    }
+    mouseWheelVertEvent(e, scale) {
+        const { widget } = this._findWidgetByEvent(e);
+        const event = this._makeWidgetEvent(e, widget);
+        const name = widget?.getName();
         if (name === WidgetNameConstants.MAIN) {
             this._chart.getChartStore().zoom(scale, { x: event.x, y: event.y }, 'main');
             return true;
         }
         return false;
-    };
-    Event.prototype.mouseDownEvent = function (e) {
-        var _a = this._findWidgetByEvent(e), pane = _a.pane, widget = _a.widget;
+    }
+    mouseDownEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
         this._mouseDownWidget = widget;
         if (widget !== null) {
-            var event_2 = this._makeWidgetEvent(e, widget);
-            var name_1 = widget.getName();
-            switch (name_1) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.SEPARATOR: {
-                    return widget.dispatchEvent('mouseDownEvent', event_2);
+                    return widget.dispatchEvent('mouseDownEvent', event);
                 }
                 case WidgetNameConstants.MAIN: {
-                    var yAxis = pane.getAxisComponent();
+                    const yAxis = pane.getAxisComponent();
                     if (!yAxis.getAutoCalcTickFlag()) {
-                        var range = yAxis.getRange();
-                        this._prevYAxisRange = __assign({}, range);
+                        const range = yAxis.getRange();
+                        this._prevYAxisRange = { ...range };
                     }
-                    this._startScrollCoordinate = { x: event_2.x, y: event_2.y };
+                    this._startScrollCoordinate = { x: event.x, y: event.y };
                     this._chart.getChartStore().startScroll();
-                    return widget.dispatchEvent('mouseDownEvent', event_2);
+                    return widget.dispatchEvent('mouseDownEvent', event);
                 }
                 case WidgetNameConstants.X_AXIS: {
-                    return this._processXAxisScrollStartEvent(widget, event_2);
+                    return this._processXAxisScrollStartEvent(widget, event);
                 }
                 case WidgetNameConstants.Y_AXIS: {
-                    return this._processYAxisScaleStartEvent(widget, event_2);
+                    return this._processYAxisScaleStartEvent(widget, event);
                 }
             }
         }
         return false;
-    };
-    Event.prototype.mouseMoveEvent = function (e) {
-        var _a, _b, _c;
-        var _d = this._findWidgetByEvent(e), pane = _d.pane, widget = _d.widget;
-        var event = this._makeWidgetEvent(e, widget);
-        if (((_a = this._mouseMoveTriggerWidgetInfo.pane) === null || _a === void 0 ? void 0 : _a.getId()) !== (pane === null || pane === void 0 ? void 0 : pane.getId()) ||
-            ((_b = this._mouseMoveTriggerWidgetInfo.widget) === null || _b === void 0 ? void 0 : _b.getName()) !== (widget === null || widget === void 0 ? void 0 : widget.getName())) {
-            widget === null || widget === void 0 ? void 0 : widget.dispatchEvent('mouseEnterEvent', event);
-            (_c = this._mouseMoveTriggerWidgetInfo.widget) === null || _c === void 0 ? void 0 : _c.dispatchEvent('mouseLeaveEvent', event);
-            this._mouseMoveTriggerWidgetInfo = { pane: pane, widget: widget };
+    }
+    mouseMoveEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
+        const event = this._makeWidgetEvent(e, widget);
+        if (this._mouseMoveTriggerWidgetInfo.pane?.getId() !== pane?.getId() ||
+            this._mouseMoveTriggerWidgetInfo.widget?.getName() !== widget?.getName()) {
+            widget?.dispatchEvent('mouseEnterEvent', event);
+            this._mouseMoveTriggerWidgetInfo.widget?.dispatchEvent('mouseLeaveEvent', event);
+            this._mouseMoveTriggerWidgetInfo = { pane, widget };
         }
         if (widget !== null) {
-            var name_2 = widget.getName();
-            switch (name_2) {
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
-                    var consumed = widget.dispatchEvent('mouseMoveEvent', event);
-                    var crosshair = { x: event.x, y: event.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() };
+                    const consumed = widget.dispatchEvent('mouseMoveEvent', event);
+                    let crosshair = { x: event.x, y: event.y, paneId: pane?.getId() };
                     if (consumed) {
                         if (widget.getForceCursor() !== 'pointer') {
                             crosshair = undefined;
@@ -14014,61 +13425,60 @@ var Event = /** @class */ (function () {
                 case WidgetNameConstants.SEPARATOR:
                 case WidgetNameConstants.X_AXIS:
                 case WidgetNameConstants.Y_AXIS: {
-                    var consumed = widget.dispatchEvent('mouseMoveEvent', event);
+                    const consumed = widget.dispatchEvent('mouseMoveEvent', event);
                     this._chart.getChartStore().setCrosshair();
                     return consumed;
                 }
             }
         }
         return false;
-    };
-    Event.prototype.pressedMouseMoveEvent = function (e) {
-        var _a, _b;
+    }
+    pressedMouseMoveEvent(e) {
         if (this._mouseDownWidget !== null && this._mouseDownWidget.getName() === WidgetNameConstants.SEPARATOR) {
             return this._mouseDownWidget.dispatchEvent('pressedMouseMoveEvent', e);
         }
-        var _c = this._findWidgetByEvent(e), pane = _c.pane, widget = _c.widget;
+        const { pane, widget } = this._findWidgetByEvent(e);
         if (widget !== null &&
-            ((_a = this._mouseDownWidget) === null || _a === void 0 ? void 0 : _a.getPane().getId()) === (pane === null || pane === void 0 ? void 0 : pane.getId()) &&
-            ((_b = this._mouseDownWidget) === null || _b === void 0 ? void 0 : _b.getName()) === widget.getName()) {
-            var event_3 = this._makeWidgetEvent(e, widget);
-            var name_3 = widget.getName();
-            switch (name_3) {
+            this._mouseDownWidget?.getPane().getId() === pane?.getId() &&
+            this._mouseDownWidget?.getName() === widget.getName()) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
                     // eslint-disable-next-line @typescript-eslint/init-declarations -- ignore
-                    var crosshair = void 0;
-                    var consumed = widget.dispatchEvent('pressedMouseMoveEvent', event_3);
+                    let crosshair;
+                    const consumed = widget.dispatchEvent('pressedMouseMoveEvent', event);
                     if (!consumed) {
-                        this._processMainScrollingEvent(widget, event_3);
+                        this._processMainScrollingEvent(widget, event);
                     }
                     if (!consumed || widget.getForceCursor() === 'pointer') {
-                        crosshair = { x: event_3.x, y: event_3.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() };
+                        crosshair = { x: event.x, y: event.y, paneId: pane?.getId() };
                     }
                     this._chart.getChartStore().setCrosshair(crosshair, { forceInvalidate: true });
                     return consumed;
                 }
                 case WidgetNameConstants.X_AXIS: {
-                    return this._processXAxisScrollingEvent(widget, event_3);
+                    return this._processXAxisScrollingEvent(widget, event);
                 }
                 case WidgetNameConstants.Y_AXIS: {
-                    return this._processYAxisScalingEvent(widget, event_3);
+                    return this._processYAxisScalingEvent(widget, event);
                 }
             }
         }
         return false;
-    };
-    Event.prototype.mouseUpEvent = function (e) {
-        var widget = this._findWidgetByEvent(e).widget;
-        var consumed = false;
+    }
+    mouseUpEvent(e) {
+        const { widget } = this._findWidgetByEvent(e);
+        let consumed = false;
         if (widget !== null) {
-            var event_4 = this._makeWidgetEvent(e, widget);
-            var name_4 = widget.getName();
-            switch (name_4) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN:
                 case WidgetNameConstants.SEPARATOR:
                 case WidgetNameConstants.X_AXIS:
                 case WidgetNameConstants.Y_AXIS: {
-                    consumed = widget.dispatchEvent('mouseUpEvent', event_4);
+                    consumed = widget.dispatchEvent('mouseUpEvent', event);
                     break;
                 }
             }
@@ -14084,26 +13494,26 @@ var Event = /** @class */ (function () {
         this._xAxisScale = 1;
         this._yAxisStartScaleDistance = 0;
         return consumed;
-    };
-    Event.prototype.mouseClickEvent = function (e) {
-        var widget = this._findWidgetByEvent(e).widget;
+    }
+    mouseClickEvent(e) {
+        const { widget } = this._findWidgetByEvent(e);
         if (widget !== null) {
-            var event_5 = this._makeWidgetEvent(e, widget);
-            return widget.dispatchEvent('mouseClickEvent', event_5);
+            const event = this._makeWidgetEvent(e, widget);
+            return widget.dispatchEvent('mouseClickEvent', event);
         }
         return false;
-    };
-    Event.prototype.mouseRightClickEvent = function (e) {
-        var widget = this._findWidgetByEvent(e).widget;
-        var consumed = false;
+    }
+    mouseRightClickEvent(e) {
+        const { widget } = this._findWidgetByEvent(e);
+        let consumed = false;
         if (widget !== null) {
-            var event_6 = this._makeWidgetEvent(e, widget);
-            var name_5 = widget.getName();
-            switch (name_5) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN:
                 case WidgetNameConstants.X_AXIS:
                 case WidgetNameConstants.Y_AXIS: {
-                    consumed = widget.dispatchEvent('mouseRightClickEvent', event_6);
+                    consumed = widget.dispatchEvent('mouseRightClickEvent', event);
                     break;
                 }
             }
@@ -14112,18 +13522,18 @@ var Event = /** @class */ (function () {
             }
         }
         return false;
-    };
-    Event.prototype.mouseDoubleClickEvent = function (e) {
-        var _a = this._findWidgetByEvent(e), pane = _a.pane, widget = _a.widget;
+    }
+    mouseDoubleClickEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
         if (widget !== null) {
-            var name_6 = widget.getName();
-            switch (name_6) {
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
-                    var event_7 = this._makeWidgetEvent(e, widget);
-                    return widget.dispatchEvent('mouseDoubleClickEvent', event_7);
+                    const event = this._makeWidgetEvent(e, widget);
+                    return widget.dispatchEvent('mouseDoubleClickEvent', event);
                 }
                 case WidgetNameConstants.Y_AXIS: {
-                    var yAxis = pane.getAxisComponent();
+                    const yAxis = pane.getAxisComponent();
                     if (!yAxis.getAutoCalcTickFlag()) {
                         yAxis.setAutoCalcTickFlag(true);
                         this._chart.layout({
@@ -14138,22 +13548,21 @@ var Event = /** @class */ (function () {
             }
         }
         return false;
-    };
-    Event.prototype.mouseLeaveEvent = function () {
+    }
+    mouseLeaveEvent() {
         this._chart.getChartStore().setCrosshair();
         return true;
-    };
-    Event.prototype.touchStartEvent = function (e) {
-        var _a;
-        var _b = this._findWidgetByEvent(e), pane = _b.pane, widget = _b.widget;
+    }
+    touchStartEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
         if (widget !== null) {
-            var event_8 = this._makeWidgetEvent(e, widget);
-            (_a = event_8.preventDefault) === null || _a === void 0 ? void 0 : _a.call(event_8);
-            var name_7 = widget.getName();
-            switch (name_7) {
+            const event = this._makeWidgetEvent(e, widget);
+            event.preventDefault?.();
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
-                    var chartStore = this._chart.getChartStore();
-                    if (widget.dispatchEvent('mouseDownEvent', event_8)) {
+                    const chartStore = this._chart.getChartStore();
+                    if (widget.dispatchEvent('mouseDownEvent', event)) {
                         this._touchCancelCrosshair = true;
                         this._touchCoordinate = null;
                         chartStore.setCrosshair(undefined, { notInvalidate: true });
@@ -14165,21 +13574,21 @@ var Event = /** @class */ (function () {
                         this._flingScrollRequestId = null;
                     }
                     this._flingStartTime = new Date().getTime();
-                    var yAxis = pane.getAxisComponent();
+                    const yAxis = pane.getAxisComponent();
                     if (!yAxis.getAutoCalcTickFlag()) {
-                        var range = yAxis.getRange();
-                        this._prevYAxisRange = __assign({}, range);
+                        const range = yAxis.getRange();
+                        this._prevYAxisRange = { ...range };
                     }
-                    this._startScrollCoordinate = { x: event_8.x, y: event_8.y };
+                    this._startScrollCoordinate = { x: event.x, y: event.y };
                     chartStore.startScroll();
                     this._touchZoomed = false;
                     if (this._touchCoordinate !== null) {
-                        var xDif = event_8.x - this._touchCoordinate.x;
-                        var yDif = event_8.y - this._touchCoordinate.y;
-                        var radius = Math.sqrt(xDif * xDif + yDif * yDif);
+                        const xDif = event.x - this._touchCoordinate.x;
+                        const yDif = event.y - this._touchCoordinate.y;
+                        const radius = Math.sqrt(xDif * xDif + yDif * yDif);
                         if (radius < TOUCH_MIN_RADIUS) {
-                            this._touchCoordinate = { x: event_8.x, y: event_8.y };
-                            chartStore.setCrosshair({ x: event_8.x, y: event_8.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() });
+                            this._touchCoordinate = { x: event.x, y: event.y };
+                            chartStore.setCrosshair({ x: event.x, y: event.y, paneId: pane?.getId() });
                         }
                         else {
                             this._touchCoordinate = null;
@@ -14190,89 +13599,87 @@ var Event = /** @class */ (function () {
                     return true;
                 }
                 case WidgetNameConstants.X_AXIS: {
-                    return this._processXAxisScrollStartEvent(widget, event_8);
+                    return this._processXAxisScrollStartEvent(widget, event);
                 }
                 case WidgetNameConstants.Y_AXIS: {
-                    return this._processYAxisScaleStartEvent(widget, event_8);
+                    return this._processYAxisScaleStartEvent(widget, event);
                 }
             }
         }
         return false;
-    };
-    Event.prototype.touchMoveEvent = function (e) {
-        var _a, _b, _c;
-        var _d = this._findWidgetByEvent(e), pane = _d.pane, widget = _d.widget;
+    }
+    touchMoveEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
         if (widget !== null) {
-            var event_9 = this._makeWidgetEvent(e, widget);
-            var name_8 = widget.getName();
-            var chartStore = this._chart.getChartStore();
-            switch (name_8) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            const chartStore = this._chart.getChartStore();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
-                    if (widget.dispatchEvent('pressedMouseMoveEvent', event_9)) {
-                        (_a = event_9.preventDefault) === null || _a === void 0 ? void 0 : _a.call(event_9);
+                    if (widget.dispatchEvent('pressedMouseMoveEvent', event)) {
+                        event.preventDefault?.();
                         chartStore.setCrosshair(undefined, { notInvalidate: true });
                         this._chart.updatePane(1 /* UpdateLevel.Overlay */);
                         return true;
                     }
                     if (this._touchCoordinate !== null) {
-                        (_b = event_9.preventDefault) === null || _b === void 0 ? void 0 : _b.call(event_9);
-                        chartStore.setCrosshair({ x: event_9.x, y: event_9.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() });
+                        event.preventDefault?.();
+                        chartStore.setCrosshair({ x: event.x, y: event.y, paneId: pane?.getId() });
                     }
                     else {
-                        this._processMainScrollingEvent(widget, event_9);
+                        this._processMainScrollingEvent(widget, event);
                     }
                     return true;
                 }
                 case WidgetNameConstants.X_AXIS: {
-                    (_c = event_9.preventDefault) === null || _c === void 0 ? void 0 : _c.call(event_9);
-                    return this._processXAxisScrollingEvent(widget, event_9);
+                    event.preventDefault?.();
+                    return this._processXAxisScrollingEvent(widget, event);
                 }
                 case WidgetNameConstants.Y_AXIS: {
-                    return this._processYAxisScalingEvent(widget, event_9);
+                    return this._processYAxisScalingEvent(widget, event);
                 }
             }
         }
         return false;
-    };
-    Event.prototype.touchEndEvent = function (e) {
-        var _this = this;
-        var widget = this._findWidgetByEvent(e).widget;
+    }
+    touchEndEvent(e) {
+        const { widget } = this._findWidgetByEvent(e);
         if (widget !== null) {
-            var event_10 = this._makeWidgetEvent(e, widget);
-            var name_9 = widget.getName();
-            switch (name_9) {
+            const event = this._makeWidgetEvent(e, widget);
+            const name = widget.getName();
+            switch (name) {
                 case WidgetNameConstants.MAIN: {
-                    widget.dispatchEvent('mouseUpEvent', event_10);
+                    widget.dispatchEvent('mouseUpEvent', event);
                     if (this._startScrollCoordinate !== null) {
-                        var time = new Date().getTime() - this._flingStartTime;
-                        var distance = event_10.x - this._startScrollCoordinate.x;
-                        var v_1 = distance / (time > 0 ? time : 1) * 20;
-                        if (time < 200 && Math.abs(v_1) > 0) {
-                            var store_1 = this._chart.getChartStore();
-                            var flingScroll_1 = function () {
-                                _this._flingScrollRequestId = requestAnimationFrame$1(function () {
-                                    store_1.startScroll();
-                                    store_1.scroll(v_1);
-                                    v_1 = v_1 * (1 - 0.025);
-                                    if (Math.abs(v_1) < 1) {
-                                        if (_this._flingScrollRequestId !== null) {
-                                            cancelAnimationFrame(_this._flingScrollRequestId);
-                                            _this._flingScrollRequestId = null;
+                        const time = new Date().getTime() - this._flingStartTime;
+                        const distance = event.x - this._startScrollCoordinate.x;
+                        let v = distance / (time > 0 ? time : 1) * 20;
+                        if (time < 200 && Math.abs(v) > 0) {
+                            const store = this._chart.getChartStore();
+                            const flingScroll = () => {
+                                this._flingScrollRequestId = requestAnimationFrame(() => {
+                                    store.startScroll();
+                                    store.scroll(v);
+                                    v = v * (1 - 0.025);
+                                    if (Math.abs(v) < 1) {
+                                        if (this._flingScrollRequestId !== null) {
+                                            cancelAnimationFrame(this._flingScrollRequestId);
+                                            this._flingScrollRequestId = null;
                                         }
                                     }
                                     else {
-                                        flingScroll_1();
+                                        flingScroll();
                                     }
                                 });
                             };
-                            flingScroll_1();
+                            flingScroll();
                         }
                     }
                     return true;
                 }
                 case WidgetNameConstants.X_AXIS:
                 case WidgetNameConstants.Y_AXIS: {
-                    var consumed = widget.dispatchEvent('mouseUpEvent', event_10);
+                    const consumed = widget.dispatchEvent('mouseUpEvent', event);
                     if (consumed) {
                         this._chart.updatePane(1 /* UpdateLevel.Overlay */);
                     }
@@ -14286,16 +13693,16 @@ var Event = /** @class */ (function () {
             this._yAxisStartScaleDistance = 0;
         }
         return false;
-    };
-    Event.prototype.tapEvent = function (e) {
-        var _a = this._findWidgetByEvent(e), pane = _a.pane, widget = _a.widget;
-        var consumed = false;
+    }
+    tapEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
+        let consumed = false;
         if (widget !== null) {
-            var event_11 = this._makeWidgetEvent(e, widget);
-            var result = widget.dispatchEvent('mouseClickEvent', event_11);
+            const event = this._makeWidgetEvent(e, widget);
+            const result = widget.dispatchEvent('mouseClickEvent', event);
             if (widget.getName() === WidgetNameConstants.MAIN) {
-                var event_12 = this._makeWidgetEvent(e, widget);
-                var chartStore = this._chart.getChartStore();
+                const event = this._makeWidgetEvent(e, widget);
+                const chartStore = this._chart.getChartStore();
                 if (result) {
                     this._touchCancelCrosshair = true;
                     this._touchCoordinate = null;
@@ -14304,8 +13711,8 @@ var Event = /** @class */ (function () {
                 }
                 else {
                     if (!this._touchCancelCrosshair && !this._touchZoomed) {
-                        this._touchCoordinate = { x: event_12.x, y: event_12.y };
-                        chartStore.setCrosshair({ x: event_12.x, y: event_12.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() }, { notInvalidate: true });
+                        this._touchCoordinate = { x: event.x, y: event.y };
+                        chartStore.setCrosshair({ x: event.x, y: event.y, paneId: pane?.getId() }, { notInvalidate: true });
                         consumed = true;
                     }
                     this._touchCancelCrosshair = false;
@@ -14316,43 +13723,42 @@ var Event = /** @class */ (function () {
             }
         }
         return consumed;
-    };
-    Event.prototype.doubleTapEvent = function (e) {
+    }
+    doubleTapEvent(e) {
         return this.mouseDoubleClickEvent(e);
-    };
-    Event.prototype.longTapEvent = function (e) {
-        var _a = this._findWidgetByEvent(e), pane = _a.pane, widget = _a.widget;
+    }
+    longTapEvent(e) {
+        const { pane, widget } = this._findWidgetByEvent(e);
         if (widget !== null && widget.getName() === WidgetNameConstants.MAIN) {
-            var event_13 = this._makeWidgetEvent(e, widget);
-            this._touchCoordinate = { x: event_13.x, y: event_13.y };
-            this._chart.getChartStore().setCrosshair({ x: event_13.x, y: event_13.y, paneId: pane === null || pane === void 0 ? void 0 : pane.getId() });
+            const event = this._makeWidgetEvent(e, widget);
+            this._touchCoordinate = { x: event.x, y: event.y };
+            this._chart.getChartStore().setCrosshair({ x: event.x, y: event.y, paneId: pane?.getId() });
             return true;
         }
         return false;
-    };
-    Event.prototype._processMainScrollingEvent = function (widget, event) {
-        var _a;
+    }
+    _processMainScrollingEvent(widget, event) {
         if (this._startScrollCoordinate !== null) {
-            var yAxis = widget.getPane().getAxisComponent();
+            const yAxis = widget.getPane().getAxisComponent();
             if (this._prevYAxisRange !== null && !yAxis.getAutoCalcTickFlag() && yAxis.scrollZoomEnabled) {
-                (_a = event.preventDefault) === null || _a === void 0 ? void 0 : _a.call(event);
-                var _b = this._prevYAxisRange, from = _b.from, to = _b.to, range = _b.range;
-                var distance_1 = 0;
+                event.preventDefault?.();
+                const { from, to, range } = this._prevYAxisRange;
+                let distance = 0;
                 if (yAxis.reverse) {
-                    distance_1 = this._startScrollCoordinate.y - event.y;
+                    distance = this._startScrollCoordinate.y - event.y;
                 }
                 else {
-                    distance_1 = event.y - this._startScrollCoordinate.y;
+                    distance = event.y - this._startScrollCoordinate.y;
                 }
-                var bounding = widget.getBounding();
-                var scale = distance_1 / bounding.height;
-                var difRange = range * scale;
-                var newFrom = from + difRange;
-                var newTo = to + difRange;
-                var newRealFrom = yAxis.valueToRealValue(newFrom, { range: this._prevYAxisRange });
-                var newRealTo = yAxis.valueToRealValue(newTo, { range: this._prevYAxisRange });
-                var newDisplayFrom = yAxis.realValueToDisplayValue(newRealFrom, { range: this._prevYAxisRange });
-                var newDisplayTo = yAxis.realValueToDisplayValue(newRealTo, { range: this._prevYAxisRange });
+                const bounding = widget.getBounding();
+                const scale = distance / bounding.height;
+                const difRange = range * scale;
+                const newFrom = from + difRange;
+                const newTo = to + difRange;
+                const newRealFrom = yAxis.valueToRealValue(newFrom, { range: this._prevYAxisRange });
+                const newRealTo = yAxis.valueToRealValue(newTo, { range: this._prevYAxisRange });
+                const newDisplayFrom = yAxis.realValueToDisplayValue(newRealFrom, { range: this._prevYAxisRange });
+                const newDisplayTo = yAxis.realValueToDisplayValue(newRealTo, { range: this._prevYAxisRange });
                 yAxis.setRange({
                     from: newFrom,
                     to: newTo,
@@ -14365,27 +13771,27 @@ var Event = /** @class */ (function () {
                     displayRange: newDisplayTo - newDisplayFrom
                 });
             }
-            var distance = event.x - this._startScrollCoordinate.x;
+            const distance = event.x - this._startScrollCoordinate.x;
             this._chart.getChartStore().scroll(distance);
         }
-    };
-    Event.prototype._processXAxisScrollStartEvent = function (widget, event) {
-        var consumed = widget.dispatchEvent('mouseDownEvent', event);
+    }
+    _processXAxisScrollStartEvent(widget, event) {
+        const consumed = widget.dispatchEvent('mouseDownEvent', event);
         if (consumed) {
             this._chart.updatePane(1 /* UpdateLevel.Overlay */);
         }
         this._xAxisStartScaleCoordinate = { x: event.x, y: event.y };
         this._xAxisStartScaleDistance = event.pageX;
         return consumed;
-    };
-    Event.prototype._processXAxisScrollingEvent = function (widget, event) {
-        var consumed = widget.dispatchEvent('pressedMouseMoveEvent', event);
+    }
+    _processXAxisScrollingEvent(widget, event) {
+        const consumed = widget.dispatchEvent('pressedMouseMoveEvent', event);
         if (!consumed) {
-            var xAxis = widget.getPane().getAxisComponent();
+            const xAxis = widget.getPane().getAxisComponent();
             if (xAxis.scrollZoomEnabled && this._xAxisStartScaleDistance !== 0) {
-                var scale = this._xAxisStartScaleDistance / event.pageX;
+                const scale = this._xAxisStartScaleDistance / event.pageX;
                 if (Number.isFinite(scale)) {
-                    var zoomScale = (scale - this._xAxisScale) * 10;
+                    const zoomScale = (scale - this._xAxisScale) * 10;
                     this._xAxisScale = scale;
                     this._chart.getChartStore().zoom(zoomScale, this._xAxisStartScaleCoordinate, 'xAxis');
                 }
@@ -14395,34 +13801,33 @@ var Event = /** @class */ (function () {
             this._chart.updatePane(1 /* UpdateLevel.Overlay */);
         }
         return consumed;
-    };
-    Event.prototype._processYAxisScaleStartEvent = function (widget, event) {
-        var consumed = widget.dispatchEvent('mouseDownEvent', event);
+    }
+    _processYAxisScaleStartEvent(widget, event) {
+        const consumed = widget.dispatchEvent('mouseDownEvent', event);
         if (consumed) {
             this._chart.updatePane(1 /* UpdateLevel.Overlay */);
         }
-        var range = widget.getPane().getAxisComponent().getRange();
-        this._prevYAxisRange = __assign({}, range);
+        const range = widget.getPane().getAxisComponent().getRange();
+        this._prevYAxisRange = { ...range };
         this._yAxisStartScaleDistance = event.pageY;
         return consumed;
-    };
-    Event.prototype._processYAxisScalingEvent = function (widget, event) {
-        var _a;
-        var consumed = widget.dispatchEvent('pressedMouseMoveEvent', event);
+    }
+    _processYAxisScalingEvent(widget, event) {
+        const consumed = widget.dispatchEvent('pressedMouseMoveEvent', event);
         if (!consumed) {
-            var yAxis = widget.getPane().getAxisComponent();
+            const yAxis = widget.getPane().getAxisComponent();
             if (this._prevYAxisRange !== null && yAxis.scrollZoomEnabled && this._yAxisStartScaleDistance !== 0) {
-                (_a = event.preventDefault) === null || _a === void 0 ? void 0 : _a.call(event);
-                var _b = this._prevYAxisRange, from = _b.from, to = _b.to, range = _b.range;
-                var scale = event.pageY / this._yAxisStartScaleDistance;
-                var newRange = range * scale;
-                var difRange = (newRange - range) / 2;
-                var newFrom = from - difRange;
-                var newTo = to + difRange;
-                var newRealFrom = yAxis.valueToRealValue(newFrom, { range: this._prevYAxisRange });
-                var newRealTo = yAxis.valueToRealValue(newTo, { range: this._prevYAxisRange });
-                var newDisplayFrom = yAxis.realValueToDisplayValue(newRealFrom, { range: this._prevYAxisRange });
-                var newDisplayTo = yAxis.realValueToDisplayValue(newRealTo, { range: this._prevYAxisRange });
+                event.preventDefault?.();
+                const { from, to, range } = this._prevYAxisRange;
+                const scale = event.pageY / this._yAxisStartScaleDistance;
+                const newRange = range * scale;
+                const difRange = (newRange - range) / 2;
+                const newFrom = from - difRange;
+                const newTo = to + difRange;
+                const newRealFrom = yAxis.valueToRealValue(newFrom, { range: this._prevYAxisRange });
+                const newRealTo = yAxis.valueToRealValue(newTo, { range: this._prevYAxisRange });
+                const newDisplayFrom = yAxis.realValueToDisplayValue(newRealFrom, { range: this._prevYAxisRange });
+                const newDisplayTo = yAxis.realValueToDisplayValue(newRealTo, { range: this._prevYAxisRange });
                 yAxis.setRange({
                     from: newFrom,
                     to: newTo,
@@ -14445,65 +13850,44 @@ var Event = /** @class */ (function () {
             this._chart.updatePane(1 /* UpdateLevel.Overlay */);
         }
         return consumed;
-    };
-    Event.prototype._findWidgetByEvent = function (event) {
-        var e_1, _a, e_2, _b;
-        var x = event.x, y = event.y;
-        var separatorPanes = this._chart.getSeparatorPanes();
-        var separatorSize = this._chart.getStyles().separator.size;
-        try {
-            for (var separatorPanes_1 = __values(separatorPanes), separatorPanes_1_1 = separatorPanes_1.next(); !separatorPanes_1_1.done; separatorPanes_1_1 = separatorPanes_1.next()) {
-                var items = separatorPanes_1_1.value;
-                var pane_1 = items[1];
-                var bounding = pane_1.getBounding();
-                var top_1 = bounding.top - Math.round((REAL_SEPARATOR_HEIGHT - separatorSize) / 2);
-                if (x >= bounding.left && x <= bounding.left + bounding.width &&
-                    y >= top_1 && y <= top_1 + REAL_SEPARATOR_HEIGHT) {
-                    return { pane: pane_1, widget: pane_1.getWidget() };
-                }
+    }
+    _findWidgetByEvent(event) {
+        const { x, y } = event;
+        const separatorPanes = this._chart.getSeparatorPanes();
+        const separatorSize = this._chart.getStyles().separator.size;
+        for (const items of separatorPanes) {
+            const pane = items[1];
+            const bounding = pane.getBounding();
+            const top = bounding.top - Math.round((REAL_SEPARATOR_HEIGHT - separatorSize) / 2);
+            if (x >= bounding.left && x <= bounding.left + bounding.width &&
+                y >= top && y <= top + REAL_SEPARATOR_HEIGHT) {
+                return { pane, widget: pane.getWidget() };
             }
         }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (separatorPanes_1_1 && !separatorPanes_1_1.done && (_a = separatorPanes_1.return)) _a.call(separatorPanes_1);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        var drawPanes = this._chart.getDrawPanes();
-        var pane = null;
-        try {
-            for (var drawPanes_1 = __values(drawPanes), drawPanes_1_1 = drawPanes_1.next(); !drawPanes_1_1.done; drawPanes_1_1 = drawPanes_1.next()) {
-                var p = drawPanes_1_1.value;
-                var bounding = p.getBounding();
-                if (x >= bounding.left && x <= bounding.left + bounding.width &&
-                    y >= bounding.top && y <= bounding.top + bounding.height) {
-                    pane = p;
-                    break;
-                }
+        const drawPanes = this._chart.getDrawPanes();
+        let pane = null;
+        for (const p of drawPanes) {
+            const bounding = p.getBounding();
+            if (x >= bounding.left && x <= bounding.left + bounding.width &&
+                y >= bounding.top && y <= bounding.top + bounding.height) {
+                pane = p;
+                break;
             }
         }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
-        finally {
-            try {
-                if (drawPanes_1_1 && !drawPanes_1_1.done && (_b = drawPanes_1.return)) _b.call(drawPanes_1);
-            }
-            finally { if (e_2) throw e_2.error; }
-        }
-        var widget = null;
+        let widget = null;
         if (pane !== null) {
             if (!isValid(widget)) {
-                var mainWidget = pane.getMainWidget();
-                var mainBounding = mainWidget.getBounding();
+                const mainWidget = pane.getMainWidget();
+                const mainBounding = mainWidget.getBounding();
                 if (x >= mainBounding.left && x <= mainBounding.left + mainBounding.width &&
                     y >= mainBounding.top && y <= mainBounding.top + mainBounding.height) {
                     widget = mainWidget;
                 }
             }
             if (!isValid(widget)) {
-                var yAxisWidget = pane.getYAxisWidget();
+                const yAxisWidget = pane.getYAxisWidget();
                 if (yAxisWidget !== null) {
-                    var yAxisBounding = yAxisWidget.getBounding();
+                    const yAxisBounding = yAxisWidget.getBounding();
                     if (x >= yAxisBounding.left && x <= yAxisBounding.left + yAxisBounding.width &&
                         y >= yAxisBounding.top && y <= yAxisBounding.top + yAxisBounding.height) {
                         widget = yAxisWidget;
@@ -14511,19 +13895,21 @@ var Event = /** @class */ (function () {
                 }
             }
         }
-        return { pane: pane, widget: widget };
-    };
-    Event.prototype._makeWidgetEvent = function (event, widget) {
-        var _a, _b, _c;
-        var bounding = (_a = widget === null || widget === void 0 ? void 0 : widget.getBounding()) !== null && _a !== void 0 ? _a : null;
-        return __assign(__assign({}, event), { x: event.x - ((_b = bounding === null || bounding === void 0 ? void 0 : bounding.left) !== null && _b !== void 0 ? _b : 0), y: event.y - ((_c = bounding === null || bounding === void 0 ? void 0 : bounding.top) !== null && _c !== void 0 ? _c : 0) });
-    };
-    Event.prototype.destroy = function () {
+        return { pane, widget };
+    }
+    _makeWidgetEvent(event, widget) {
+        const bounding = widget?.getBounding() ?? null;
+        return {
+            ...event,
+            x: event.x - (bounding?.left ?? 0),
+            y: event.y - (bounding?.top ?? 0)
+        };
+    }
+    destroy() {
         this._container.removeEventListener('keydown', this._boundKeyBoardDownEvent);
         this._event.destroy();
-    };
-    return Event;
-}());
+    }
+}
 
 /**
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14538,29 +13924,36 @@ var Event = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var ChartImp = /** @class */ (function () {
-    function ChartImp(container, options) {
-        this._chartBounding = createDefaultBounding();
-        this._drawPanes = [];
-        this._separatorPanes = new Map();
-        this._layoutOptions = {
-            sort: true,
-            measureHeight: true,
-            measureWidth: true,
-            update: true,
-            buildYAxisTick: false,
-            cacheYAxisWidth: false,
-            forceBuildYAxisTick: false
-        };
-        this._layoutPending = false;
-        this._cacheYAxisWidth = { left: 0, right: 0 };
+class ChartImp {
+    id;
+    _container;
+    _chartContainer;
+    _chartBounding = createDefaultBounding();
+    _chartEvent;
+    _chartStore;
+    _drawPanes = [];
+    _candlePane;
+    _xAxisPane;
+    _separatorPanes = new Map();
+    _layoutOptions = {
+        sort: true,
+        measureHeight: true,
+        measureWidth: true,
+        update: true,
+        buildYAxisTick: false,
+        cacheYAxisWidth: false,
+        forceBuildYAxisTick: false
+    };
+    _layoutPending = false;
+    _cacheYAxisWidth = { left: 0, right: 0 };
+    constructor(container, options) {
         this._initContainer(container);
         this._chartEvent = new Event(this._chartContainer, this);
         this._chartStore = new StoreImp(this, options);
         this._initPanes(options);
         this._layout();
     }
-    ChartImp.prototype._initContainer = function (container) {
+    _initContainer(container) {
         this._container = container;
         this._chartContainer = createDom('div', {
             position: 'relative',
@@ -14582,50 +13975,46 @@ var ChartImp = /** @class */ (function () {
         this._chartContainer.tabIndex = 1;
         container.appendChild(this._chartContainer);
         this._cacheChartBounding();
-    };
-    ChartImp.prototype._cacheChartBounding = function () {
+    }
+    _cacheChartBounding() {
         this._chartBounding.width = Math.floor(this._chartContainer.clientWidth);
         this._chartBounding.height = Math.floor(this._chartContainer.clientHeight);
-    };
-    ChartImp.prototype._initPanes = function (options) {
-        var _this = this;
-        var _a;
-        var layout = (_a = options === null || options === void 0 ? void 0 : options.layout) !== null && _a !== void 0 ? _a : [{ type: 'candle' }];
-        var createCandlePane = function (child) {
-            var _a, _b;
-            if (!isValid(_this._candlePane)) {
-                var paneOptions_1 = (_a = child.options) !== null && _a !== void 0 ? _a : {};
-                merge(paneOptions_1, { id: PaneIdConstants.CANDLE });
-                _this._candlePane = _this._createPane(CandlePane, PaneIdConstants.CANDLE, paneOptions_1);
-                var content = (_b = child.content) !== null && _b !== void 0 ? _b : [];
-                content.forEach(function (v) {
-                    _this.createIndicator(v, true, paneOptions_1);
+    }
+    _initPanes(options) {
+        const layout = options?.layout ?? [{ type: 'candle' }];
+        const createCandlePane = child => {
+            if (!isValid(this._candlePane)) {
+                const paneOptions = child.options ?? {};
+                merge(paneOptions, { id: PaneIdConstants.CANDLE });
+                this._candlePane = this._createPane(CandlePane, PaneIdConstants.CANDLE, paneOptions);
+                const content = child.content ?? [];
+                content.forEach(v => {
+                    this.createIndicator(v, true, paneOptions);
                 });
             }
         };
-        var createXAxisPane = function (ops) {
-            if (!isValid(_this._xAxisPane)) {
-                var pane = _this._createPane(XAxisPane, PaneIdConstants.X_AXIS, ops !== null && ops !== void 0 ? ops : {});
-                _this._xAxisPane = pane;
+        const createXAxisPane = (ops) => {
+            if (!isValid(this._xAxisPane)) {
+                const pane = this._createPane(XAxisPane, PaneIdConstants.X_AXIS, ops ?? {});
+                this._xAxisPane = pane;
             }
         };
-        layout.forEach(function (child) {
-            var _a, _b, _c;
+        layout.forEach(child => {
             switch (child.type) {
                 case 'candle': {
                     createCandlePane(child);
                     break;
                 }
                 case 'indicator': {
-                    var content = (_a = child.content) !== null && _a !== void 0 ? _a : [];
+                    const content = child.content ?? [];
                     if (content.length > 0) {
-                        var paneId = (_c = (_b = child.options) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : null;
+                        let paneId = child.options?.id ?? null;
                         if (isValid(paneId)) {
                             paneId = createId(PaneIdConstants.INDICATOR);
                         }
-                        var paneOptions_2 = __assign(__assign({}, child.options), { id: paneId });
-                        content.forEach(function (v) {
-                            _this.createIndicator(v, true, paneOptions_2);
+                        const paneOptions = { ...child.options, id: paneId };
+                        content.forEach(v => {
+                            this.createIndicator(v, true, paneOptions);
                         });
                     }
                     break;
@@ -14638,33 +14027,33 @@ var ChartImp = /** @class */ (function () {
         });
         createCandlePane({ });
         createXAxisPane({ order: Number.MAX_SAFE_INTEGER });
-    };
-    ChartImp.prototype._createPane = function (DrawPaneClass, id, options) {
-        var pane = new DrawPaneClass(this, id, options !== null && options !== void 0 ? options : {});
+    }
+    _createPane(DrawPaneClass, id, options) {
+        const pane = new DrawPaneClass(this, id, options ?? {});
         this._drawPanes.push(pane);
         return pane;
-    };
-    ChartImp.prototype._recalculatePaneHeight = function (currentPane, currentHeight, changeHeight) {
+    }
+    _recalculatePaneHeight(currentPane, currentHeight, changeHeight) {
         if (changeHeight === 0) {
             return false;
         }
-        var normalStatePanes = this._drawPanes.filter(function (pane) {
-            var paneId = pane.getId();
+        const normalStatePanes = this._drawPanes.filter(pane => {
+            const paneId = pane.getId();
             return (pane.getOptions().state === 'normal' &&
                 paneId !== currentPane.getId() &&
                 paneId !== PaneIdConstants.X_AXIS);
         });
-        var count = normalStatePanes.length;
+        const count = normalStatePanes.length;
         if (count === 0) {
             return false;
         }
         if (currentPane.getId() !== PaneIdConstants.CANDLE &&
             isValid(this._candlePane) &&
             this._candlePane.getOptions().state === 'normal') {
-            var height = this._candlePane.getBounding().height;
+            const height = this._candlePane.getBounding().height;
             if (height > 0) {
-                var minHeight = this._candlePane.getOptions().minHeight;
-                var newHeight = height + changeHeight;
+                const minHeight = this._candlePane.getOptions().minHeight;
+                let newHeight = height + changeHeight;
                 if (newHeight < minHeight) {
                     newHeight = minHeight;
                     currentHeight -= (height + changeHeight - newHeight);
@@ -14673,208 +14062,204 @@ var ChartImp = /** @class */ (function () {
             }
         }
         else {
-            var remainingHeight_1 = changeHeight;
-            var normalStatePaneChangeHeight_1 = Math.floor(changeHeight / count);
-            normalStatePanes.forEach(function (pane, index) {
-                var height = pane.getBounding().height;
-                var newHeight = 0;
+            let remainingHeight = changeHeight;
+            const normalStatePaneChangeHeight = Math.floor(changeHeight / count);
+            normalStatePanes.forEach((pane, index) => {
+                const height = pane.getBounding().height;
+                let newHeight = 0;
                 if (index === count - 1) {
-                    newHeight = height + remainingHeight_1;
+                    newHeight = height + remainingHeight;
                 }
                 else {
-                    newHeight = height + normalStatePaneChangeHeight_1;
+                    newHeight = height + normalStatePaneChangeHeight;
                 }
                 if (newHeight < pane.getOptions().minHeight) {
                     newHeight = pane.getOptions().minHeight;
                 }
                 pane.setBounding({ height: newHeight });
-                remainingHeight_1 -= (newHeight - height);
+                remainingHeight -= (newHeight - height);
             });
-            if (Math.abs(remainingHeight_1) > 0) {
-                currentHeight -= remainingHeight_1;
+            if (Math.abs(remainingHeight) > 0) {
+                currentHeight -= remainingHeight;
             }
         }
         currentPane.setBounding({ height: currentHeight });
         return true;
-    };
-    ChartImp.prototype.getDrawPaneById = function (paneId) {
+    }
+    getDrawPaneById(paneId) {
         if (paneId === PaneIdConstants.CANDLE) {
             return this._candlePane;
         }
         if (paneId === PaneIdConstants.X_AXIS) {
             return this._xAxisPane;
         }
-        var pane = this._drawPanes.find(function (p) { return p.getId() === paneId; });
-        return pane !== null && pane !== void 0 ? pane : null;
-    };
-    ChartImp.prototype.getContainer = function () { return this._container; };
-    ChartImp.prototype.getChartStore = function () { return this._chartStore; };
-    ChartImp.prototype.getXAxisPane = function () { return this._xAxisPane; };
-    ChartImp.prototype.getDrawPanes = function () { return this._drawPanes; };
-    ChartImp.prototype.getSeparatorPanes = function () { return this._separatorPanes; };
-    ChartImp.prototype.layout = function (options) {
-        var _this = this;
-        var _a, _b, _c, _d, _e, _f, _g;
-        if ((_a = options.sort) !== null && _a !== void 0 ? _a : false) {
+        const pane = this._drawPanes.find(p => p.getId() === paneId);
+        return pane ?? null;
+    }
+    getContainer() { return this._container; }
+    getChartStore() { return this._chartStore; }
+    getXAxisPane() { return this._xAxisPane; }
+    getDrawPanes() { return this._drawPanes; }
+    getSeparatorPanes() { return this._separatorPanes; }
+    layout(options) {
+        if (options.sort ?? false) {
             this._layoutOptions.sort = options.sort;
         }
-        if ((_b = options.measureHeight) !== null && _b !== void 0 ? _b : false) {
+        if (options.measureHeight ?? false) {
             this._layoutOptions.measureHeight = options.measureHeight;
         }
-        if ((_c = options.measureWidth) !== null && _c !== void 0 ? _c : false) {
+        if (options.measureWidth ?? false) {
             this._layoutOptions.measureWidth = options.measureWidth;
         }
-        if ((_d = options.update) !== null && _d !== void 0 ? _d : false) {
+        if (options.update ?? false) {
             this._layoutOptions.update = options.update;
         }
-        if ((_e = options.buildYAxisTick) !== null && _e !== void 0 ? _e : false) {
+        if (options.buildYAxisTick ?? false) {
             this._layoutOptions.buildYAxisTick = options.buildYAxisTick;
         }
-        if ((_f = options.cacheYAxisWidth) !== null && _f !== void 0 ? _f : false) {
+        if (options.cacheYAxisWidth ?? false) {
             this._layoutOptions.cacheYAxisWidth = options.cacheYAxisWidth;
         }
-        if ((_g = options.buildYAxisTick) !== null && _g !== void 0 ? _g : false) {
+        if (options.buildYAxisTick ?? false) {
             this._layoutOptions.forceBuildYAxisTick = options.forceBuildYAxisTick;
         }
         if (!this._layoutPending) {
             this._layoutPending = true;
-            Promise.resolve().then(function (_) {
-                _this._layout();
-                _this._layoutPending = false;
-            }).catch(function (_) {
+            Promise.resolve().then(_ => {
+                this._layout();
+                this._layoutPending = false;
+            }).catch((_) => {
                 // todo
             });
         }
-    };
-    ChartImp.prototype._layout = function () {
-        var _this = this;
-        var _a = this._layoutOptions, sort = _a.sort, measureHeight = _a.measureHeight, measureWidth = _a.measureWidth, update = _a.update, buildYAxisTick = _a.buildYAxisTick, cacheYAxisWidth = _a.cacheYAxisWidth, forceBuildYAxisTick = _a.forceBuildYAxisTick;
+    }
+    _layout() {
+        const { sort, measureHeight, measureWidth, update, buildYAxisTick, cacheYAxisWidth, forceBuildYAxisTick } = this._layoutOptions;
         if (sort) {
             while (isValid(this._chartContainer.firstChild)) {
                 this._chartContainer.removeChild(this._chartContainer.firstChild);
             }
             this._separatorPanes.clear();
-            this._drawPanes.sort(function (a, b) { return a.getOptions().order - b.getOptions().order; });
-            var prevPane_1 = null;
-            this._drawPanes.forEach(function (pane) {
+            this._drawPanes.sort((a, b) => a.getOptions().order - b.getOptions().order);
+            let prevPane = null;
+            this._drawPanes.forEach(pane => {
                 if (pane.getId() !== PaneIdConstants.X_AXIS) {
-                    if (isValid(prevPane_1)) {
-                        var separatorPane = new SeparatorPane(_this, '', prevPane_1, pane);
-                        _this._chartContainer.appendChild(separatorPane.getContainer());
-                        _this._separatorPanes.set(pane, separatorPane);
+                    if (isValid(prevPane)) {
+                        const separatorPane = new SeparatorPane(this, '', prevPane, pane);
+                        this._chartContainer.appendChild(separatorPane.getContainer());
+                        this._separatorPanes.set(pane, separatorPane);
                     }
-                    prevPane_1 = pane;
+                    prevPane = pane;
                 }
-                _this._chartContainer.appendChild(pane.getContainer());
+                this._chartContainer.appendChild(pane.getContainer());
             });
         }
         if (measureHeight) {
-            var totalHeight = this._chartBounding.height;
-            var separatorSize_1 = this.getStyles().separator.size;
-            var xAxisHeight = this._xAxisPane.getAxisComponent().getAutoSize();
-            var remainingHeight_2 = totalHeight - xAxisHeight;
-            if (remainingHeight_2 < 0) {
-                remainingHeight_2 = 0;
+            const totalHeight = this._chartBounding.height;
+            const separatorSize = this.getStyles().separator.size;
+            const xAxisHeight = this._xAxisPane.getAxisComponent().getAutoSize();
+            let remainingHeight = totalHeight - xAxisHeight;
+            if (remainingHeight < 0) {
+                remainingHeight = 0;
             }
-            this._drawPanes.forEach(function (pane) {
-                var paneId = pane.getId();
-                if (isValid(_this._separatorPanes.get(pane))) {
-                    remainingHeight_2 -= separatorSize_1;
+            this._drawPanes.forEach(pane => {
+                const paneId = pane.getId();
+                if (isValid(this._separatorPanes.get(pane))) {
+                    remainingHeight -= separatorSize;
                 }
                 if (paneId !== PaneIdConstants.X_AXIS && paneId !== PaneIdConstants.CANDLE && pane.getVisible()) {
-                    var paneHeight = pane.getBounding().height;
-                    if (paneHeight > remainingHeight_2) {
-                        paneHeight = remainingHeight_2;
-                        remainingHeight_2 = 0;
+                    let paneHeight = pane.getBounding().height;
+                    if (paneHeight > remainingHeight) {
+                        paneHeight = remainingHeight;
+                        remainingHeight = 0;
                     }
                     else {
-                        remainingHeight_2 -= paneHeight;
+                        remainingHeight -= paneHeight;
                     }
                     pane.setBounding({ height: paneHeight });
                 }
             });
-            this._candlePane.setBounding({ height: Math.max(remainingHeight_2, 0) });
+            this._candlePane.setBounding({ height: Math.max(remainingHeight, 0) });
             this._xAxisPane.setBounding({ height: xAxisHeight });
-            var top_1 = 0;
-            this._drawPanes.forEach(function (pane) {
-                var separatorPane = _this._separatorPanes.get(pane);
+            let top = 0;
+            this._drawPanes.forEach(pane => {
+                const separatorPane = this._separatorPanes.get(pane);
                 if (isValid(separatorPane)) {
-                    separatorPane.setBounding({ height: separatorSize_1, top: top_1 });
-                    top_1 += separatorSize_1;
+                    separatorPane.setBounding({ height: separatorSize, top });
+                    top += separatorSize;
                 }
-                pane.setBounding({ top: top_1 });
-                top_1 += pane.getBounding().height;
+                pane.setBounding({ top });
+                top += pane.getBounding().height;
             });
         }
-        var forceMeasureWidth = measureWidth;
+        let forceMeasureWidth = measureWidth;
         if (buildYAxisTick || forceBuildYAxisTick) {
-            this._drawPanes.forEach(function (pane) {
-                var success = pane.getAxisComponent().buildTicks(forceBuildYAxisTick);
-                forceMeasureWidth || (forceMeasureWidth = success);
+            this._drawPanes.forEach(pane => {
+                const success = pane.getAxisComponent().buildTicks(forceBuildYAxisTick);
+                forceMeasureWidth ||= success;
             });
         }
         if (forceMeasureWidth) {
-            var totalWidth = this._chartBounding.width;
-            var styles = this.getStyles();
-            var leftYAxisWidth_1 = 0;
-            var leftYAxisOutside_1 = true;
-            var rightYAxisWidth_1 = 0;
-            var rightYAxisOutside_1 = true;
-            this._drawPanes.forEach(function (pane) {
+            const totalWidth = this._chartBounding.width;
+            const styles = this.getStyles();
+            let leftYAxisWidth = 0;
+            let leftYAxisOutside = true;
+            let rightYAxisWidth = 0;
+            let rightYAxisOutside = true;
+            this._drawPanes.forEach(pane => {
                 if (pane.getId() !== PaneIdConstants.X_AXIS) {
-                    var yAxis = pane.getAxisComponent();
-                    var inside = yAxis.inside;
-                    var yAxisWidth = yAxis.getAutoSize();
+                    const yAxis = pane.getAxisComponent();
+                    const inside = yAxis.inside;
+                    const yAxisWidth = yAxis.getAutoSize();
                     if (yAxis.position === 'left') {
-                        leftYAxisWidth_1 = Math.max(leftYAxisWidth_1, yAxisWidth);
+                        leftYAxisWidth = Math.max(leftYAxisWidth, yAxisWidth);
                         if (inside) {
-                            leftYAxisOutside_1 = false;
+                            leftYAxisOutside = false;
                         }
                     }
                     else {
-                        rightYAxisWidth_1 = Math.max(rightYAxisWidth_1, yAxisWidth);
+                        rightYAxisWidth = Math.max(rightYAxisWidth, yAxisWidth);
                         if (inside) {
-                            rightYAxisOutside_1 = false;
+                            rightYAxisOutside = false;
                         }
                     }
                 }
             });
             if (cacheYAxisWidth) {
-                leftYAxisWidth_1 = Math.max(this._cacheYAxisWidth.left, leftYAxisWidth_1);
-                rightYAxisWidth_1 = Math.max(this._cacheYAxisWidth.right, rightYAxisWidth_1);
+                leftYAxisWidth = Math.max(this._cacheYAxisWidth.left, leftYAxisWidth);
+                rightYAxisWidth = Math.max(this._cacheYAxisWidth.right, rightYAxisWidth);
             }
-            this._cacheYAxisWidth.left = leftYAxisWidth_1;
-            this._cacheYAxisWidth.right = rightYAxisWidth_1;
-            var mainWidth = totalWidth;
-            var mainLeft = 0;
-            var mainRight = 0;
+            this._cacheYAxisWidth.left = leftYAxisWidth;
+            this._cacheYAxisWidth.right = rightYAxisWidth;
+            let mainWidth = totalWidth;
+            let mainLeft = 0;
+            let mainRight = 0;
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-            if (leftYAxisOutside_1) {
-                mainWidth -= leftYAxisWidth_1;
-                mainLeft = leftYAxisWidth_1;
+            if (leftYAxisOutside) {
+                mainWidth -= leftYAxisWidth;
+                mainLeft = leftYAxisWidth;
             }
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- ignore
-            if (rightYAxisOutside_1) {
-                mainWidth -= rightYAxisWidth_1;
-                mainRight = rightYAxisWidth_1;
+            if (rightYAxisOutside) {
+                mainWidth -= rightYAxisWidth;
+                mainRight = rightYAxisWidth;
             }
             this._chartStore.setTotalBarSpace(mainWidth);
-            var paneBounding_1 = { width: totalWidth };
-            var mainBounding_1 = { width: mainWidth, left: mainLeft, right: mainRight };
-            var leftYAxisBounding_1 = { width: leftYAxisWidth_1 };
-            var rightYAxisBounding_1 = { width: rightYAxisWidth_1 };
-            var separatorFill = styles.separator.fill;
-            var separatorBounding_1 = {};
+            const paneBounding = { width: totalWidth };
+            const mainBounding = { width: mainWidth, left: mainLeft, right: mainRight };
+            const leftYAxisBounding = { width: leftYAxisWidth };
+            const rightYAxisBounding = { width: rightYAxisWidth };
+            const separatorFill = styles.separator.fill;
+            let separatorBounding = {};
             if (!separatorFill) {
-                separatorBounding_1 = mainBounding_1;
+                separatorBounding = mainBounding;
             }
             else {
-                separatorBounding_1 = paneBounding_1;
+                separatorBounding = paneBounding;
             }
-            this._drawPanes.forEach(function (pane) {
-                var _a;
-                (_a = _this._separatorPanes.get(pane)) === null || _a === void 0 ? void 0 : _a.setBounding(separatorBounding_1);
-                pane.setBounding(paneBounding_1, mainBounding_1, leftYAxisBounding_1, rightYAxisBounding_1);
+            this._drawPanes.forEach((pane) => {
+                this._separatorPanes.get(pane)?.setBounding(separatorBounding);
+                pane.setBounding(paneBounding, mainBounding, leftYAxisBounding, rightYAxisBounding);
             });
         }
         if (update) {
@@ -14890,27 +14275,24 @@ var ChartImp = /** @class */ (function () {
             cacheYAxisWidth: false,
             forceBuildYAxisTick: false
         };
-    };
-    ChartImp.prototype.updatePane = function (level, paneId) {
-        var _this = this;
+    }
+    updatePane(level, paneId) {
         if (isValid(paneId)) {
-            var pane = this.getDrawPaneById(paneId);
-            pane === null || pane === void 0 ? void 0 : pane.update(level);
+            const pane = this.getDrawPaneById(paneId);
+            pane?.update(level);
         }
         else {
-            this._drawPanes.forEach(function (pane) {
-                var _a;
+            this._drawPanes.forEach(pane => {
                 pane.update(level);
-                (_a = _this._separatorPanes.get(pane)) === null || _a === void 0 ? void 0 : _a.update(level);
+                this._separatorPanes.get(pane)?.update(level);
             });
         }
-    };
-    ChartImp.prototype.getDom = function (paneId, position) {
-        var _a, _b;
+    }
+    getDom(paneId, position) {
         if (isValid(paneId)) {
-            var pane = this.getDrawPaneById(paneId);
+            const pane = this.getDrawPaneById(paneId);
             if (isValid(pane)) {
-                var pos = position !== null && position !== void 0 ? position : 'root';
+                const pos = position ?? 'root';
                 switch (pos) {
                     case 'root': {
                         return pane.getContainer();
@@ -14919,7 +14301,7 @@ var ChartImp = /** @class */ (function () {
                         return pane.getMainWidget().getContainer();
                     }
                     case 'yAxis': {
-                        return (_b = (_a = pane.getYAxisWidget()) === null || _a === void 0 ? void 0 : _a.getContainer()) !== null && _b !== void 0 ? _b : null;
+                        return pane.getYAxisWidget()?.getContainer() ?? null;
                     }
                 }
             }
@@ -14928,13 +14310,12 @@ var ChartImp = /** @class */ (function () {
             return this._chartContainer;
         }
         return null;
-    };
-    ChartImp.prototype.getSize = function (paneId, position) {
-        var _a, _b;
+    }
+    getSize(paneId, position) {
         if (isValid(paneId)) {
-            var pane = this.getDrawPaneById(paneId);
+            const pane = this.getDrawPaneById(paneId);
             if (isValid(pane)) {
-                var pos = position !== null && position !== void 0 ? position : 'root';
+                const pos = position ?? 'root';
                 switch (pos) {
                     case 'root': {
                         return pane.getBounding();
@@ -14943,7 +14324,7 @@ var ChartImp = /** @class */ (function () {
                         return pane.getMainWidget().getBounding();
                     }
                     case 'yAxis': {
-                        return (_b = (_a = pane.getYAxisWidget()) === null || _a === void 0 ? void 0 : _a.getBounding()) !== null && _b !== void 0 ? _b : null;
+                        return pane.getYAxisWidget()?.getBounding() ?? null;
                     }
                 }
             }
@@ -14952,73 +14333,67 @@ var ChartImp = /** @class */ (function () {
             return this._chartBounding;
         }
         return null;
-    };
-    ChartImp.prototype._resetYAxisAutoCalcTickFlag = function () {
-        this._drawPanes.forEach(function (pane) {
+    }
+    _resetYAxisAutoCalcTickFlag() {
+        this._drawPanes.forEach(pane => {
             pane.getAxisComponent().setAutoCalcTickFlag(true);
         });
-    };
-    ChartImp.prototype.setSymbol = function (symbol) {
+    }
+    setSymbol(symbol) {
         if (symbol !== this.getSymbol()) {
             this._resetYAxisAutoCalcTickFlag();
             this._chartStore.setSymbol(symbol);
         }
-    };
-    ChartImp.prototype.getSymbol = function () {
+    }
+    getSymbol() {
         return this._chartStore.getSymbol();
-    };
-    ChartImp.prototype.setPeriod = function (period) {
+    }
+    setPeriod(period) {
         if (period !== this.getPeriod()) {
             this._resetYAxisAutoCalcTickFlag();
             this._chartStore.setPeriod(period);
         }
-    };
-    ChartImp.prototype.getPeriod = function () {
+    }
+    getPeriod() {
         return this._chartStore.getPeriod();
-    };
-    ChartImp.prototype.setStyles = function (value) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setStyles(value);
+    }
+    setStyles(value) {
+        this._setOptions(() => {
+            this._chartStore.setStyles(value);
         });
-    };
-    ChartImp.prototype.getStyles = function () { return this._chartStore.getStyles(); };
-    ChartImp.prototype.setFormatter = function (formatter) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setFormatter(formatter);
+    }
+    getStyles() { return this._chartStore.getStyles(); }
+    setFormatter(formatter) {
+        this._setOptions(() => {
+            this._chartStore.setFormatter(formatter);
         });
-    };
-    ChartImp.prototype.getFormatter = function () { return this._chartStore.getFormatter(); };
-    ChartImp.prototype.setLocale = function (locale) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setLocale(locale);
+    }
+    getFormatter() { return this._chartStore.getFormatter(); }
+    setLocale(locale) {
+        this._setOptions(() => {
+            this._chartStore.setLocale(locale);
         });
-    };
-    ChartImp.prototype.getLocale = function () { return this._chartStore.getLocale(); };
-    ChartImp.prototype.setTimezone = function (timezone) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setTimezone(timezone);
+    }
+    getLocale() { return this._chartStore.getLocale(); }
+    setTimezone(timezone) {
+        this._setOptions(() => {
+            this._chartStore.setTimezone(timezone);
         });
-    };
-    ChartImp.prototype.getTimezone = function () { return this._chartStore.getTimezone(); };
-    ChartImp.prototype.setThousandsSeparator = function (thousandsSeparator) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setThousandsSeparator(thousandsSeparator);
+    }
+    getTimezone() { return this._chartStore.getTimezone(); }
+    setThousandsSeparator(thousandsSeparator) {
+        this._setOptions(() => {
+            this._chartStore.setThousandsSeparator(thousandsSeparator);
         });
-    };
-    ChartImp.prototype.getThousandsSeparator = function () { return this._chartStore.getThousandsSeparator(); };
-    ChartImp.prototype.setDecimalFold = function (decimalFold) {
-        var _this = this;
-        this._setOptions(function () {
-            _this._chartStore.setDecimalFold(decimalFold);
+    }
+    getThousandsSeparator() { return this._chartStore.getThousandsSeparator(); }
+    setDecimalFold(decimalFold) {
+        this._setOptions(() => {
+            this._chartStore.setDecimalFold(decimalFold);
         });
-    };
-    ChartImp.prototype.getDecimalFold = function () { return this._chartStore.getDecimalFold(); };
-    ChartImp.prototype._setOptions = function (fuc) {
+    }
+    getDecimalFold() { return this._chartStore.getDecimalFold(); }
+    _setOptions(fuc) {
         fuc();
         this.layout({
             measureHeight: true,
@@ -15027,80 +14402,79 @@ var ChartImp = /** @class */ (function () {
             buildYAxisTick: true,
             forceBuildYAxisTick: true
         });
-    };
-    ChartImp.prototype.setOffsetRightDistance = function (distance) {
+    }
+    setOffsetRightDistance(distance) {
         this._chartStore.setOffsetRightDistance(distance, true);
-    };
-    ChartImp.prototype.getOffsetRightDistance = function () {
+    }
+    getOffsetRightDistance() {
         return this._chartStore.getOffsetRightDistance();
-    };
-    ChartImp.prototype.setMaxOffsetLeftDistance = function (distance) {
+    }
+    setMaxOffsetLeftDistance(distance) {
         if (distance < 0) {
             logWarn('setMaxOffsetLeftDistance', 'distance', 'distance must greater than zero!!!');
             return;
         }
         this._chartStore.setMaxOffsetLeftDistance(distance);
-    };
-    ChartImp.prototype.setMaxOffsetRightDistance = function (distance) {
+    }
+    setMaxOffsetRightDistance(distance) {
         if (distance < 0) {
             logWarn('setMaxOffsetRightDistance', 'distance', 'distance must greater than zero!!!');
             return;
         }
         this._chartStore.setMaxOffsetRightDistance(distance);
-    };
-    ChartImp.prototype.setLeftMinVisibleBarCount = function (barCount) {
+    }
+    setLeftMinVisibleBarCount(barCount) {
         if (barCount < 0) {
             logWarn('setLeftMinVisibleBarCount', 'barCount', 'barCount must greater than zero!!!');
             return;
         }
         this._chartStore.setLeftMinVisibleBarCount(Math.ceil(barCount));
-    };
-    ChartImp.prototype.setRightMinVisibleBarCount = function (barCount) {
+    }
+    setRightMinVisibleBarCount(barCount) {
         if (barCount < 0) {
             logWarn('setRightMinVisibleBarCount', 'barCount', 'barCount must greater than zero!!!');
             return;
         }
         this._chartStore.setRightMinVisibleBarCount(Math.ceil(barCount));
-    };
-    ChartImp.prototype.setBarSpace = function (space) {
+    }
+    setBarSpace(space) {
         this._chartStore.setBarSpace(space);
-    };
-    ChartImp.prototype.getBarSpace = function () {
+    }
+    getBarSpace() {
         return this._chartStore.getBarSpace();
-    };
-    ChartImp.prototype.getVisibleRange = function () {
+    }
+    getVisibleRange() {
         return this._chartStore.getVisibleRange();
-    };
-    ChartImp.prototype.resetData = function () {
+    }
+    resetData() {
         this._chartStore.resetData();
-    };
-    ChartImp.prototype.getDataList = function () {
+    }
+    getDataList() {
         return this._chartStore.getDataList();
-    };
-    ChartImp.prototype.setDataLoader = function (dataLoader) {
+    }
+    setDataLoader(dataLoader) {
         this._resetYAxisAutoCalcTickFlag();
         this._chartStore.setDataLoader(dataLoader);
-    };
-    ChartImp.prototype.createIndicator = function (value, isStack, paneOptions) {
-        var _a;
-        var indicator = isString(value) ? { name: value } : value;
+    }
+    createIndicator(value, isStack, paneOptions) {
+        const indicator = isString(value) ? { name: value } : value;
         if (getIndicatorClass(indicator.name) === null) {
             logWarn('createIndicator', 'value', 'indicator not supported, you may need to use registerIndicator to add one!!!');
             return null;
         }
-        var paneOpts = paneOptions !== null && paneOptions !== void 0 ? paneOptions : {};
+        const paneOpts = paneOptions ?? {};
         if (!isString(paneOpts.id)) {
             paneOpts.id = createId(PaneIdConstants.INDICATOR);
         }
         if (!isString(indicator.id)) {
             indicator.id = createId(indicator.name);
         }
-        var result = this._chartStore.addIndicator(indicator, paneOpts.id, isStack !== null && isStack !== void 0 ? isStack : false);
+        const result = this._chartStore.addIndicator(indicator, paneOpts.id, isStack ?? false);
         if (result) {
-            var shouldSort = false;
+            let shouldSort = false;
             if (!isValid(this.getDrawPaneById(paneOpts.id))) {
                 this._createPane(IndicatorPane, paneOpts.id, paneOpts);
-                (_a = paneOpts.height) !== null && _a !== void 0 ? _a : (paneOpts.height = PANE_DEFAULT_HEIGHT);
+                paneOpts.height ??= PANE_DEFAULT_HEIGHT;
                 shouldSort = true;
             }
             this.setPaneOptions(paneOpts);
@@ -15115,33 +14489,32 @@ var ChartImp = /** @class */ (function () {
             return indicator.id;
         }
         return null;
-    };
-    ChartImp.prototype.overrideIndicator = function (override) {
+    }
+    overrideIndicator(override) {
         return this._chartStore.overrideIndicator(override);
-    };
-    ChartImp.prototype.getIndicators = function (filter) {
-        return this._chartStore.getIndicatorsByFilter(filter !== null && filter !== void 0 ? filter : {});
-    };
-    ChartImp.prototype.removeIndicator = function (filter) {
-        var _this = this;
-        var removed = this._chartStore.removeIndicator(filter !== null && filter !== void 0 ? filter : {});
+    }
+    getIndicators(filter) {
+        return this._chartStore.getIndicatorsByFilter(filter ?? {});
+    }
+    removeIndicator(filter) {
+        const removed = this._chartStore.removeIndicator(filter ?? {});
         if (removed) {
-            var shouldMeasureHeight_1 = false;
-            var paneIds_1 = [];
-            this._drawPanes.forEach(function (pane) {
-                var paneId = pane.getId();
+            let shouldMeasureHeight = false;
+            const paneIds = [];
+            this._drawPanes.forEach(pane => {
+                const paneId = pane.getId();
                 if (paneId !== PaneIdConstants.CANDLE && paneId !== PaneIdConstants.X_AXIS) {
-                    paneIds_1.push(paneId);
+                    paneIds.push(paneId);
                 }
             });
-            paneIds_1.forEach(function (paneId) {
-                if (!_this._chartStore.hasIndicators(paneId)) {
-                    var index = _this._drawPanes.findIndex(function (pane) { return pane.getId() === paneId; });
-                    var pane = _this._drawPanes[index];
+            paneIds.forEach(paneId => {
+                if (!this._chartStore.hasIndicators(paneId)) {
+                    const index = this._drawPanes.findIndex(pane => pane.getId() === paneId);
+                    const pane = this._drawPanes[index];
                     if (isValid(pane)) {
-                        shouldMeasureHeight_1 = true;
-                        _this._recalculatePaneHeight(pane, 0, pane.getBounding().height);
-                        _this._drawPanes.splice(index, 1);
+                        shouldMeasureHeight = true;
+                        this._recalculatePaneHeight(pane, 0, pane.getBounding().height);
+                        this._drawPanes.splice(index, 1);
                         pane.destroy();
                     }
                 }
@@ -15151,8 +14524,8 @@ var ChartImp = /** @class */ (function () {
                 this._candlePane.setBounding({ height: this._chartBounding.height - this._xAxisPane.getBounding().height });
             }
             this.layout({
-                sort: shouldMeasureHeight_1,
-                measureHeight: shouldMeasureHeight_1,
+                sort: shouldMeasureHeight,
+                measureHeight: shouldMeasureHeight,
                 measureWidth: true,
                 update: true,
                 buildYAxisTick: true,
@@ -15160,13 +14533,12 @@ var ChartImp = /** @class */ (function () {
             });
         }
         return removed;
-    };
-    ChartImp.prototype.createOverlay = function (value) {
-        var _this = this;
-        var overlays = [];
-        var appointPaneFlags = [];
-        var build = function (overlay) {
-            if (!isValid(overlay.paneId) || _this.getDrawPaneById(overlay.paneId) === null) {
+    }
+    createOverlay(value) {
+        const overlays = [];
+        const appointPaneFlags = [];
+        const build = overlay => {
+            if (!isValid(overlay.paneId) || this.getDrawPaneById(overlay.paneId) === null) {
                 overlay.paneId = PaneIdConstants.CANDLE;
                 appointPaneFlags.push(false);
             }
@@ -15179,8 +14551,8 @@ var ChartImp = /** @class */ (function () {
             build({ name: value });
         }
         else if (isArray(value)) {
-            value.forEach(function (v) {
-                var overlay = null;
+            value.forEach(v => {
+                let overlay = null;
                 if (isString(v)) {
                     overlay = { name: v };
                 }
@@ -15193,101 +14565,95 @@ var ChartImp = /** @class */ (function () {
         else {
             build(value);
         }
-        var ids = this._chartStore.addOverlays(overlays, appointPaneFlags);
+        const ids = this._chartStore.addOverlays(overlays, appointPaneFlags);
         if (isArray(value)) {
             return ids;
         }
         return ids[0];
-    };
-    ChartImp.prototype.getOverlays = function (filter) {
-        return this._chartStore.getOverlaysByFilter(filter !== null && filter !== void 0 ? filter : {});
-    };
-    ChartImp.prototype.overrideOverlay = function (override) {
+    }
+    getOverlays(filter) {
+        return this._chartStore.getOverlaysByFilter(filter ?? {});
+    }
+    overrideOverlay(override) {
         return this._chartStore.overrideOverlay(override);
-    };
-    ChartImp.prototype.removeOverlay = function (filter) {
-        return this._chartStore.removeOverlay(filter !== null && filter !== void 0 ? filter : {});
-    };
-    ChartImp.prototype.setPaneOptions = function (options) {
-        var e_1, _a;
-        var _this = this;
-        var _b;
-        var shouldMeasureHeight = false;
-        var shouldLayout = false;
-        var validId = isValid(options.id);
-        var _loop_1 = function (currentPane) {
-            var currentPaneId = currentPane.getId();
+    }
+    removeOverlay(filter) {
+        return this._chartStore.removeOverlay(filter ?? {});
+    }
+    setPaneOptions(options) {
+        let shouldMeasureHeight = false;
+        let shouldLayout = false;
+        const validId = isValid(options.id);
+        for (const currentPane of this._drawPanes) {
+            const currentPaneId = currentPane.getId();
             if ((validId && options.id === currentPaneId) || !validId) {
                 if (currentPaneId !== PaneIdConstants.X_AXIS) {
                     if (isNumber(options.height) && options.height > 0) {
-                        var minHeight = Math.max((_b = options.minHeight) !== null && _b !== void 0 ? _b : currentPane.getOptions().minHeight, 0);
-                        var height = Math.max(minHeight, options.height);
+                        const minHeight = Math.max(options.minHeight ?? currentPane.getOptions().minHeight, 0);
+                        const height = Math.max(minHeight, options.height);
                         shouldLayout = true;
                         shouldMeasureHeight = true;
-                        currentPane.setOriginalBounding({ height: height });
-                        this_1._recalculatePaneHeight(currentPane, height, -height);
+                        currentPane.setOriginalBounding({ height });
+                        this._recalculatePaneHeight(currentPane, height, -height);
                     }
                     if (isValid(options.state) &&
                         currentPane.getOptions().state !== options.state) {
                         shouldMeasureHeight = true;
                         shouldLayout = true;
-                        var state = options.state;
+                        const state = options.state;
                         switch (state) {
                             case 'maximize': {
-                                var maximizePane = this_1._drawPanes.find(function (pane) {
-                                    var paneId = pane.getId();
+                                const maximizePane = this._drawPanes.find(pane => {
+                                    const paneId = pane.getId();
                                     return pane.getOptions().state === 'maximize' && paneId !== PaneIdConstants.X_AXIS;
                                 });
                                 if (!isValid(maximizePane)) {
                                     if (currentPane.getOptions().state === 'normal') {
                                         currentPane.setOriginalBounding({ height: currentPane.getBounding().height });
                                     }
-                                    currentPane.setOptions({ state: state });
-                                    var totalHeight = this_1._chartBounding.height;
-                                    currentPane.setBounding({ height: totalHeight - this_1._xAxisPane.getBounding().height });
-                                    this_1._drawPanes.forEach(function (pane) {
-                                        var _a;
+                                    currentPane.setOptions({ state });
+                                    const totalHeight = this._chartBounding.height;
+                                    currentPane.setBounding({ height: totalHeight - this._xAxisPane.getBounding().height });
+                                    this._drawPanes.forEach(pane => {
                                         if (pane.getId() !== PaneIdConstants.X_AXIS && pane.getId() !== currentPaneId) {
                                             pane.setBounding({ height: pane.getOriginalBounding().height });
                                             pane.setVisible(false);
-                                            (_a = _this._separatorPanes.get(pane)) === null || _a === void 0 ? void 0 : _a.setVisible(false);
+                                            this._separatorPanes.get(pane)?.setVisible(false);
                                         }
                                     });
                                 }
                                 break;
                             }
                             case 'minimize': {
-                                var height = currentPane.getBounding().height;
-                                var currentState = currentPane.getOptions().state;
-                                var changeHeight = height - PANE_MIN_HEIGHT;
+                                const height = currentPane.getBounding().height;
+                                const currentState = currentPane.getOptions().state;
+                                let changeHeight = height - PANE_MIN_HEIGHT;
                                 if (currentState === 'maximize') {
                                     changeHeight = currentPane.getOriginalBounding().height - PANE_MIN_HEIGHT;
                                 }
-                                if (this_1._recalculatePaneHeight(currentPane, PANE_MIN_HEIGHT, changeHeight)) {
+                                if (this._recalculatePaneHeight(currentPane, PANE_MIN_HEIGHT, changeHeight)) {
                                     if (currentState === 'normal') {
-                                        currentPane.setOriginalBounding({ height: height });
+                                        currentPane.setOriginalBounding({ height });
                                     }
-                                    currentPane.setOptions({ state: state });
+                                    currentPane.setOptions({ state });
                                 }
-                                this_1._drawPanes.forEach(function (pane) {
-                                    var _a;
+                                this._drawPanes.forEach(pane => {
                                     if (pane.getId() !== PaneIdConstants.X_AXIS) {
                                         pane.setVisible(true);
-                                        (_a = _this._separatorPanes.get(pane)) === null || _a === void 0 ? void 0 : _a.setVisible(true);
+                                        this._separatorPanes.get(pane)?.setVisible(true);
                                     }
                                 });
                                 break;
                             }
                             default: {
-                                var height = currentPane.getOriginalBounding().height;
-                                if (this_1._recalculatePaneHeight(currentPane, height, currentPane.getBounding().height - height)) {
-                                    currentPane.setOptions({ state: state });
+                                const height = currentPane.getOriginalBounding().height;
+                                if (this._recalculatePaneHeight(currentPane, height, currentPane.getBounding().height - height)) {
+                                    currentPane.setOptions({ state });
                                 }
-                                this_1._drawPanes.forEach(function (pane) {
-                                    var _a;
+                                this._drawPanes.forEach(pane => {
                                     if (pane.getId() !== PaneIdConstants.X_AXIS) {
                                         pane.setVisible(true);
-                                        (_a = _this._separatorPanes.get(pane)) === null || _a === void 0 ? void 0 : _a.setVisible(true);
+                                        this._separatorPanes.get(pane)?.setVisible(true);
                                     }
                                 });
                                 break;
@@ -15298,29 +14664,13 @@ var ChartImp = /** @class */ (function () {
                 if (isValid(options.axis)) {
                     shouldLayout = true;
                 }
-                var ops = __assign({}, options);
+                const ops = { ...options };
                 delete ops.state;
                 currentPane.setOptions(ops);
                 if (currentPaneId === options.id) {
-                    return "break";
+                    break;
                 }
             }
-        };
-        var this_1 = this;
-        try {
-            for (var _c = __values(this._drawPanes), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var currentPane = _d.value;
-                var state_1 = _loop_1(currentPane);
-                if (state_1 === "break")
-                    break;
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
-            }
-            finally { if (e_1) throw e_1.error; }
         }
         if (shouldLayout) {
             this.layout({
@@ -15331,205 +14681,195 @@ var ChartImp = /** @class */ (function () {
                 forceBuildYAxisTick: true
             });
         }
-    };
-    ChartImp.prototype.getPaneOptions = function (id) {
-        var _a;
+    }
+    getPaneOptions(id) {
         if (isValid(id)) {
-            var pane = this.getDrawPaneById(id);
-            return (_a = pane === null || pane === void 0 ? void 0 : pane.getOptions()) !== null && _a !== void 0 ? _a : null;
+            const pane = this.getDrawPaneById(id);
+            return pane?.getOptions() ?? null;
         }
-        return this._drawPanes.map(function (pane) { return pane.getOptions(); });
-    };
-    ChartImp.prototype.setZoomEnabled = function (enabled) {
+        return this._drawPanes.map(pane => pane.getOptions());
+    }
+    setZoomEnabled(enabled) {
         this._chartStore.setZoomEnabled(enabled);
-    };
-    ChartImp.prototype.isZoomEnabled = function () {
+    }
+    isZoomEnabled() {
         return this._chartStore.isZoomEnabled();
-    };
-    ChartImp.prototype.setZoomAnchor = function (anchor) {
+    }
+    setZoomAnchor(anchor) {
         this._chartStore.setZoomAnchor(anchor);
-    };
-    ChartImp.prototype.getZoomAnchor = function () {
+    }
+    getZoomAnchor() {
         return this._chartStore.getZoomAnchor();
-    };
-    ChartImp.prototype.setScrollEnabled = function (enabled) {
+    }
+    setScrollEnabled(enabled) {
         this._chartStore.setScrollEnabled(enabled);
-    };
-    ChartImp.prototype.isScrollEnabled = function () {
+    }
+    isScrollEnabled() {
         return this._chartStore.isScrollEnabled();
-    };
-    ChartImp.prototype.scrollByDistance = function (distance, animationDuration) {
-        var _this = this;
-        var duration = isNumber(animationDuration) && animationDuration > 0 ? animationDuration : 0;
+    }
+    scrollByDistance(distance, animationDuration) {
+        const duration = isNumber(animationDuration) && animationDuration > 0 ? animationDuration : 0;
         this._chartStore.startScroll();
         if (duration > 0) {
-            var animation = new Animation({ duration: duration });
-            animation.doFrame(function (frameTime) {
-                var progressDistance = distance * (frameTime / duration);
-                _this._chartStore.scroll(progressDistance);
+            const animation = new Animation({ duration });
+            animation.doFrame(frameTime => {
+                const progressDistance = distance * (frameTime / duration);
+                this._chartStore.scroll(progressDistance);
             });
             animation.start();
         }
         else {
             this._chartStore.scroll(distance);
         }
-    };
-    ChartImp.prototype.scrollToRealTime = function (animationDuration) {
-        var barSpace = this._chartStore.getBarSpace().bar;
-        var difBarCount = this._chartStore.getLastBarRightSideDiffBarCount() - this._chartStore.getInitialOffsetRightDistance() / barSpace;
-        var distance = difBarCount * barSpace;
+    }
+    scrollToRealTime(animationDuration) {
+        const { bar: barSpace } = this._chartStore.getBarSpace();
+        const difBarCount = this._chartStore.getLastBarRightSideDiffBarCount() - this._chartStore.getInitialOffsetRightDistance() / barSpace;
+        const distance = difBarCount * barSpace;
         this.scrollByDistance(distance, animationDuration);
-    };
-    ChartImp.prototype.scrollToDataIndex = function (dataIndex, animationDuration) {
-        var distance = (this._chartStore.getLastBarRightSideDiffBarCount() + (this.getDataList().length - 1 - dataIndex)) * this._chartStore.getBarSpace().bar;
+    }
+    scrollToDataIndex(dataIndex, animationDuration) {
+        const distance = (this._chartStore.getLastBarRightSideDiffBarCount() + (this.getDataList().length - 1 - dataIndex)) * this._chartStore.getBarSpace().bar;
         this.scrollByDistance(distance, animationDuration);
-    };
-    ChartImp.prototype.scrollToTimestamp = function (timestamp, animationDuration) {
-        var dataIndex = binarySearchNearest(this.getDataList(), 'timestamp', timestamp);
+    }
+    scrollToTimestamp(timestamp, animationDuration) {
+        const dataIndex = binarySearchNearest(this.getDataList(), 'timestamp', timestamp);
         this.scrollToDataIndex(dataIndex, animationDuration);
-    };
-    ChartImp.prototype.zoomAtCoordinate = function (scale, coordinate, animationDuration) {
-        var _this = this;
-        var duration = isNumber(animationDuration) && animationDuration > 0 ? animationDuration : 0;
-        var barSpace = this._chartStore.getBarSpace().bar;
-        var scaleBarSpace = barSpace * scale;
-        var difSpace = scaleBarSpace - barSpace;
+    }
+    zoomAtCoordinate(scale, coordinate, animationDuration) {
+        const duration = isNumber(animationDuration) && animationDuration > 0 ? animationDuration : 0;
+        const { bar: barSpace } = this._chartStore.getBarSpace();
+        const scaleBarSpace = barSpace * scale;
+        const difSpace = scaleBarSpace - barSpace;
         if (duration > 0) {
-            var prevProgressBarSpace_1 = 0;
-            var animation = new Animation({ duration: duration });
-            animation.doFrame(function (frameTime) {
-                var progressBarSpace = difSpace * (frameTime / duration);
-                var scale = (progressBarSpace - prevProgressBarSpace_1) / _this._chartStore.getBarSpace().bar * SCALE_MULTIPLIER;
-                _this._chartStore.zoom(scale, coordinate !== null && coordinate !== void 0 ? coordinate : null, 'main');
-                prevProgressBarSpace_1 = progressBarSpace;
+            let prevProgressBarSpace = 0;
+            const animation = new Animation({ duration });
+            animation.doFrame(frameTime => {
+                const progressBarSpace = difSpace * (frameTime / duration);
+                const scale = (progressBarSpace - prevProgressBarSpace) / this._chartStore.getBarSpace().bar * SCALE_MULTIPLIER;
+                this._chartStore.zoom(scale, coordinate ?? null, 'main');
+                prevProgressBarSpace = progressBarSpace;
             });
             animation.start();
         }
         else {
-            this._chartStore.zoom(difSpace / barSpace * SCALE_MULTIPLIER, coordinate !== null && coordinate !== void 0 ? coordinate : null, 'main');
+            this._chartStore.zoom(difSpace / barSpace * SCALE_MULTIPLIER, coordinate ?? null, 'main');
         }
-    };
-    ChartImp.prototype.zoomAtDataIndex = function (scale, dataIndex, animationDuration) {
-        var x = this._chartStore.dataIndexToCoordinate(dataIndex);
-        this.zoomAtCoordinate(scale, { x: x, y: 0 }, animationDuration);
-    };
-    ChartImp.prototype.zoomAtTimestamp = function (scale, timestamp, animationDuration) {
-        var dataIndex = binarySearchNearest(this.getDataList(), 'timestamp', timestamp);
+    }
+    zoomAtDataIndex(scale, dataIndex, animationDuration) {
+        const x = this._chartStore.dataIndexToCoordinate(dataIndex);
+        this.zoomAtCoordinate(scale, { x, y: 0 }, animationDuration);
+    }
+    zoomAtTimestamp(scale, timestamp, animationDuration) {
+        const dataIndex = binarySearchNearest(this.getDataList(), 'timestamp', timestamp);
         this.zoomAtDataIndex(scale, dataIndex, animationDuration);
-    };
-    ChartImp.prototype.convertToPixel = function (points, filter) {
-        var _this = this;
-        var _a;
-        var _b = filter !== null && filter !== void 0 ? filter : {}, _c = _b.paneId, paneId = _c === void 0 ? PaneIdConstants.CANDLE : _c, _d = _b.absolute, absolute = _d === void 0 ? false : _d;
-        var coordinates = [];
+    }
+    convertToPixel(points, filter) {
+        const { paneId = PaneIdConstants.CANDLE, absolute = false } = filter ?? {};
+        let coordinates = [];
         if (paneId !== PaneIdConstants.X_AXIS) {
-            var pane = this.getDrawPaneById(paneId);
+            const pane = this.getDrawPaneById(paneId);
             if (pane !== null) {
-                var bounding_1 = pane.getBounding();
+                const bounding = pane.getBounding();
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
                 // @ts-expect-error
-                var ps = [].concat(points);
-                var xAxis_1 = this._xAxisPane.getAxisComponent();
-                var yAxis_1 = pane.getAxisComponent();
-                coordinates = ps.map(function (point) {
-                    var coordinate = {};
-                    var dataIndex = point.dataIndex;
+                const ps = [].concat(points);
+                const xAxis = this._xAxisPane.getAxisComponent();
+                const yAxis = pane.getAxisComponent();
+                coordinates = ps.map(point => {
+                    const coordinate = {};
+                    let dataIndex = point.dataIndex;
                     if (isNumber(point.timestamp)) {
-                        dataIndex = _this._chartStore.timestampToDataIndex(point.timestamp);
+                        dataIndex = this._chartStore.timestampToDataIndex(point.timestamp);
                     }
                     if (isNumber(dataIndex)) {
-                        coordinate.x = xAxis_1.convertToPixel(dataIndex);
+                        coordinate.x = xAxis.convertToPixel(dataIndex);
                     }
                     if (isNumber(point.value)) {
-                        var y = yAxis_1.convertToPixel(point.value);
-                        coordinate.y = absolute ? bounding_1.top + y : y;
+                        const y = yAxis.convertToPixel(point.value);
+                        coordinate.y = absolute ? bounding.top + y : y;
                     }
                     return coordinate;
                 });
             }
         }
-        return isArray(points) ? coordinates : ((_a = coordinates[0]) !== null && _a !== void 0 ? _a : {});
-    };
-    ChartImp.prototype.convertFromPixel = function (coordinates, filter) {
-        var _this = this;
-        var _a;
-        var _b = filter !== null && filter !== void 0 ? filter : {}, _c = _b.paneId, paneId = _c === void 0 ? PaneIdConstants.CANDLE : _c, _d = _b.absolute, absolute = _d === void 0 ? false : _d;
-        var points = [];
+        return isArray(points) ? coordinates : (coordinates[0] ?? {});
+    }
+    convertFromPixel(coordinates, filter) {
+        const { paneId = PaneIdConstants.CANDLE, absolute = false } = filter ?? {};
+        let points = [];
         if (paneId !== PaneIdConstants.X_AXIS) {
-            var pane = this.getDrawPaneById(paneId);
+            const pane = this.getDrawPaneById(paneId);
             if (pane !== null) {
-                var bounding_2 = pane.getBounding();
+                const bounding = pane.getBounding();
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- ignore
                 // @ts-expect-error
-                var cs = [].concat(coordinates);
-                var xAxis_2 = this._xAxisPane.getAxisComponent();
-                var yAxis_2 = pane.getAxisComponent();
-                points = cs.map(function (coordinate) {
-                    var _a;
-                    var point = {};
+                const cs = [].concat(coordinates);
+                const xAxis = this._xAxisPane.getAxisComponent();
+                const yAxis = pane.getAxisComponent();
+                points = cs.map(coordinate => {
+                    const point = {};
                     if (isNumber(coordinate.x)) {
-                        var dataIndex = xAxis_2.convertFromPixel(coordinate.x);
+                        const dataIndex = xAxis.convertFromPixel(coordinate.x);
                         point.dataIndex = dataIndex;
-                        point.timestamp = (_a = _this._chartStore.dataIndexToTimestamp(dataIndex)) !== null && _a !== void 0 ? _a : undefined;
+                        point.timestamp = this._chartStore.dataIndexToTimestamp(dataIndex) ?? undefined;
                     }
                     if (isNumber(coordinate.y)) {
-                        var y = absolute ? coordinate.y - bounding_2.top : coordinate.y;
-                        point.value = yAxis_2.convertFromPixel(y);
+                        const y = absolute ? coordinate.y - bounding.top : coordinate.y;
+                        point.value = yAxis.convertFromPixel(y);
                     }
                     return point;
                 });
             }
         }
-        return isArray(coordinates) ? points : ((_a = points[0]) !== null && _a !== void 0 ? _a : {});
-    };
-    ChartImp.prototype.executeAction = function (type, data) {
-        var _a;
+        return isArray(coordinates) ? points : (points[0] ?? {});
+    }
+    executeAction(type, data) {
         switch (type) {
             case 'onCrosshairChange': {
-                var crosshair = null;
+                let crosshair = null;
                 if (isValid(data)) {
-                    crosshair = __assign({}, data);
-                    (_a = crosshair.paneId) !== null && _a !== void 0 ? _a : (crosshair.paneId = PaneIdConstants.CANDLE);
+                    crosshair = { ...data };
+                    crosshair.paneId ??= PaneIdConstants.CANDLE;
                 }
                 this._chartStore.setCrosshair(crosshair, { notExecuteAction: true });
                 break;
             }
         }
-    };
-    ChartImp.prototype.subscribeAction = function (type, callback) {
+    }
+    subscribeAction(type, callback) {
         this._chartStore.subscribeAction(type, callback);
-    };
-    ChartImp.prototype.unsubscribeAction = function (type, callback) {
+    }
+    unsubscribeAction(type, callback) {
         this._chartStore.unsubscribeAction(type, callback);
-    };
-    ChartImp.prototype.getConvertPictureUrl = function (includeOverlay, type, backgroundColor) {
-        var _this = this;
-        var _a = this._chartBounding, width = _a.width, height = _a.height;
-        var canvas = createDom('canvas', {
-            width: "".concat(width, "px"),
-            height: "".concat(height, "px"),
+    }
+    getConvertPictureUrl(includeOverlay, type, backgroundColor) {
+        const { width, height } = this._chartBounding;
+        const canvas = createDom('canvas', {
+            width: `${width}px`,
+            height: `${height}px`,
             boxSizing: 'border-box'
         });
-        var ctx = canvas.getContext('2d');
-        var pixelRatio = getPixelRatio(canvas);
+        const ctx = canvas.getContext('2d');
+        const pixelRatio = getPixelRatio(canvas);
         canvas.width = width * pixelRatio;
         canvas.height = height * pixelRatio;
         ctx.scale(pixelRatio, pixelRatio);
-        ctx.fillStyle = backgroundColor !== null && backgroundColor !== void 0 ? backgroundColor : '#FFFFFF';
+        ctx.fillStyle = backgroundColor ?? '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
-        var overlayFlag = includeOverlay !== null && includeOverlay !== void 0 ? includeOverlay : false;
-        this._drawPanes.forEach(function (pane) {
-            var separatorPane = _this._separatorPanes.get(pane);
+        const overlayFlag = includeOverlay ?? false;
+        this._drawPanes.forEach(pane => {
+            const separatorPane = this._separatorPanes.get(pane);
             if (isValid(separatorPane)) {
-                var separatorBounding = separatorPane.getBounding();
+                const separatorBounding = separatorPane.getBounding();
                 ctx.drawImage(separatorPane.getImage(overlayFlag), separatorBounding.left, separatorBounding.top, separatorBounding.width, separatorBounding.height);
             }
-            var bounding = pane.getBounding();
+            const bounding = pane.getBounding();
             ctx.drawImage(pane.getImage(overlayFlag), 0, bounding.top, width, bounding.height);
         });
-        return canvas.toDataURL("image/".concat(type !== null && type !== void 0 ? type : 'jpeg'));
-    };
-    ChartImp.prototype.resize = function () {
+        return canvas.toDataURL(`image/${type ?? 'jpeg'}`);
+    }
+    resize() {
         this._cacheChartBounding();
         this.layout({
             measureHeight: true,
@@ -15538,542 +14878,1123 @@ var ChartImp = /** @class */ (function () {
             buildYAxisTick: true,
             forceBuildYAxisTick: true
         });
-    };
-    ChartImp.prototype.destroy = function () {
+    }
+    destroy() {
         this._chartEvent.destroy();
-        this._drawPanes.forEach(function (pane) {
+        this._drawPanes.forEach(pane => {
             pane.destroy();
         });
         this._drawPanes = [];
         this._separatorPanes.clear();
         this._chartStore.destroy();
         this._container.removeChild(this._chartContainer);
-    };
-    return ChartImp;
-}());
+    }
+    applyNewData(data, more) {
+        this._chartStore.applyNewData(data, more);
+    }
+    applyMoreData(data, more) {
+        this._chartStore.applyMoreData(data, more);
+    }
+    updateData(data) {
+        this._chartStore.updateData(data);
+    }
+    setYScrolling(yScrolling) {
+        this._chartStore.setYScrolling(yScrolling);
+    }
+    getYScrolling() {
+        return this._chartStore.getYScrolling();
+    }
+    loadMore(cb) {
+        this._chartStore.setDataLoader({
+            getBars: (params) => {
+                const timestamp = params.timestamp;
+                cb(timestamp);
+            }
+        });
+    }
+    setPriceVolumePrecision(pricePrecision, volumePrecision) {
+        this._chartStore.setSymbol({ pricePrecision, volumePrecision });
+    }
+}
 
 /**
- * EnsoCharts Pro — Custom overlay definitions (drawing tools)
- * Ported from the old equicharts-pro bundle to TypeScript.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+
+ * http://www.apache.org/licenses/LICENSE-2.0
+
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-// ── Helpers ──
-/** Rotate point `p` around `center` by `angle` radians */
-function rotatePoint(p, center, angle) {
-    var cos = Math.cos(angle);
-    var sin = Math.sin(angle);
-    return {
-        x: (p.x - center.x) * cos - (p.y - center.y) * sin + center.x,
-        y: (p.x - center.x) * sin + (p.y - center.y) * cos + center.y
-    };
+const charts = new Map();
+let chartBaseId = 1;
+/**
+ * Chart version
+ * @return {string}
+ */
+function version() {
+    return '10.0.0-beta1';
 }
-/** Euclidean distance between two coordinates */
-function getDistance(a, b) {
-    var dx = Math.abs(a.x - b.x);
-    var dy = Math.abs(a.y - b.y);
-    return Math.sqrt(dx * dx + dy * dy);
+/**
+ * Init chart instance
+ * @param ds
+ * @param options
+ * @returns {Chart}
+ */
+function init(ds, options) {
+    logTag();
+    let dom = null;
+    if (isString(ds)) {
+        dom = document.getElementById(ds);
+    }
+    else {
+        dom = ds;
+    }
+    if (dom === null) {
+        logError('', '', 'The chart cannot be initialized correctly. Please check the parameters. The chart container cannot be null and child elements need to be added!!!');
+        return null;
+    }
+    let chart = charts.get(dom.id);
+    if (isValid(chart)) {
+        logWarn('', '', 'The chart has been initialized on the dom！！！');
+        return chart;
+    }
+    const id = `k_line_chart_${chartBaseId++}`;
+    chart = new ChartImp(dom, options);
+    chart.id = id;
+    dom.setAttribute('k-line-chart-id', id);
+    charts.set(id, chart);
+    return chart;
 }
-/** Extend a line from coordinates[0] through coordinates[1] to the bounding edge */
-function extendLine(coords, bounding) {
-    if (coords.length > 1) {
-        var end = void 0;
-        if (coords[0].x === coords[1].x && coords[0].y !== coords[1].y) {
-            end = coords[0].y < coords[1].y
-                ? { x: coords[0].x, y: bounding.height }
-                : { x: coords[0].x, y: 0 };
+/**
+ * Destroy chart instance
+ * @param dcs
+ */
+function dispose(dcs) {
+    let id = null;
+    if (dcs instanceof ChartImp) {
+        id = dcs.id;
+    }
+    else {
+        let dom = null;
+        if (isString(dcs)) {
+            dom = document.getElementById(dcs);
         }
-        else if (coords[0].x > coords[1].x) {
-            end = {
+        else {
+            dom = dcs;
+        }
+        id = dom?.getAttribute('k-line-chart-id') ?? null;
+    }
+    if (id !== null) {
+        charts.get(id)?.destroy();
+        charts.delete(id);
+    }
+}
+
+class ChartMain {
+}
+
+function getRotateCoordinate(coordinate, targetCoordinate, angle) {
+    const x = (coordinate.x - targetCoordinate.x) * Math.cos(angle) -
+        (coordinate.y - targetCoordinate.y) * Math.sin(angle) +
+        targetCoordinate.x;
+    const y = (coordinate.x - targetCoordinate.x) * Math.sin(angle) +
+        (coordinate.y - targetCoordinate.y) * Math.cos(angle) +
+        targetCoordinate.y;
+    return { x, y };
+}
+function getRayLine(coordinates, bounding) {
+    if (coordinates.length > 1) {
+        let coordinate;
+        if (coordinates[0].x === coordinates[1].x &&
+            coordinates[0].y !== coordinates[1].y) {
+            if (coordinates[0].y < coordinates[1].y) {
+                coordinate = {
+                    x: coordinates[0].x,
+                    y: bounding.height,
+                };
+            }
+            else {
+                coordinate = {
+                    x: coordinates[0].x,
+                    y: 0,
+                };
+            }
+        }
+        else if (coordinates[0].x > coordinates[1].x) {
+            coordinate = {
                 x: 0,
-                y: utils.getLinearYFromCoordinates(coords[0], coords[1], { x: 0, y: coords[0].y })
+                y: utils.getLinearYFromCoordinates(coordinates[0], coordinates[1], {
+                    x: 0,
+                    y: coordinates[0].y,
+                }),
             };
         }
         else {
-            end = {
+            coordinate = {
                 x: bounding.width,
-                y: utils.getLinearYFromCoordinates(coords[0], coords[1], { x: bounding.width, y: coords[0].y })
+                y: utils.getLinearYFromCoordinates(coordinates[0], coordinates[1], {
+                    x: bounding.width,
+                    y: coordinates[0].y,
+                }),
             };
         }
-        return { coordinates: [coords[0], end] };
+        return { coordinates: [coordinates[0], coordinate] };
     }
     return [];
 }
-// ── Overlay Definitions ──
-var arrow = {
+function getDistance(coordinate1, coordinate2) {
+    const xDis = Math.abs(coordinate1.x - coordinate2.x);
+    const yDis = Math.abs(coordinate1.y - coordinate2.y);
+    return Math.sqrt(xDis * xDis + yDis * yDis);
+}
+function formatThousands(value, sign) {
+    const vl = `${value}`;
+    if (sign.length === 0) {
+        return vl;
+    }
+    if (vl.includes('.')) {
+        const arr = vl.split('.');
+        return `${arr[0].replace(/(\d)(?=(\d{3})+$)/g, ($1) => `${$1}${sign}`)}.${arr[1]}`;
+    }
+    return vl.replace(/(\d)(?=(\d{3})+$)/g, ($1) => `${$1}${sign}`);
+}
+
+const arrow = {
     name: 'arrow',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var dir = coordinates[1].x > coordinates[0].x ? 0 : 1;
-            var si = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
-            var angle = void 0;
-            if (si) {
-                angle = Math.atan(si[0]) + Math.PI * dir;
+            const flag = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            const kb = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            let offsetAngle;
+            if (kb) {
+                offsetAngle = Math.atan(kb[0]) + Math.PI * flag;
             }
             else {
-                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
+                if (coordinates[1].y > coordinates[0].y) {
+                    offsetAngle = Math.PI / 2;
+                }
+                else {
+                    offsetAngle = (Math.PI / 2) * 3;
+                }
             }
-            var a1 = rotatePoint({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], angle);
-            var a2 = rotatePoint({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], angle);
+            const rotateCoordinate1 = getRotateCoordinate({ x: coordinates[1].x - 8, y: coordinates[1].y + 4 }, coordinates[1], offsetAngle);
+            const rotateCoordinate2 = getRotateCoordinate({ x: coordinates[1].x - 8, y: coordinates[1].y - 4 }, coordinates[1], offsetAngle);
             return [
-                { type: 'line', attrs: { coordinates: coordinates } },
-                { type: 'line', ignoreEvent: true, attrs: { coordinates: [a1, coordinates[1], a2] } }
+                {
+                    type: 'line',
+                    attrs: { coordinates },
+                },
+                {
+                    type: 'line',
+                    ignoreEvent: true,
+                    attrs: {
+                        coordinates: [rotateCoordinate1, coordinates[1], rotateCoordinate2],
+                    },
+                },
             ];
         }
         return [];
-    }
+    },
 };
-var circle = {
+
+const circle = {
     name: 'circle',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { circle: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    styles: {
+        circle: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var r = getDistance(coordinates[0], coordinates[1]);
-            return { type: 'circle', attrs: __assign(__assign({}, coordinates[0]), { r: r }), styles: { style: 'stroke_fill' } };
+            const radius = getDistance(coordinates[0], coordinates[1]);
+            return {
+                type: 'circle',
+                attrs: {
+                    ...coordinates[0],
+                    r: radius,
+                },
+                styles: { style: 'stroke_fill' },
+            };
         }
         return [];
-    }
+    },
 };
-var rect = {
+
+const rect = {
     name: 'rect',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            return [{
+            return [
+                {
                     type: 'polygon',
                     attrs: {
                         coordinates: [
                             coordinates[0],
                             { x: coordinates[1].x, y: coordinates[0].y },
                             coordinates[1],
-                            { x: coordinates[0].x, y: coordinates[1].y }
-                        ]
+                            { x: coordinates[0].x, y: coordinates[1].y },
+                        ],
                     },
-                    styles: { style: 'stroke_fill' }
-                }];
+                    styles: { style: 'stroke_fill' },
+                },
+            ];
         }
         return [];
-    }
+    },
 };
-var parallelogram = {
+
+const parallelogram = {
     name: 'parallelogram',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length === 2) {
-            return [{ type: 'line', ignoreEvent: true, attrs: { coordinates: coordinates } }];
+            return [
+                {
+                    type: 'line',
+                    ignoreEvent: true,
+                    attrs: { coordinates },
+                },
+            ];
         }
         if (coordinates.length === 3) {
-            var d = {
+            const coordinate = {
                 x: coordinates[0].x + coordinates[2].x - coordinates[1].x,
-                y: coordinates[0].y + coordinates[2].y - coordinates[1].y
+                y: coordinates[0].y + coordinates[2].y - coordinates[1].y,
             };
-            return [{
+            return [
+                {
                     type: 'polygon',
-                    attrs: { coordinates: [coordinates[0], coordinates[1], coordinates[2], d] },
-                    styles: { style: 'stroke_fill' }
-                }];
+                    attrs: {
+                        coordinates: [
+                            coordinates[0],
+                            coordinates[1],
+                            coordinates[2],
+                            coordinate,
+                        ],
+                    },
+                    styles: { style: 'stroke_fill' },
+                },
+            ];
         }
         return [];
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         if (performPointIndex < 2) {
+            // @ts-expect-error
             points[0].price = performPoint.price;
+            // @ts-expect-error
             points[1].price = performPoint.price;
         }
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         if (currentStep === 2) {
+            // @ts-expect-error
             points[0].price = performPoint.price;
         }
-    }
+    },
 };
-var triangle = {
+
+const triangle = {
     name: 'triangle',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        return [{ type: 'polygon', attrs: { coordinates: coordinates }, styles: { style: 'stroke_fill' } }];
-    }
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
+        return [
+            {
+                type: 'polygon',
+                attrs: { coordinates },
+                styles: { style: 'stroke_fill' },
+            },
+        ];
+    },
 };
-var fibonacciCircle = {
+
+const fibonacciCircle = {
     name: 'fibonacciCircle',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var dx = Math.abs(coordinates[0].x - coordinates[1].x);
-            var dy = Math.abs(coordinates[0].y - coordinates[1].y);
-            var radius_1 = Math.sqrt(dx * dx + dy * dy);
-            var levels = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            var circles_1 = [];
-            var labels_1 = [];
-            levels.forEach(function (l) {
-                var r = radius_1 * l;
-                circles_1.push(__assign(__assign({}, coordinates[0]), { r: r }));
-                labels_1.push({ x: coordinates[0].x, y: coordinates[0].y + r + 6, text: "".concat((l * 100).toFixed(1), "%") });
+            const xDis = Math.abs(coordinates[0].x - coordinates[1].x);
+            const yDis = Math.abs(coordinates[0].y - coordinates[1].y);
+            const radius = Math.sqrt(xDis * xDis + yDis * yDis);
+            const percents = [0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            const circles = [];
+            const texts = [];
+            percents.forEach((percent) => {
+                const r = radius * percent;
+                circles.push({ ...coordinates[0], r });
+                texts.push({
+                    x: coordinates[0].x,
+                    y: coordinates[0].y + r + 6,
+                    text: `${(percent * 100).toFixed(1)}%`,
+                });
             });
             return [
-                { type: 'circle', attrs: circles_1, styles: { style: 'stroke' } },
-                { type: 'text', ignoreEvent: true, attrs: labels_1 }
+                {
+                    type: 'circle',
+                    attrs: circles,
+                    styles: { style: 'stroke' },
+                },
+                {
+                    type: 'text',
+                    ignoreEvent: true,
+                    attrs: texts,
+                },
             ];
         }
         return [];
-    }
+    },
 };
-var fibonacciSegment = {
+
+const fibonacciSegment = {
     name: 'fibonacciSegment',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var lines = [];
-        var labels = [];
+    // @ts-ignore
+    createPointFigures: ({ coordinates, overlay, precision }) => {
+        const lines = [];
+        const texts = [];
         if (coordinates.length > 1) {
-            var leftX_1 = coordinates[1].x > coordinates[0].x ? coordinates[0].x : coordinates[1].x;
-            var levels = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
-            var coordDiff_1 = coordinates[0].y - coordinates[1].y;
-            var points_1 = overlay.points;
-            var valueDiff_1 = points_1[0].value - points_1[1].value;
-            levels.forEach(function (l) {
-                var y = coordinates[1].y + coordDiff_1 * l;
-                var price = (points_1[1].value + valueDiff_1 * l).toFixed(2);
-                lines.push({ coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }] });
-                labels.push({ x: leftX_1, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
+            const textX = coordinates[1].x > coordinates[0].x
+                ? coordinates[0].x
+                : coordinates[1].x;
+            const percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+            const yDif = coordinates[0].y - coordinates[1].y;
+            const points = overlay.points;
+            // @ts-expect-error
+            const valueDif = points[0].value - points[1].value;
+            percents.forEach((percent) => {
+                const y = coordinates[1].y + yDif * percent;
+                // @ts-expect-error
+                const price = (points[1].value + valueDif * percent).toFixed(precision.price);
+                lines.push({
+                    coordinates: [
+                        { x: coordinates[0].x, y },
+                        { x: coordinates[1].x, y },
+                    ],
+                });
+                texts.push({
+                    x: textX,
+                    y,
+                    text: `${price} (${(percent * 100).toFixed(1)}%)`,
+                    baseline: 'bottom',
+                });
             });
         }
         return [
-            { type: 'line', attrs: lines },
-            { type: 'text', ignoreEvent: true, attrs: labels }
+            {
+                type: 'line',
+                attrs: lines,
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var fibonacciSpiral = {
+
+const fibonacciSpiral = {
     name: 'fibonacciSpiral',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, bounding }) => {
         if (coordinates.length > 1) {
-            var baseR = getDistance(coordinates[0], coordinates[1]) / Math.sqrt(24);
-            var dir = coordinates[1].x > coordinates[0].x ? 0 : 1;
-            var si = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
-            var angle = void 0;
-            if (si) {
-                angle = Math.atan(si[0]) + Math.PI * dir;
+            const startRadius = getDistance(coordinates[0], coordinates[1]) / Math.sqrt(24);
+            const flag = coordinates[1].x > coordinates[0].x ? 0 : 1;
+            const kb = utils.getLinearSlopeIntercept(coordinates[0], coordinates[1]);
+            let offsetAngle;
+            if (kb) {
+                offsetAngle = Math.atan(kb[0]) + Math.PI * flag;
             }
             else {
-                angle = coordinates[1].y > coordinates[0].y ? Math.PI / 2 : Math.PI / 2 * 3;
-            }
-            var c1 = rotatePoint({ x: coordinates[0].x - baseR, y: coordinates[0].y }, coordinates[0], angle);
-            var c2 = rotatePoint({ x: coordinates[0].x - baseR, y: coordinates[0].y - baseR }, coordinates[0], angle);
-            var arcs = [
-                __assign(__assign({}, c1), { r: baseR, startAngle: angle, endAngle: angle + Math.PI / 2 }),
-                __assign(__assign({}, c2), { r: baseR * 2, startAngle: angle + Math.PI / 2, endAngle: angle + Math.PI })
-            ];
-            var cx = coordinates[0].x - baseR;
-            var cy = coordinates[0].y - baseR;
-            for (var i = 2; i < 9; i++) {
-                var r = arcs[i - 2].r + arcs[i - 1].r;
-                var sa = 0;
-                switch (i % 4) {
-                    case 0:
-                        sa = angle;
-                        cx -= arcs[i - 2].r;
-                        break;
-                    case 1:
-                        sa = angle + Math.PI / 2;
-                        cy -= arcs[i - 2].r;
-                        break;
-                    case 2:
-                        sa = angle + Math.PI;
-                        cx += arcs[i - 2].r;
-                        break;
-                    case 3:
-                        sa = angle + Math.PI / 2 * 3;
-                        cy += arcs[i - 2].r;
-                        break;
+                if (coordinates[1].y > coordinates[0].y) {
+                    offsetAngle = Math.PI / 2;
                 }
-                var center = rotatePoint({ x: cx, y: cy }, coordinates[0], angle);
-                arcs.push(__assign(__assign({}, center), { r: r, startAngle: sa, endAngle: sa + Math.PI / 2 }));
+                else {
+                    offsetAngle = (Math.PI / 2) * 3;
+                }
+            }
+            const rotateCoordinate1 = getRotateCoordinate({ x: coordinates[0].x - startRadius, y: coordinates[0].y }, coordinates[0], offsetAngle);
+            const rotateCoordinate2 = getRotateCoordinate({
+                x: coordinates[0].x - startRadius,
+                y: coordinates[0].y - startRadius,
+            }, coordinates[0], offsetAngle);
+            const arcs = [
+                {
+                    ...rotateCoordinate1,
+                    r: startRadius,
+                    startAngle: offsetAngle,
+                    endAngle: offsetAngle + Math.PI / 2,
+                },
+                {
+                    ...rotateCoordinate2,
+                    r: startRadius * 2,
+                    startAngle: offsetAngle + Math.PI / 2,
+                    endAngle: offsetAngle + Math.PI,
+                },
+            ];
+            let x = coordinates[0].x - startRadius;
+            let y = coordinates[0].y - startRadius;
+            for (let i = 2; i < 9; i++) {
+                const r = arcs[i - 2].r + arcs[i - 1].r;
+                let startAngle = 0;
+                switch (i % 4) {
+                    case 0: {
+                        startAngle = offsetAngle;
+                        x -= arcs[i - 2].r;
+                        break;
+                    }
+                    case 1: {
+                        startAngle = offsetAngle + Math.PI / 2;
+                        y -= arcs[i - 2].r;
+                        break;
+                    }
+                    case 2: {
+                        startAngle = offsetAngle + Math.PI;
+                        x += arcs[i - 2].r;
+                        break;
+                    }
+                    case 3: {
+                        startAngle = offsetAngle + (Math.PI / 2) * 3;
+                        y += arcs[i - 2].r;
+                        break;
+                    }
+                }
+                const endAngle = startAngle + Math.PI / 2;
+                const rotateCoordinate = getRotateCoordinate({ x, y }, coordinates[0], offsetAngle);
+                arcs.push({
+                    ...rotateCoordinate,
+                    r,
+                    startAngle,
+                    endAngle,
+                });
             }
             return [
-                { type: 'arc', attrs: arcs },
-                { type: 'line', attrs: extendLine(coordinates, bounding) }
+                {
+                    type: 'arc',
+                    attrs: arcs,
+                },
+                {
+                    type: 'line',
+                    attrs: getRayLine(coordinates, bounding),
+                },
             ];
         }
         return [];
-    }
+    },
 };
-var fibonacciSpeedResistanceFan = {
+
+const fibonacciSpeedResistanceFan = {
     name: 'fibonacciSpeedResistanceFan',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        var gridLines = [];
-        var fanLines = [];
-        var labels = [];
+    createPointFigures: ({ coordinates, bounding }) => {
+        const lines1 = [];
+        let lines2 = [];
+        const texts = [];
         if (coordinates.length > 1) {
-            var labelOffset_1 = coordinates[1].x > coordinates[0].x ? -38 : 4;
-            var labelOffsetY_1 = coordinates[1].y > coordinates[0].y ? -2 : 20;
-            var dx_1 = coordinates[1].x - coordinates[0].x;
-            var dy_1 = coordinates[1].y - coordinates[0].y;
-            var levels = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
-            levels.forEach(function (l) {
-                var x = coordinates[1].x - dx_1 * l;
-                var y = coordinates[1].y - dy_1 * l;
-                gridLines.push({ coordinates: [{ x: x, y: coordinates[0].y }, { x: x, y: coordinates[1].y }] });
-                gridLines.push({ coordinates: [{ x: coordinates[0].x, y: y }, { x: coordinates[1].x, y: y }] });
-                fanLines = fanLines.concat(extendLine([coordinates[0], { x: x, y: coordinates[1].y }], bounding));
-                fanLines = fanLines.concat(extendLine([coordinates[0], { x: coordinates[1].x, y: y }], bounding));
-                labels.unshift({ x: coordinates[0].x + labelOffset_1, y: y + 10, text: "".concat(l.toFixed(3)) });
-                labels.unshift({ x: x - 18, y: coordinates[0].y + labelOffsetY_1, text: "".concat(l.toFixed(3)) });
+            const xOffset = coordinates[1].x > coordinates[0].x ? -38 : 4;
+            const yOffset = coordinates[1].y > coordinates[0].y ? -2 : 20;
+            const xDistance = coordinates[1].x - coordinates[0].x;
+            const yDistance = coordinates[1].y - coordinates[0].y;
+            const percents = [1, 0.75, 0.618, 0.5, 0.382, 0.25, 0];
+            percents.forEach((percent) => {
+                const x = coordinates[1].x - xDistance * percent;
+                const y = coordinates[1].y - yDistance * percent;
+                lines1.push({
+                    coordinates: [
+                        { x, y: coordinates[0].y },
+                        { x, y: coordinates[1].y },
+                    ],
+                });
+                lines1.push({
+                    coordinates: [
+                        { x: coordinates[0].x, y },
+                        { x: coordinates[1].x, y },
+                    ],
+                });
+                lines2 = lines2.concat(getRayLine([coordinates[0], { x, y: coordinates[1].y }], bounding));
+                lines2 = lines2.concat(getRayLine([coordinates[0], { x: coordinates[1].x, y }], bounding));
+                texts.unshift({
+                    x: coordinates[0].x + xOffset,
+                    y: y + 10,
+                    text: `${percent.toFixed(3)}`,
+                });
+                texts.unshift({
+                    x: x - 18,
+                    y: coordinates[0].y + yOffset,
+                    text: `${percent.toFixed(3)}`,
+                });
             });
         }
         return [
-            { type: 'line', attrs: gridLines },
-            { type: 'line', attrs: fanLines },
-            { type: 'text', ignoreEvent: true, attrs: labels }
+            {
+                type: 'line',
+                attrs: lines1,
+            },
+            {
+                type: 'line',
+                attrs: lines2,
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var fibonacciExtension = {
+
+const fibonacciExtension = {
     name: 'fibonacciExtension',
     totalStep: 4,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var lines = [];
-        var labels = [];
+    // @ts-ignore
+    createPointFigures: ({ coordinates, overlay, precision }) => {
+        const fbLines = [];
+        const texts = [];
         if (coordinates.length > 2) {
-            var points_2 = overlay.points;
-            var valueDiff_2 = points_2[1].value - points_2[0].value;
-            var coordDiff_2 = coordinates[1].y - coordinates[0].y;
-            var levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            var leftX_2 = coordinates[2].x > coordinates[1].x ? coordinates[1].x : coordinates[2].x;
-            levels.forEach(function (l) {
-                var y = coordinates[2].y + coordDiff_2 * l;
-                var price = (points_2[2].value + valueDiff_2 * l).toFixed(2);
-                lines.push({ coordinates: [{ x: coordinates[1].x, y: y }, { x: coordinates[2].x, y: y }] });
-                labels.push({ x: leftX_2, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
+            const points = overlay.points;
+            // @ts-expect-error
+            const valueDif = points[1].value - points[0].value;
+            const yDif = coordinates[1].y - coordinates[0].y;
+            const percents = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+            const textX = coordinates[2].x > coordinates[1].x
+                ? coordinates[1].x
+                : coordinates[2].x;
+            percents.forEach((percent) => {
+                const y = coordinates[2].y + yDif * percent;
+                // @ts-expect-error
+                const price = (points[2].value + valueDif * percent).toFixed(precision.price);
+                fbLines.push({
+                    coordinates: [
+                        { x: coordinates[1].x, y },
+                        { x: coordinates[2].x, y },
+                    ],
+                });
+                texts.push({
+                    x: textX,
+                    y,
+                    text: `${price} (${(percent * 100).toFixed(1)}%)`,
+                    baseline: 'bottom',
+                });
             });
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates }, styles: { style: 'dashed' } },
-            { type: 'line', attrs: lines },
-            { type: 'text', ignoreEvent: true, attrs: labels }
+            {
+                type: 'line',
+                attrs: { coordinates },
+                styles: { style: 'dashed' },
+            },
+            {
+                type: 'line',
+                attrs: fbLines,
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var gannBox = {
+
+const gannBox = {
     name: 'gannBox',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
         if (coordinates.length > 1) {
-            var e = coordinates;
-            var qy = (e[1].y - e[0].y) / 4;
-            var dx = e[1].x - e[0].x;
-            var dashes = [
-                { coordinates: [e[0], { x: e[1].x, y: e[1].y - qy }] },
-                { coordinates: [e[0], { x: e[1].x, y: e[1].y - qy * 2 }] },
-                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y + qy }] },
-                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y + qy * 2 }] },
-                { coordinates: [__assign({}, e[0]), { x: e[0].x + dx * 0.236, y: e[1].y }] },
-                { coordinates: [__assign({}, e[0]), { x: e[0].x + dx * 0.5, y: e[1].y }] },
-                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[0].x + dx * 0.236, y: e[0].y }] },
-                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[0].x + dx * 0.5, y: e[0].y }] }
+            const quarterYDis = (coordinates[1].y - coordinates[0].y) / 4;
+            const xDis = coordinates[1].x - coordinates[0].x;
+            const dashedLines = [
+                {
+                    coordinates: [
+                        coordinates[0],
+                        { x: coordinates[1].x, y: coordinates[1].y - quarterYDis },
+                    ],
+                },
+                {
+                    coordinates: [
+                        coordinates[0],
+                        { x: coordinates[1].x, y: coordinates[1].y - quarterYDis * 2 },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[1].y },
+                        { x: coordinates[1].x, y: coordinates[0].y + quarterYDis },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[1].y },
+                        { x: coordinates[1].x, y: coordinates[0].y + quarterYDis * 2 },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { ...coordinates[0] },
+                        { x: coordinates[0].x + xDis * 0.236, y: coordinates[1].y },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { ...coordinates[0] },
+                        { x: coordinates[0].x + xDis * 0.5, y: coordinates[1].y },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[1].y },
+                        { x: coordinates[0].x + xDis * 0.236, y: coordinates[0].y },
+                    ],
+                },
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[1].y },
+                        { x: coordinates[0].x + xDis * 0.5, y: coordinates[0].y },
+                    ],
+                },
             ];
-            var cross = [
-                { coordinates: [e[0], e[1]] },
-                { coordinates: [{ x: e[0].x, y: e[1].y }, { x: e[1].x, y: e[0].y }] }
+            const solidLines = [
+                { coordinates: [coordinates[0], coordinates[1]] },
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[1].y },
+                        { x: coordinates[1].x, y: coordinates[0].y },
+                    ],
+                },
             ];
             return [
                 {
                     type: 'line',
                     attrs: [
-                        { coordinates: [e[0], { x: e[1].x, y: e[0].y }] },
-                        { coordinates: [{ x: e[1].x, y: e[0].y }, e[1]] },
-                        { coordinates: [e[1], { x: e[0].x, y: e[1].y }] },
-                        { coordinates: [{ x: e[0].x, y: e[1].y }, e[0]] }
-                    ]
+                        {
+                            coordinates: [
+                                coordinates[0],
+                                { x: coordinates[1].x, y: coordinates[0].y },
+                            ],
+                        },
+                        {
+                            coordinates: [
+                                { x: coordinates[1].x, y: coordinates[0].y },
+                                coordinates[1],
+                            ],
+                        },
+                        {
+                            coordinates: [
+                                coordinates[1],
+                                { x: coordinates[0].x, y: coordinates[1].y },
+                            ],
+                        },
+                        {
+                            coordinates: [
+                                { x: coordinates[0].x, y: coordinates[1].y },
+                                coordinates[0],
+                            ],
+                        },
+                    ],
                 },
                 {
-                    type: 'polygon', ignoreEvent: true,
-                    attrs: { coordinates: [e[0], { x: e[1].x, y: e[0].y }, e[1], { x: e[0].x, y: e[1].y }] },
-                    styles: { style: 'fill' }
+                    type: 'polygon',
+                    ignoreEvent: true,
+                    attrs: {
+                        coordinates: [
+                            coordinates[0],
+                            { x: coordinates[1].x, y: coordinates[0].y },
+                            coordinates[1],
+                            { x: coordinates[0].x, y: coordinates[1].y },
+                        ],
+                    },
+                    styles: { style: 'fill' },
                 },
-                { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
-                { type: 'line', attrs: cross }
+                {
+                    type: 'line',
+                    attrs: dashedLines,
+                    styles: { style: 'dashed' },
+                },
+                {
+                    type: 'line',
+                    attrs: solidLines,
+                },
             ];
         }
         return [];
-    }
+    },
 };
-function makeWaveOverlay(name, totalStep) {
-    return {
-        name: name,
-        totalStep: totalStep,
-        needDefaultPointFigure: true,
-        needDefaultXAxisFigure: true,
-        needDefaultYAxisFigure: true,
-        createPointFigures: function (_a) {
-            var coordinates = _a.coordinates;
-            var labels = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { text: "(".concat(i, ")"), baseline: 'bottom' })); });
-            return [
-                { type: 'line', attrs: { coordinates: coordinates } },
-                { type: 'text', ignoreEvent: true, attrs: labels }
-            ];
-        }
-    };
-}
-var threeWaves = makeWaveOverlay('threeWaves', 5);
-var fiveWaves = makeWaveOverlay('fiveWaves', 7);
-var eightWaves = makeWaveOverlay('eightWaves', 10);
-var anyWaves = makeWaveOverlay('anyWaves', Number.MAX_SAFE_INTEGER);
-var abcd = {
+
+const threeWaves = {
+    name: 'threeWaves',
+    totalStep: 5,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            text: `(${i})`,
+            baseline: 'bottom',
+        }));
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
+        ];
+    },
+};
+
+const fiveWaves = {
+    name: 'fiveWaves',
+    totalStep: 7,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            text: `(${i})`,
+            baseline: 'bottom',
+        }));
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
+        ];
+    },
+};
+
+const eightWaves = {
+    name: 'eightWaves',
+    totalStep: 10,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            text: `(${i})`,
+            baseline: 'bottom',
+        }));
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
+        ];
+    },
+};
+
+const anyWaves = {
+    name: 'anyWaves',
+    totalStep: Number.MAX_SAFE_INTEGER,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            text: `(${i})`,
+            baseline: 'bottom',
+        }));
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
+        ];
+    },
+};
+
+const abcd = {
     name: 'abcd',
     totalStep: 5,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var labels = ['A', 'B', 'C', 'D'];
-        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
-        var diag1 = [];
-        var diag2 = [];
+    createPointFigures: ({ coordinates }) => {
+        let acLineCoordinates = [];
+        let bdLineCoordinates = [];
+        const tags = ['A', 'B', 'C', 'D'];
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            baseline: 'bottom',
+            text: `(${tags[i]})`,
+        }));
         if (coordinates.length > 2) {
-            diag1 = [coordinates[0], coordinates[2]];
-            if (coordinates.length > 3)
-                diag2 = [coordinates[1], coordinates[3]];
+            acLineCoordinates = [coordinates[0], coordinates[2]];
+            if (coordinates.length > 3) {
+                bdLineCoordinates = [coordinates[1], coordinates[3]];
+            }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
-            { type: 'line', attrs: [{ coordinates: diag1 }, { coordinates: diag2 }], styles: { style: 'dashed' } },
-            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'line',
+                attrs: [
+                    { coordinates: acLineCoordinates },
+                    { coordinates: bdLineCoordinates },
+                ],
+                styles: { style: 'dashed' },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var xabcd = {
+
+const xabcd = {
     name: 'xabcd',
     totalStep: 6,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var labels = ['X', 'A', 'B', 'C', 'D'];
-        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: "(".concat(labels[i], ")") })); });
-        var dashes = [];
-        var polys = [];
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates, overlay: _overlay }) => {
+        const dashedLines = [];
+        const polygons = [];
+        const tags = ['X', 'A', 'B', 'C', 'D'];
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            baseline: 'bottom',
+            text: `(${tags[i]})`,
+        }));
         if (coordinates.length > 2) {
-            dashes.push({ coordinates: [coordinates[0], coordinates[2]] });
-            polys.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            dashedLines.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polygons.push({
+                coordinates: [coordinates[0], coordinates[1], coordinates[2]],
+            });
             if (coordinates.length > 3) {
-                dashes.push({ coordinates: [coordinates[1], coordinates[3]] });
+                dashedLines.push({ coordinates: [coordinates[1], coordinates[3]] });
                 if (coordinates.length > 4) {
-                    dashes.push({ coordinates: [coordinates[2], coordinates[4]] });
-                    polys.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                    dashedLines.push({ coordinates: [coordinates[2], coordinates[4]] });
+                    polygons.push({
+                        coordinates: [coordinates[2], coordinates[3], coordinates[4]],
+                    });
                 }
             }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
-            { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
-            { type: 'polygon', ignoreEvent: true, attrs: polys },
-            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'line',
+                attrs: dashedLines,
+                styles: { style: 'dashed' },
+            },
+            {
+                type: 'polygon',
+                ignoreEvent: true,
+                attrs: polygons,
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var headAndShoulders = {
+
+const elliotTripleComboWaves = {
+    name: 'elliotTripleComboWaves',
+    totalStep: 6,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates }) => {
+        let acLineCoordinates = [];
+        let bdLineCoordinates = [];
+        const tags = ['(0)', '(W)', '(X)', '(Y)', '(Z)'];
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            baseline: 'bottom',
+            text: `(${tags[i]})`,
+        }));
+        return [
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'line',
+                attrs: [
+                    { coordinates: acLineCoordinates },
+                    { coordinates: bdLineCoordinates },
+                ],
+                styles: { style: 'dashed' },
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
+        ];
+    },
+};
+
+const headAndShoulders = {
     name: 'headAndShoulders',
     totalStep: 8,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { polygon: { color: 'rgba(22, 119, 255, 0.15)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var labels = ['1', 'Left Shoulder', '2', 'Head', '3', 'Right Shoulder', '4'];
-        var textAttrs = coordinates.map(function (c, i) { return (__assign(__assign({}, c), { baseline: 'bottom', text: labels[i] })); });
-        var dashes = [];
-        var polys = [];
+    styles: {
+        polygon: {
+            color: 'rgba(22, 119, 255, 0.15)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
+        const dashedLines = [];
+        const polygons = [];
+        const tags = [
+            '1',
+            'Left Shoulder',
+            '2',
+            'Head',
+            '3',
+            'Right Shoulder',
+            '4',
+        ];
+        const texts = coordinates.map((coordinate, i) => ({
+            ...coordinate,
+            baseline: 'bottom',
+            text: `${tags[i]}`,
+        }));
         if (coordinates.length > 2) {
-            dashes.push({ coordinates: [coordinates[0], coordinates[2]] });
-            polys.push({ coordinates: [coordinates[0], coordinates[1], coordinates[2]] });
+            dashedLines.push({ coordinates: [coordinates[0], coordinates[2]] });
+            polygons.push({
+                coordinates: [coordinates[0], coordinates[1], coordinates[2]],
+            });
             if (coordinates.length > 4) {
-                dashes.push({ coordinates: [coordinates[2], coordinates[4]] });
-                polys.push({ coordinates: [coordinates[2], coordinates[3], coordinates[4]] });
+                dashedLines.push({ coordinates: [coordinates[2], coordinates[4]] });
+                polygons.push({
+                    coordinates: [coordinates[2], coordinates[3], coordinates[4]],
+                });
                 if (coordinates.length > 6) {
-                    dashes.push({ coordinates: [coordinates[4], coordinates[6]] });
-                    polys.push({ coordinates: [coordinates[4], coordinates[5], coordinates[6]] });
+                    dashedLines.push({ coordinates: [coordinates[4], coordinates[6]] });
+                    polygons.push({
+                        coordinates: [coordinates[4], coordinates[5], coordinates[6]],
+                    });
                 }
             }
         }
         return [
-            { type: 'line', attrs: { coordinates: coordinates } },
-            { type: 'line', attrs: dashes, styles: { style: 'dashed' } },
-            { type: 'polygon', ignoreEvent: true, attrs: polys },
-            { type: 'text', ignoreEvent: true, attrs: textAttrs }
+            {
+                type: 'line',
+                attrs: { coordinates },
+            },
+            {
+                type: 'line',
+                attrs: dashedLines,
+                styles: { style: 'dashed' },
+            },
+            {
+                type: 'polygon',
+                ignoreEvent: true,
+                attrs: polygons,
+            },
+            {
+                type: 'text',
+                ignoreEvent: true,
+                attrs: texts,
+            },
         ];
-    }
+    },
 };
-var crossLine = {
-    name: 'crossLine',
-    totalStep: 2,
-    needDefaultPointFigure: true,
-    needDefaultXAxisFigure: true,
-    needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, bounding = _a.bounding;
-        return [
-            { type: 'line', attrs: { coordinates: [{ x: 0, y: coordinates[0].y }, { x: bounding.width, y: coordinates[0].y }] } },
-            { type: 'line', attrs: { coordinates: [{ x: coordinates[0].x, y: 0 }, { x: coordinates[0].x, y: bounding.height }] } }
-        ];
-    }
-};
-var measure = {
+
+const measure = {
     name: 'measure',
     totalStep: 3,
     needDefaultPointFigure: true,
@@ -16082,28 +16003,31 @@ var measure = {
     styles: {
         backgroundColor: 'rgba(22, 119, 255, 0.25)',
         tipBackgroundColor: '#1677FF',
-        lineColor: '#1677FF'
+        lineColor: '#1677FF',
     },
-    createPointFigures: function (_a) {
-        var _b, _c, _d, _e, _f;
-        var coordinates = _a.coordinates, overlay = _a.overlay, bounding = _a.bounding;
+    createPointFigures: ({ coordinates, overlay, bounding }) => {
         if (coordinates.length > 1) {
-            var v1 = (_b = overlay.points[1]) === null || _b === void 0 ? void 0 : _b.value;
-            var v0 = (_c = overlay.points[0]) === null || _c === void 0 ? void 0 : _c.value;
-            var pct = 0;
-            var diff = 0;
-            if (v0 !== undefined && v1 !== undefined) {
-                pct = (v1 - v0) / v0 * 100;
-                diff = v1 - v0;
+            const newPrice = overlay.points[1]?.value;
+            const oldPrice = overlay.points[0]?.value;
+            let percentage = 0;
+            let differencePrice = 0;
+            if (oldPrice !== undefined && newPrice !== undefined) {
+                percentage = ((newPrice - oldPrice) / oldPrice) * 100;
+                differencePrice = newPrice - oldPrice;
             }
-            var isRight = coordinates[0].x < coordinates[1].x;
-            var isDown = coordinates[0].y < coordinates[1].y;
-            var mid = { x: Math.round((coordinates[0].x + coordinates[1].x) / 2), y: Math.round((coordinates[0].y + coordinates[1].y) / 2) };
-            var bgColor = (_d = overlay.styles) === null || _d === void 0 ? void 0 : _d.backgroundColor;
-            var tipColor = (_e = overlay.styles) === null || _e === void 0 ? void 0 : _e.tipBackgroundColor;
-            var lineColor = (_f = overlay.styles) === null || _f === void 0 ? void 0 : _f.lineColor;
-            var text = "".concat(diff.toFixed(2), " (").concat(pct.toFixed(2), "%)");
-            var figs = [
+            const leftToRight = coordinates[0]?.x < coordinates[1]?.x;
+            const topToBottom = coordinates[0]?.y < coordinates[1]?.y;
+            const centerCoordinate = {
+                x: Math.round((coordinates[0].x + coordinates[1].x) / 2),
+                y: Math.round((coordinates[0].y + coordinates[1].y) / 2),
+            };
+            const backgroundColor = overlay.styles?.backgroundColor;
+            const tipBackgroundColor = overlay.styles?.tipBackgroundColor;
+            const lineColor = overlay.styles?.lineColor;
+            const texts = [
+                `${differencePrice.toFixed(2)} (${percentage.toFixed(2)}%)`,
+            ];
+            const figures = [
                 {
                     type: 'polygon',
                     attrs: {
@@ -16111,136 +16035,451 @@ var measure = {
                             coordinates[0],
                             { x: coordinates[1].x, y: coordinates[0].y },
                             coordinates[1],
-                            { x: coordinates[0].x, y: coordinates[1].y }
-                        ]
+                            { x: coordinates[0].x, y: coordinates[1].y },
+                        ],
                     },
-                    styles: { color: bgColor }
+                    styles: {
+                        color: backgroundColor,
+                    },
                 },
-                { type: 'line', attrs: { coordinates: [{ x: coordinates[0].x, y: mid.y }, { x: coordinates[1].x, y: mid.y }] }, styles: { color: lineColor } },
-                { type: 'line', attrs: { coordinates: [{ x: mid.x, y: coordinates[0].y }, { x: mid.x, y: coordinates[1].y }] }, styles: { color: lineColor } }
+                {
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: coordinates[0].x, y: centerCoordinate.y },
+                            { x: coordinates[1].x, y: centerCoordinate.y },
+                        ],
+                    },
+                    styles: {
+                        color: lineColor,
+                    },
+                },
+                {
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: centerCoordinate.x, y: coordinates[0].y },
+                            { x: centerCoordinate.x, y: coordinates[1].y },
+                        ],
+                    },
+                    styles: {
+                        color: lineColor,
+                    },
+                },
             ];
-            // Arrow heads
-            if (isRight) {
-                figs.push({ type: 'line', attrs: { coordinates: [{ x: coordinates[1].x - 6, y: mid.y - 4 }, { x: coordinates[1].x, y: mid.y }, { x: coordinates[1].x - 6, y: mid.y + 4 }] } });
+            if (leftToRight) {
+                figures.push({
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: coordinates[1].x - 6, y: centerCoordinate.y - 4 },
+                            { x: coordinates[1].x, y: centerCoordinate.y },
+                            { x: coordinates[1].x - 6, y: centerCoordinate.y + 4 },
+                        ],
+                    },
+                });
             }
             else {
-                figs.push({ type: 'line', attrs: { coordinates: [{ x: coordinates[1].x + 6, y: mid.y - 4 }, { x: coordinates[1].x, y: mid.y }, { x: coordinates[1].x + 6, y: mid.y + 4 }] } });
+                figures.push({
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: coordinates[1].x + 6, y: centerCoordinate.y - 4 },
+                            { x: coordinates[1].x, y: centerCoordinate.y },
+                            { x: coordinates[1].x + 6, y: centerCoordinate.y + 4 },
+                        ],
+                    },
+                });
             }
-            if (isDown) {
-                figs.push({ type: 'line', attrs: { coordinates: [{ x: mid.x - 4, y: coordinates[1].y - 6 }, { x: mid.x, y: coordinates[1].y }, { x: mid.x + 4, y: coordinates[1].y - 6 }] }, styles: { color: lineColor } });
+            if (topToBottom) {
+                figures.push({
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: centerCoordinate.x - 4, y: coordinates[1].y - 6 },
+                            { x: centerCoordinate.x, y: coordinates[1].y },
+                            { x: centerCoordinate.x + 4, y: coordinates[1].y - 6 },
+                        ],
+                    },
+                    styles: {
+                        color: lineColor,
+                    },
+                });
             }
             else {
-                figs.push({ type: 'line', attrs: { coordinates: [{ x: mid.x - 4, y: coordinates[1].y + 6 }, { x: mid.x, y: coordinates[1].y }, { x: mid.x + 4, y: coordinates[1].y + 6 }] }, styles: { color: lineColor } });
+                figures.push({
+                    type: 'line',
+                    attrs: {
+                        coordinates: [
+                            { x: centerCoordinate.x - 4, y: coordinates[1].y + 6 },
+                            { x: centerCoordinate.x, y: coordinates[1].y },
+                            { x: centerCoordinate.x + 4, y: coordinates[1].y + 6 },
+                        ],
+                    },
+                    styles: {
+                        color: lineColor,
+                    },
+                });
             }
-            // Label
-            var textWidth = Math.max(utils.calcTextWidth(text), 80) + 24;
-            var textHeight = 28;
-            var textY = void 0;
-            if (isDown) {
-                textY = coordinates[1].y + 8 + textHeight > bounding.height ? bounding.height - textHeight : coordinates[1].y + 8;
+            const length = texts.length;
+            if (length > 0) {
+                const tipGap = 8;
+                const textGap = 4;
+                const horizontalPadding = 12;
+                const verticalPadding = 8;
+                let y;
+                let width = 0;
+                const height = length * 12 + (length - 1) * textGap + verticalPadding * 2;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                texts.forEach((text) => {
+                    width = Math.max(utils.calcTextWidth(text), width);
+                });
+                width += horizontalPadding * 2;
+                if (topToBottom) {
+                    if (coordinates[1].y + tipGap + height > bounding.height) {
+                        y = bounding.height - height;
+                    }
+                    else {
+                        y = coordinates[1].y + tipGap;
+                    }
+                }
+                else {
+                    if (coordinates[1].y - tipGap - height < 0) {
+                        y = 0;
+                    }
+                    else {
+                        y = coordinates[1].y - tipGap - height;
+                    }
+                }
+                figures.push({
+                    type: 'rect',
+                    attrs: {
+                        x: centerCoordinate.x - width / 2,
+                        y,
+                        width,
+                        height,
+                    },
+                    styles: {
+                        borderRadius: 4,
+                        color: tipBackgroundColor,
+                    },
+                });
+                let textY = y + verticalPadding;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                texts.forEach((text) => {
+                    figures.push({
+                        type: 'text',
+                        attrs: {
+                            x: centerCoordinate.x,
+                            y: textY,
+                            text,
+                            align: 'center',
+                        },
+                        styles: {
+                            paddingLeft: 0,
+                            paddingTop: 0,
+                            paddingRight: 0,
+                            paddingBottom: 0,
+                            backgroundColor: 'none',
+                            family: 'Space Grotesk, sans-serif',
+                        },
+                    });
+                    textY += 12 + textGap;
+                });
             }
-            else {
-                textY = coordinates[1].y - 8 - textHeight < 0 ? 0 : coordinates[1].y - 8 - textHeight;
-            }
-            figs.push({
-                type: 'rect',
-                attrs: { x: mid.x - textWidth / 2, y: textY, width: textWidth, height: textHeight },
-                styles: { borderRadius: 4, color: tipColor }
-            });
-            figs.push({
-                type: 'text',
-                attrs: { x: mid.x, y: textY + 8, text: text, align: 'center' },
-                styles: { paddingLeft: 0, paddingTop: 0, paddingRight: 0, paddingBottom: 0, backgroundColor: 'none', family: 'Space Grotesk, sans-serif' }
-            });
-            return figs;
+            return figures;
         }
         return [];
-    }
+    },
 };
-var fibonacciDiagonal = {
-    name: 'fibonacciDiagonal',
+
+const crossLine = {
+    name: 'crossLine',
+    totalStep: 2,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ coordinates, bounding }) => {
+        return [
+            {
+                type: 'line',
+                attrs: {
+                    coordinates: [
+                        {
+                            x: 0,
+                            y: coordinates[0].y,
+                        },
+                        {
+                            x: bounding.width,
+                            y: coordinates[0].y,
+                        },
+                    ],
+                },
+            },
+            {
+                type: 'line',
+                attrs: {
+                    coordinates: [
+                        {
+                            x: coordinates[0].x,
+                            y: 0,
+                        },
+                        {
+                            x: coordinates[0].x,
+                            y: bounding.height,
+                        },
+                    ],
+                },
+            },
+        ];
+    },
+};
+
+const faltTopBottom = {
+    name: 'faltTopBottom',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: false,
+    styles: {
+        polygon: {
+            color: '#FCB9002b',
+        },
+        line: {
+            size: 2,
+            color: '#FCB900',
+        },
+    },
+    createPointFigures: ({ coordinates, overlay: _overlay }) => {
+        let mainLine = [];
+        const dashedLines = [];
+        const polygons = [];
+        if (coordinates.length > 2) {
+            mainLine = [
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[2].y },
+                        { x: coordinates[1].x, y: coordinates[2].y },
+                    ],
+                },
+            ];
+            polygons.push({
+                coordinates: [
+                    coordinates[0],
+                    coordinates[1],
+                    { x: coordinates[1].x, y: coordinates[2].y },
+                    { x: coordinates[0].x, y: coordinates[2].y },
+                ],
+            });
+            dashedLines.push({ coordinates: [coordinates[0], coordinates[1]] });
+        }
+        else {
+            mainLine = [{ coordinates: coordinates }];
+        }
+        return [
+            {
+                type: 'line',
+                attrs: mainLine,
+                size: 2,
+            },
+            {
+                type: 'polygon',
+                ignoreEvent: true,
+                attrs: polygons,
+            },
+            {
+                type: 'line',
+                attrs: dashedLines,
+                size: 2,
+            },
+        ];
+    },
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
+        switch (currentStep) {
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    },
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
+        switch (performPointIndex) {
+            case 1:
+                points[2].timestamp = performPoint.timestamp;
+                points[2].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                break;
+        }
+    },
+};
+
+const disJointChannel = {
+    name: 'disJointChannel',
+    totalStep: 4,
+    needDefaultPointFigure: true,
+    needDefaultXAxisFigure: true,
+    needDefaultYAxisFigure: true,
+    styles: {
+        polygon: {
+            color: '#FCB9002b',
+        },
+        line: {
+            size: 2,
+            color: '#FCB900',
+        },
+    },
+    createPointFigures: ({ coordinates, bounding: _bounding }) => {
+        let mainLine = [];
+        const dashedLines = [];
+        // const polygons: PolygonAttrs[] = [];
+        let height = 0;
+        if (coordinates.length >= 2) {
+            height = Math.abs(coordinates[1].y - coordinates[0].y);
+        }
+        if (coordinates.length > 2) {
+            mainLine = [
+                {
+                    coordinates: [
+                        { x: coordinates[0].x, y: coordinates[0].y },
+                        { x: coordinates[1].x, y: coordinates[1].y },
+                    ],
+                },
+            ];
+            dashedLines.push({
+                coordinates: [
+                    { x: coordinates[1].x, y: coordinates[2].y },
+                    { x: coordinates[0].x, y: coordinates[2].y + height },
+                ],
+            });
+        }
+        else {
+            mainLine = [{ coordinates: coordinates }];
+        }
+        return [
+            {
+                type: 'line',
+                ignoreEvent: false,
+                attrs: mainLine,
+            },
+            {
+                type: 'line',
+                ignoreEvent: false,
+                attrs: dashedLines,
+            },
+        ];
+    },
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
+        switch (currentStep) {
+            case 3:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    },
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
+        switch (performPointIndex) {
+            case 1:
+                points[2].timestamp = performPoint.timestamp;
+                points[2].dataIndex = performPoint.dataIndex;
+                break;
+            case 2:
+                points[1].timestamp = performPoint.timestamp;
+                points[1].dataIndex = performPoint.dataIndex;
+                break;
+        }
+    },
+};
+
+const arc = {
+    name: 'arc',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates, overlay = _a.overlay;
-        var points = overlay.points;
-        if (coordinates.length > 0) {
-            var lines_1 = [];
-            var labels_2 = [];
-            var leftX_3 = coordinates[0].x;
-            var rightX_1 = coordinates[coordinates.length - 1].x;
-            if (coordinates.length > 1 && points[0].value !== undefined && points[1].value !== undefined) {
-                var levels = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
-                var coordDiff_3 = coordinates[0].y - coordinates[1].y;
-                var valueDiff_3 = points[0].value - points[1].value;
-                levels.forEach(function (l) {
-                    var y = coordinates[1].y + coordDiff_3 * l;
-                    var price = (points[1].value + valueDiff_3 * l).toFixed(2);
-                    lines_1.push({ coordinates: [{ x: leftX_3, y: y }, { x: rightX_1, y: y }] });
-                    labels_2.push({ x: leftX_3, y: y, text: "".concat(price, " (").concat((l * 100).toFixed(1), "%)"), baseline: 'bottom' });
-                });
-                // Diagonal line
-                lines_1.push({
-                    coordinates: [
-                        { x: lines_1[0].coordinates[0].x, y: lines_1[0].coordinates[0].y },
-                        { x: lines_1[levels.length - 1].coordinates[1].x, y: lines_1[levels.length - 1].coordinates[1].y }
-                    ]
-                });
-            }
+    styles: {
+        arc: {
+            color: 'rgba(22, 119, 255)',
+        },
+    },
+    createPointFigures: ({ coordinates }) => {
+        if (coordinates.length > 1) {
+            const midX = (coordinates[0].x + coordinates[1].x) / 2;
+            const midY = (coordinates[0].y + coordinates[1].y) / 2;
+            const radius = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
+                Math.pow(coordinates[1].y - coordinates[0].y, 2)) / 2;
+            const startAngle = 0;
+            const endAngle = Math.PI;
             return [
-                { type: 'line', attrs: lines_1 },
-                { type: 'text', ignoreEvent: true, attrs: labels_2 }
+                {
+                    type: 'arc',
+                    attrs: {
+                        x: midX,
+                        y: midY,
+                        r: radius,
+                        startAngle: startAngle,
+                        endAngle: endAngle,
+                    },
+                    styles: { style: 'solid' },
+                },
             ];
         }
         return [];
-    }
+    },
 };
-var tradingPlan = {
+
+const tradingPlan = {
     name: 'tradingPlan',
     totalStep: 5,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: false,
     needDefaultYAxisFigure: true,
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        var len = coordinates.length;
-        if (len >= 2) {
-            if (len === 2)
-                return [{ type: 'line', attrs: { coordinates: coordinates } }];
-            if (len >= 3) {
-                var risk = {
+    createPointFigures: ({ coordinates }) => {
+        const n = coordinates.length;
+        if (n >= 2) {
+            const line = { type: 'line', attrs: { coordinates } };
+            if (n == 2) {
+                return [line];
+            }
+            if (n >= 3) {
+                const bottomRect = {
                     type: 'polygon',
                     attrs: {
                         coordinates: [
-                            coordinates[0], coordinates[1],
+                            coordinates[0], //
+                            coordinates[1],
                             { x: coordinates[1].x, y: coordinates[2].y },
-                            { x: coordinates[0].x, y: coordinates[2].y }
-                        ]
+                            { x: coordinates[0].x, y: coordinates[2].y },
+                        ],
                     },
-                    styles: { style: 'fill', color: '#DE46464f' }
+                    styles: { style: 'fill', color: '#DE46464f' },
                 };
-                if (len === 3)
-                    return [risk];
-                var reward = {
+                if (n == 3) {
+                    return [bottomRect];
+                }
+                const topRect = {
                     type: 'polygon',
                     attrs: {
                         coordinates: [
-                            coordinates[0], coordinates[1],
+                            coordinates[0], //
+                            coordinates[1],
                             { x: coordinates[1].x, y: coordinates[3].y },
-                            { x: coordinates[0].x, y: coordinates[3].y }
-                        ]
+                            { x: coordinates[0].x, y: coordinates[3].y },
+                        ],
                     },
-                    styles: { style: 'fill', color: '#03ca9b2f' }
+                    styles: { style: 'fill', color: '#03ca9b2f' },
                 };
-                return [risk, reward];
+                return [bottomRect, topRect];
             }
         }
         return [];
     },
-    performEventMoveForDrawing: function (_a) {
-        var currentStep = _a.currentStep, points = _a.points, performPoint = _a.performPoint;
+    performEventMoveForDrawing: ({ currentStep, points, performPoint }) => {
         switch (currentStep) {
             case 2:
                 points[0].value = performPoint.value;
@@ -16255,8 +16494,7 @@ var tradingPlan = {
                 break;
         }
     },
-    performEventPressedMove: function (_a) {
-        var points = _a.points, performPointIndex = _a.performPointIndex, performPoint = _a.performPoint;
+    performEventPressedMove: ({ points, performPointIndex, performPoint }) => {
         switch (performPointIndex) {
             case 0:
                 points[1].value = performPoint.value;
@@ -16275,29 +16513,77 @@ var tradingPlan = {
                 points[1].dataIndex = points[2].dataIndex = performPoint.dataIndex;
                 break;
         }
-    }
+    },
 };
-var arcOverlay = {
-    name: 'arc',
+
+const fibonacciDiagonal = {
+    name: 'fibonacciDiagonal',
     totalStep: 3,
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    styles: { arc: { color: 'rgba(22, 119, 255)' } },
-    createPointFigures: function (_a) {
-        var coordinates = _a.coordinates;
-        if (coordinates.length > 1) {
-            var cx = (coordinates[0].x + coordinates[1].x) / 2;
-            var cy = (coordinates[0].y + coordinates[1].y) / 2;
-            var r = Math.sqrt(Math.pow(coordinates[1].x - coordinates[0].x, 2) +
-                Math.pow(coordinates[1].y - coordinates[0].y, 2)) / 2;
-            return [{ type: 'arc', attrs: { x: cx, y: cy, r: r, startAngle: 0, endAngle: Math.PI }, styles: { style: 'solid' } }];
+    createPointFigures: ({ coordinates, bounding: _bounding, overlay, precision, thousandsSeparator, }) => {
+        const points = overlay.points;
+        if (coordinates.length > 0) {
+            const lines = [];
+            const texts = [];
+            // const startX = 0
+            // const endX = bounding.width
+            const startX = coordinates[0].x;
+            const endX = coordinates[coordinates.length - 1].x;
+            if (coordinates.length > 1 &&
+                points[0].value !== undefined &&
+                points[1].value !== undefined) {
+                const percents = [1, 0.786, 0.618, 0.5, 0.382, 0.236, 0];
+                const yDif = coordinates[0].y - coordinates[1].y;
+                const valueDif = points[0].value - points[1].value;
+                percents.forEach((percent) => {
+                    const y = coordinates[1].y + yDif * percent;
+                    const value = formatThousands(((points[1].value ?? 0) + valueDif * percent).toFixed(precision.price), thousandsSeparator);
+                    lines.push({
+                        coordinates: [
+                            { x: startX, y },
+                            { x: endX, y },
+                        ],
+                    });
+                    texts.push({
+                        x: startX,
+                        y,
+                        text: `${value} (${(percent * 100).toFixed(1)}%)`,
+                        baseline: 'bottom',
+                    });
+                });
+                lines.push({
+                    coordinates: [
+                        { x: lines[0].coordinates[0].x, y: lines[0].coordinates[0].y },
+                        {
+                            x: lines[percents.length - 1].coordinates[1].x,
+                            y: lines[percents.length - 1].coordinates[1].y,
+                        },
+                    ],
+                });
+            }
+            return [
+                {
+                    type: 'line',
+                    attrs: lines,
+                },
+                {
+                    type: 'text',
+                    isCheckEvent: false,
+                    attrs: texts,
+                },
+            ];
         }
         return [];
-    }
+    },
+    onRightClick: (event) => {
+        alert(`object ${event.overlay.name} was clicked`);
+        return true;
+    },
 };
-/** All custom overlay definitions to register */
-var proOverlays = [
+
+const overlays = [
     arrow,
     circle,
     rect,
@@ -16315,482 +16601,18 @@ var proOverlays = [
     anyWaves,
     abcd,
     xabcd,
+    elliotTripleComboWaves,
     headAndShoulders,
     measure,
     crossLine,
-    fibonacciDiagonal,
+    faltTopBottom,
+    disJointChannel,
+    arc,
     tradingPlan,
-    arcOverlay
+    fibonacciDiagonal,
 ];
-/** Overlay names grouped by drawing bar category */
-var overlayGroups = {
-    lines: ['arrow'],
-    shapes: ['circle', 'rect', 'triangle', 'parallelogram', 'arc'],
-    fibonacci: ['fibonacciSegment', 'fibonacciCircle', 'fibonacciSpiral', 'fibonacciSpeedResistanceFan', 'fibonacciExtension', 'fibonacciDiagonal'],
-    gann: ['gannBox'],
-    waves: ['threeWaves', 'fiveWaves', 'eightWaves', 'anyWaves'],
-    patterns: ['abcd', 'xabcd', 'headAndShoulders'],
-    measure: ['measure', 'crossLine', 'tradingPlan']
-};
 
 /**
- * EnsoCharts Pro — DrawingBar component (vanilla TS/DOM, no framework dependency)
- *
- * A vertical toolbar for selecting drawing overlay tools.
- * Renders tool groups with expandable sub-menus.
- */
-/** SVG icon paths for drawing tool categories */
-var icons = {
-    lines: '<path d="M3 17l6-6 4 4L21 7"/>',
-    shapes: '<rect x="3" y="3" width="18" height="18" rx="2"/>',
-    fibonacci: '<path d="M3 21V9a9 9 0 0 1 9-9h9"/>',
-    gann: '<path d="M3 3v18h18"/><path d="M3 21L21 3"/>',
-    waves: '<path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>',
-    patterns: '<path d="M3 21l5-5m0 0l4 4m-4-4l4-4m4 4l5-5"/>',
-    measure: '<path d="M3 3v18h18"/><path d="M7 17V7h10"/>',
-    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
-    visible: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
-    remove: '<path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>'
-};
-function svgIcon(pathContent, size) {
-    if (size === void 0) { size = 18; }
-    return "<svg width=\"".concat(size, "\" height=\"").concat(size, "\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">").concat(pathContent, "</svg>");
-}
-var DrawingBar = /** @class */ (function () {
-    function DrawingBar(options) {
-        var _this = this;
-        this._activeGroup = null;
-        this._submenu = null;
-        this._container = document.createElement('div');
-        this._container.className = 'equicharts-drawing-bar';
-        var groups = Object.entries(overlayGroups);
-        groups.forEach(function (_a) {
-            var _b;
-            var _c = __read(_a, 2), groupName = _c[0], tools = _c[1];
-            var item = document.createElement('div');
-            item.className = 'equicharts-drawing-bar__item';
-            item.title = groupName;
-            item.innerHTML = svgIcon((_b = icons[groupName]) !== null && _b !== void 0 ? _b : icons.lines);
-            if (tools.length === 1) {
-                item.addEventListener('click', function () {
-                    var _a;
-                    _this._setActiveTool(tools[0], item);
-                    (_a = options.onDrawingItemClick) === null || _a === void 0 ? void 0 : _a.call(options, tools[0]);
-                });
-            }
-            else {
-                // Has submenu
-                var arrow = document.createElement('span');
-                arrow.className = 'equicharts-drawing-bar__arrow';
-                arrow.innerHTML = '<svg width="6" height="6" viewBox="0 0 4 6"><path d="M1 0.16C0.83-0.05 0.43-0.05 0.18 0.16C-0.06 0.37-0.06 0.72 0.18 0.93L2.61 3.03L0.26 5.07C0.01 5.28 0.01 5.63 0.26 5.84C0.51 6.05 0.9 6.05 1.15 5.84L3.82 3.53C4.02 3.36 4.05 3.09 3.92 2.88C3.93 2.73 3.87 2.58 3.74 2.47L1 0.16Z" fill="currentColor"/></svg>';
-                item.appendChild(arrow);
-                item.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-                    _this._toggleSubmenu(groupName, tools, item, options);
-                });
-            }
-            _this._container.appendChild(item);
-        });
-        // Separator
-        var sep = document.createElement('span');
-        sep.className = 'equicharts-drawing-bar__sep';
-        this._container.appendChild(sep);
-        // Mode toggle (weak/strong magnet)
-        var modeBtn = document.createElement('div');
-        modeBtn.className = 'equicharts-drawing-bar__item';
-        modeBtn.title = 'Magnet Mode';
-        modeBtn.innerHTML = svgIcon('<path d="M12 2a4 4 0 014 4v6a4 4 0 01-8 0V6a4 4 0 014-4z"/>', 16);
-        var currentMode = 'normal';
-        modeBtn.addEventListener('click', function () {
-            var _a;
-            currentMode = currentMode === 'normal' ? 'weak_magnet' : currentMode === 'weak_magnet' ? 'strong_magnet' : 'normal';
-            modeBtn.classList.toggle('active', currentMode !== 'normal');
-            (_a = options.onModeChange) === null || _a === void 0 ? void 0 : _a.call(options, currentMode);
-        });
-        this._container.appendChild(modeBtn);
-        // Lock toggle
-        var lockBtn = document.createElement('div');
-        lockBtn.className = 'equicharts-drawing-bar__item';
-        lockBtn.title = 'Lock Drawings';
-        lockBtn.innerHTML = svgIcon(icons.lock, 16);
-        var locked = false;
-        lockBtn.addEventListener('click', function () {
-            var _a;
-            locked = !locked;
-            lockBtn.classList.toggle('active', locked);
-            (_a = options.onLockChange) === null || _a === void 0 ? void 0 : _a.call(options, locked);
-        });
-        this._container.appendChild(lockBtn);
-        // Visibility toggle
-        var visBtn = document.createElement('div');
-        visBtn.className = 'equicharts-drawing-bar__item';
-        visBtn.title = 'Show/Hide Drawings';
-        visBtn.innerHTML = svgIcon(icons.visible, 16);
-        var visible = true;
-        visBtn.addEventListener('click', function () {
-            var _a;
-            visible = !visible;
-            visBtn.classList.toggle('active', !visible);
-            (_a = options.onVisibleChange) === null || _a === void 0 ? void 0 : _a.call(options, visible);
-        });
-        this._container.appendChild(visBtn);
-        // Remove all
-        var removeBtn = document.createElement('div');
-        removeBtn.className = 'equicharts-drawing-bar__item';
-        removeBtn.title = 'Remove All Drawings';
-        removeBtn.innerHTML = svgIcon(icons.remove, 16);
-        removeBtn.addEventListener('click', function () {
-            var _a;
-            (_a = options.onRemoveClick) === null || _a === void 0 ? void 0 : _a.call(options);
-        });
-        this._container.appendChild(removeBtn);
-        // Click outside closes submenu
-        document.addEventListener('click', function () { return _this._closeSubmenu(); });
-    }
-    Object.defineProperty(DrawingBar.prototype, "element", {
-        get: function () {
-            return this._container;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    DrawingBar.prototype.destroy = function () {
-        this._closeSubmenu();
-        this._container.remove();
-    };
-    DrawingBar.prototype._setActiveTool = function (_name, btn) {
-        this._container.querySelectorAll('.equicharts-drawing-bar__item').forEach(function (el) { return el.classList.remove('selected'); });
-        btn.classList.add('selected');
-    };
-    DrawingBar.prototype._toggleSubmenu = function (groupName, tools, anchor, options) {
-        var _this = this;
-        if (this._activeGroup === groupName && this._submenu) {
-            this._closeSubmenu();
-            return;
-        }
-        this._closeSubmenu();
-        this._activeGroup = groupName;
-        var menu = document.createElement('div');
-        menu.className = 'equicharts-drawing-bar__submenu';
-        tools.forEach(function (tool) {
-            var li = document.createElement('div');
-            li.className = 'equicharts-drawing-bar__submenu-item';
-            li.textContent = tool;
-            li.addEventListener('click', function (ev) {
-                var _a;
-                ev.stopPropagation();
-                _this._setActiveTool(tool, anchor);
-                (_a = options.onDrawingItemClick) === null || _a === void 0 ? void 0 : _a.call(options, tool);
-                _this._closeSubmenu();
-            });
-            menu.appendChild(li);
-        });
-        // Position next to anchor
-        var rect = anchor.getBoundingClientRect();
-        menu.style.position = 'fixed';
-        menu.style.left = "".concat(rect.right + 4, "px");
-        menu.style.top = "".concat(rect.top, "px");
-        document.body.appendChild(menu);
-        this._submenu = menu;
-    };
-    DrawingBar.prototype._closeSubmenu = function () {
-        if (this._submenu) {
-            this._submenu.remove();
-            this._submenu = null;
-            this._activeGroup = null;
-        }
-    };
-    return DrawingBar;
-}());
-
-/**
- * EnsoCharts Pro — ChartMain wrapper
- *
- * Wraps the core equicharts `init()` with:
- * - Drawing bar (with all tool groups)
- * - Corner toggle button (chevron to show/hide drawing bar)
- * - Canvas auto-resize when drawing bar shows/hides
- * - Floating-headers hover integration
- * - Overlay tool registration
- * - Dark theme defaults
- */
-// Register all pro overlays once
-var _overlaysRegistered = false;
-function ensureOverlaysRegistered() {
-    if (_overlaysRegistered)
-        return;
-    proOverlays.forEach(function (o) { registerOverlay(o); });
-    _overlaysRegistered = true;
-}
-var ChartMain = /** @class */ (function () {
-    function ChartMain(options) {
-        var _this = this;
-        var _a, _b, _c, _d;
-        this._chart = null;
-        this._drawingBar = null;
-        this._cornerBtn = null;
-        this._drawingBarEl = null;
-        ensureOverlaysRegistered();
-        // Resolve container
-        if (typeof options.container === 'string') {
-            var el = document.getElementById(options.container);
-            if (!el)
-                throw new Error('BUG: ChartMain container not found');
-            this._container = el;
-        }
-        else {
-            this._container = options.container;
-        }
-        this._container.classList.add('equicharts');
-        this._container.setAttribute('data-theme', (_a = options.theme) !== null && _a !== void 0 ? _a : 'dark');
-        this._drawingBarVisible = (_b = options.drawingBarVisible) !== null && _b !== void 0 ? _b : false;
-        // Layout: [drawing-bar] [chart-canvas]
-        // Use flex row — drawing bar on left, chart fills remaining space
-        this._container.style.display = 'flex';
-        this._container.style.flexDirection = 'row';
-        this._container.style.width = '100%';
-        this._container.style.height = '100%';
-        this._container.style.position = 'relative';
-        // Chart wrapper (takes remaining space)
-        this._chartWrapper = document.createElement('div');
-        this._chartWrapper.className = 'equicharts-chart-wrapper';
-        this._chartWrapper.style.flex = '1';
-        this._chartWrapper.style.minWidth = '0';
-        this._chartWrapper.style.height = '100%';
-        // Init core chart
-        var chart = init(this._chartWrapper);
-        if (!chart)
-            throw new Error('BUG: equicharts init() returned null');
-        this._chart = chart;
-        // Drawing bar
-        this._drawingBar = new DrawingBar({
-            chart: chart,
-            onDrawingItemClick: function (name) { chart.createOverlay(name); },
-            onModeChange: function (mode) { chart.overrideOverlay({ mode: mode }); },
-            onLockChange: function (locked) { chart.overrideOverlay({ lock: locked }); },
-            onVisibleChange: function (visible) { chart.overrideOverlay({ visible: visible }); },
-            onRemoveClick: function () { chart.removeOverlay(); }
-        });
-        this._drawingBarEl = this._drawingBar.element;
-        // Insert drawing bar before chart
-        if (this._drawingBarVisible) {
-            this._container.appendChild(this._drawingBarEl);
-        }
-        this._container.appendChild(this._chartWrapper);
-        // Corner toggle button
-        this._cornerBtn = document.createElement('div');
-        this._cornerBtn.className = 'equicharts-corner-btn';
-        this._cornerBtn.title = 'Toggle Drawing Tools';
-        this._cornerBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:rotate(-90deg)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>';
-        this._cornerBtn.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            _this.toggleDrawingBar();
-        });
-        this._container.appendChild(this._cornerBtn);
-        // Update corner button rotation based on visibility
-        this._updateCornerBtn();
-        // Floating-headers hover integration
-        var hideTimer = null;
-        var userDismissed = false;
-        this._cornerBtn.addEventListener('click', function () {
-            if (_this._drawingBarVisible) {
-                userDismissed = true;
-            }
-            else {
-                userDismissed = false;
-            }
-        });
-        this._container.addEventListener('mouseenter', function () {
-            if (!document.body.hasAttribute('data-floating-headers'))
-                return;
-            if (hideTimer) {
-                clearTimeout(hideTimer);
-                hideTimer = null;
-            }
-            if (userDismissed)
-                return;
-            if (!_this._drawingBarVisible) {
-                _this._showDrawingBar();
-            }
-        });
-        this._container.addEventListener('mouseleave', function () {
-            if (!document.body.hasAttribute('data-floating-headers'))
-                return;
-            if (userDismissed)
-                return;
-            hideTimer = setTimeout(function () {
-                if (_this._drawingBarVisible) {
-                    _this._hideDrawingBar();
-                }
-            }, 200);
-        });
-        // Apply default dark theme styles
-        if (options.theme !== 'light') {
-            chart.setStyles({
-                grid: {
-                    show: true,
-                    horizontal: { color: 'rgba(255, 255, 255, 0.04)' },
-                    vertical: { color: 'rgba(255, 255, 255, 0.04)' }
-                },
-                candle: {
-                    type: 'candle_solid',
-                    bar: { upColor: '#03ca9b', downColor: '#DE4645' },
-                    priceMark: {
-                        high: { show: true },
-                        low: { show: true },
-                        last: { show: true, line: { show: true } }
-                    },
-                    tooltip: { showRule: 'follow_cross', showType: 'rect' }
-                },
-                indicator: { tooltip: { showRule: 'follow_cross' } },
-                xAxis: { tickText: { color: 'rgba(255, 255, 255, 0.5)' } },
-                yAxis: { tickText: { color: 'rgba(255, 255, 255, 0.5)' } },
-                crosshair: {
-                    horizontal: {
-                        line: { color: 'rgba(255, 255, 255, 0.3)' },
-                        text: { backgroundColor: '#333' }
-                    },
-                    vertical: {
-                        line: { color: 'rgba(255, 255, 255, 0.3)' },
-                        text: { backgroundColor: '#333' }
-                    }
-                },
-                separator: { color: 'rgba(255, 255, 255, 0.08)' }
-            });
-        }
-        // Apply custom styles
-        if (options.styles) {
-            chart.setStyles(options.styles);
-        }
-        // Default indicators
-        var mainInds = (_c = options.mainIndicators) !== null && _c !== void 0 ? _c : ['MA'];
-        mainInds.forEach(function (name) { chart.createIndicator(name, false, { id: 'candle_pane' }); });
-        var subInds = (_d = options.subIndicators) !== null && _d !== void 0 ? _d : ['VOL'];
-        subInds.forEach(function (name) { chart.createIndicator(name); });
-        // Set symbol
-        if (options.symbol) {
-            chart.setSymbol(options.symbol);
-        }
-        // Set period
-        if (options.period) {
-            chart.setPeriod({ type: options.period.timespan, span: options.period.multiplier });
-        }
-        // Update --drawing-bar-w CSS variable
-        this._updateDrawingBarWidth();
-    }
-    // ── Public API ──
-    ChartMain.prototype.getChart = function () { return this._chart; };
-    ChartMain.prototype.setTheme = function (theme) {
-        var _a;
-        this._container.setAttribute('data-theme', theme);
-        (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setStyles(theme);
-    };
-    ChartMain.prototype.getTheme = function () { var _a; return (_a = this._container.getAttribute('data-theme')) !== null && _a !== void 0 ? _a : 'dark'; };
-    ChartMain.prototype.setStyles = function (styles) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setStyles(styles); };
-    ChartMain.prototype.getStyles = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getStyles(); };
-    ChartMain.prototype.setLocale = function (locale) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setLocale(locale); };
-    ChartMain.prototype.getLocale = function () { var _a, _b; return (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getLocale()) !== null && _b !== void 0 ? _b : 'en-US'; };
-    ChartMain.prototype.setSymbol = function (symbol) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setSymbol(symbol); };
-    ChartMain.prototype.getSymbol = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getSymbol(); };
-    ChartMain.prototype.setPeriod = function (period) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setPeriod({ type: period.timespan, span: period.multiplier }); };
-    ChartMain.prototype.getPeriod = function () { var _a; return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getPeriod(); };
-    ChartMain.prototype.setYScrolling = function (enabled) { var _a, _b; (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setYScrolling) === null || _b === void 0 ? void 0 : _b.call(_a, enabled); };
-    ChartMain.prototype.getYScrolling = function () { var _a, _b, _c; return (_c = (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getYScrolling) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : true; };
-    ChartMain.prototype.resize = function () { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.resize(); };
-    ChartMain.prototype.setDataLoader = function (loader) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.setDataLoader(loader); };
-    ChartMain.prototype.createOverlay = function (name, paneId) {
-        var _a;
-        return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.createOverlay(paneId ? { name: name, paneId: paneId } : name);
-    };
-    ChartMain.prototype.overrideOverlay = function (opts) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.overrideOverlay(opts); };
-    ChartMain.prototype.removeOverlay = function (opts) { var _a; (_a = this._chart) === null || _a === void 0 ? void 0 : _a.removeOverlay(opts); };
-    ChartMain.prototype.createIndicator = function (name, isStack, paneOptions) {
-        var _a;
-        return (_a = this._chart) === null || _a === void 0 ? void 0 : _a.createIndicator(name, isStack !== null && isStack !== void 0 ? isStack : false, paneOptions);
-    };
-    ChartMain.prototype.removeIndicator = function (paneId, name) {
-        var _a;
-        (_a = this._chart) === null || _a === void 0 ? void 0 : _a.removeIndicator(name ? { paneId: paneId, name: name } : { paneId: paneId });
-    };
-    ChartMain.prototype.getConvertPictureUrl = function (withWatermark, type, bgColor) {
-        var _a, _b;
-        return (_b = (_a = this._chart) === null || _a === void 0 ? void 0 : _a.getConvertPictureUrl(withWatermark, type, bgColor)) !== null && _b !== void 0 ? _b : '';
-    };
-    ChartMain.prototype.toggleDrawingBar = function () {
-        if (this._drawingBarVisible) {
-            this._hideDrawingBar();
-        }
-        else {
-            this._showDrawingBar();
-        }
-    };
-    ChartMain.prototype.getDrawingBarVisible = function () { return this._drawingBarVisible; };
-    ChartMain.prototype.toggleIndicators = function () {
-        // Future: toggle sub-indicator panes
-    };
-    ChartMain.prototype.destroy = function () {
-        var _a, _b;
-        (_a = this._drawingBar) === null || _a === void 0 ? void 0 : _a.destroy();
-        if (this._chartWrapper) {
-            dispose(this._chartWrapper);
-        }
-        (_b = this._cornerBtn) === null || _b === void 0 ? void 0 : _b.remove();
-        this._chart = null;
-    };
-    // ── Private ──
-    ChartMain.prototype._showDrawingBar = function () {
-        var _this = this;
-        if (this._drawingBarVisible || !this._drawingBarEl)
-            return;
-        this._drawingBarVisible = true;
-        this._container.insertBefore(this._drawingBarEl, this._chartWrapper);
-        this._updateCornerBtn();
-        this._updateDrawingBarWidth();
-        requestAnimationFrame(function () { var _a; (_a = _this._chart) === null || _a === void 0 ? void 0 : _a.resize(); });
-    };
-    ChartMain.prototype._hideDrawingBar = function () {
-        var _this = this;
-        if (!this._drawingBarVisible || !this._drawingBarEl)
-            return;
-        this._drawingBarVisible = false;
-        this._drawingBarEl.remove();
-        this._updateCornerBtn();
-        this._updateDrawingBarWidth();
-        requestAnimationFrame(function () { var _a; (_a = _this._chart) === null || _a === void 0 ? void 0 : _a.resize(); });
-    };
-    ChartMain.prototype._updateCornerBtn = function () {
-        if (!this._cornerBtn)
-            return;
-        var svg = this._cornerBtn.querySelector('svg');
-        if (svg) {
-            svg.style.transform = this._drawingBarVisible ? 'rotate(-90deg)' : 'rotate(90deg)';
-        }
-    };
-    ChartMain.prototype._updateDrawingBarWidth = function () {
-        if (this._drawingBarVisible && this._drawingBarEl) {
-            var w = this._drawingBarEl.offsetWidth;
-            this._container.style.setProperty('--drawing-bar-w', "".concat(w, "px"));
-        }
-        else {
-            this._container.style.setProperty('--drawing-bar-w', '0px');
-        }
-    };
-    return ChartMain;
-}());
-
-/**
- *       ___           ___                   ___           ___           ___           ___           ___           ___           ___
- *      /\__\         /\__\      ___        /\__\         /\  \         /\  \         /\__\         /\  \         /\  \         /\  \
- *     /:/  /        /:/  /     /\  \      /::|  |       /::\  \       /::\  \       /:/  /        /::\  \       /::\  \        \:\  \
- *    /:/__/        /:/  /      \:\  \    /:|:|  |      /:/\:\  \     /:/\:\  \     /:/__/        /:/\:\  \     /:/\:\  \        \:\  \
- *   /::\__\____   /:/  /       /::\__\  /:/|:|  |__   /::\~\:\  \   /:/  \:\  \   /::\  \ ___   /::\~\:\  \   /::\~\:\  \       /::\  \
- *  /:/\:::::\__\ /:/__/     __/:/\/__/ /:/ |:| /\__\ /:/\:\ \:\__\ /:/__/ \:\__\ /:/\:\  /\__\ /:/\:\ \:\__\ /:/\:\ \:\__\     /:/\:\__\
- *  \/_|:|~~|~    \:\  \    /\/:/  /    \/__|:|/:/  / \:\~\:\ \/__/ \:\  \  \/__/ \/__\:\/:/  / \/__\:\/:/  / \/_|::\/:/  /    /:/  \/__/
- *     |:|  |      \:\  \   \::/__/         |:/:/  /   \:\ \:\__\    \:\  \            \::/  /       \::/  /     |:|::/  /    /:/  /
- *     |:|  |       \:\  \   \:\__\         |::/  /     \:\ \/__/     \:\  \           /:/  /        /:/  /      |:|\/__/     \/__/
- *     |:|  |        \:\__\   \/__/         /:/  /       \:\__\        \:\__\         /:/  /        /:/  /       |:|  |
- *      \|__|         \/__/                 \/__/         \/__/         \/__/         \/__/         \/__/         \|__|
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16803,97 +16625,36 @@ var ChartMain = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var charts = new Map();
-var chartBaseId = 1;
-/**
- * Chart version
- * @return {string}
- */
-function version() {
-    return '10.0.0-beta1';
-}
-/**
- * Init chart instance
- * @param ds
- * @param options
- * @returns {Chart}
- */
-function init(ds, options) {
-    logTag();
-    var dom = null;
-    if (isString(ds)) {
-        dom = document.getElementById(ds);
-    }
-    else {
-        dom = ds;
-    }
-    if (dom === null) {
-        logError('', '', 'The chart cannot be initialized correctly. Please check the parameters. The chart container cannot be null and child elements need to be added!!!');
-        return null;
-    }
-    var chart = charts.get(dom.id);
-    if (isValid(chart)) {
-        logWarn('', '', 'The chart has been initialized on the dom！！！');
-        return chart;
-    }
-    var id = "k_line_chart_".concat(chartBaseId++);
-    chart = new ChartImp(dom, options);
-    chart.id = id;
-    dom.setAttribute('k-line-chart-id', id);
-    charts.set(id, chart);
-    return chart;
-}
-/**
- * Destroy chart instance
- * @param dcs
- */
-function dispose(dcs) {
-    var _a, _b;
-    var id = null;
-    if (dcs instanceof ChartImp) {
-        id = dcs.id;
-    }
-    else {
-        var dom = null;
-        if (isString(dcs)) {
-            dom = document.getElementById(dcs);
-        }
-        else {
-            dom = dcs;
-        }
-        id = (_a = dom === null || dom === void 0 ? void 0 : dom.getAttribute('k-line-chart-id')) !== null && _a !== void 0 ? _a : null;
-    }
-    if (id !== null) {
-        (_b = charts.get(id)) === null || _b === void 0 ? void 0 : _b.destroy();
-        charts.delete(id);
-    }
-}
-var utils = {
-    clone: clone,
-    merge: merge,
-    isString: isString,
-    isNumber: isNumber,
-    isValid: isValid,
-    isObject: isObject,
-    isArray: isArray,
-    isFunction: isFunction,
-    isBoolean: isBoolean,
-    formatValue: formatValue,
-    formatPrecision: formatPrecision,
-    formatBigNumber: formatBigNumber,
+// Register Pro overlays automatically
+overlays.forEach((o) => {
+    registerOverlay(o);
+});
+const utils = {
+    clone,
+    merge,
+    isString,
+    isNumber,
+    isValid,
+    isObject,
+    isArray,
+    isFunction,
+    isBoolean,
+    formatValue,
+    formatPrecision,
+    formatBigNumber,
     formatDate: formatTimestampByTemplate,
-    formatThousands: formatThousands,
-    formatFoldDecimal: formatFoldDecimal,
-    calcTextWidth: calcTextWidth,
-    getLinearSlopeIntercept: getLinearSlopeIntercept,
-    getLinearYFromSlopeIntercept: getLinearYFromSlopeIntercept,
-    getLinearYFromCoordinates: getLinearYFromCoordinates,
-    checkCoordinateOnArc: checkCoordinateOnArc,
-    checkCoordinateOnCircle: checkCoordinateOnCircle,
-    checkCoordinateOnLine: checkCoordinateOnLine,
-    checkCoordinateOnPolygon: checkCoordinateOnPolygon,
-    checkCoordinateOnRect: checkCoordinateOnRect,
-    checkCoordinateOnText: checkCoordinateOnText
+    formatThousands: formatThousands$1,
+    formatFoldDecimal,
+    calcTextWidth,
+    getLinearSlopeIntercept,
+    getLinearYFromSlopeIntercept,
+    getLinearYFromCoordinates,
+    checkCoordinateOnArc,
+    checkCoordinateOnCircle,
+    checkCoordinateOnLine,
+    checkCoordinateOnPolygon,
+    checkCoordinateOnRect,
+    checkCoordinateOnText
 };
 
-export { ChartMain, DrawingBar, dispose, getFigureClass, getOverlayClass, getSupportedFigures, getSupportedIndicators, getSupportedLocales, getSupportedOverlays, init, overlayGroups, proOverlays, registerFigure, registerIndicator, registerLocale, registerOverlay, registerStyles, registerXAxis, registerYAxis, utils, version };
+export { CandleType, ChartMain, YAxisType, dispose, getFigureClass, getOverlayClass, getSupportedFigures, getSupportedIndicators, getSupportedLocales, getSupportedOverlays, init, overlays as proOverlays, registerFigure, registerIndicator, registerLocale, registerOverlay, registerStyles, registerXAxis, registerYAxis, utils, version };
