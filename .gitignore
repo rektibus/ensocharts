@@ -1,0 +1,10 @@
+/node_modules
+/.idea
+/.vscode
+/website
+/docs/.vitepress/cache
+/docs/node_modules
+
+.npmrc
+
+.DS_Store
