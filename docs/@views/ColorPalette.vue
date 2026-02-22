@@ -29,7 +29,7 @@ const visible = ref(false)
 
 const popoverVisible = ref(false)
 
-const currentColor = useLocalStorage('klinecharts-primary-color')
+const currentColor = useLocalStorage('ensocharts-primary-color')
 
 const colors = [
   '#F92855',

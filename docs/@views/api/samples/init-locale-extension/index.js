@@ -1,4 +1,4 @@
-import { init, registerLocale } from 'klinecharts'
+import { init, registerLocale } from 'ensocharts'
 
 registerLocale('zh-TW', {
   time: '時間：',
@@ -27,7 +27,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

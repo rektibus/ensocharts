@@ -22,7 +22,7 @@ const { lang } = useData()
       <div class="actions">
         <QuickStartButton/>
         <GithubStarButton
-          username="klinecharts" 
+          username="ensocharts" 
           repo="KLineChart"
           :delay="2"
           :inView="true"/>

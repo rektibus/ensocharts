@@ -28,7 +28,7 @@ const SymbolSearchModal: Component<SymbolSearchModalProps> = (props) => {
       onClose={props.onClose}
     >
       <Input
-        class="equicharts-symbol-search-modal-input"
+        class="ensocharts-symbol-search-modal-input"
         placeholder={i18n('symbol_code', props.locale)}
         suffix={
           <svg viewBox="0 0 1024 1024">
@@ -42,7 +42,7 @@ const SymbolSearchModal: Component<SymbolSearchModalProps> = (props) => {
         }}
       />
       <List
-        class="equicharts-symbol-search-modal-list"
+        class="ensocharts-symbol-search-modal-list"
         loading={symbolList.loading}
         dataSource={(symbolList() as any) ?? []}
         renderItem={(symbol: SymbolInfo) => (

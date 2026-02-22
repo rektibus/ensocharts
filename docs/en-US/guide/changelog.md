@@ -35,11 +35,11 @@
 
 ## 9.x
 
-Go to [https://v9.klinecharts.com](https://v9.klinecharts.com) to check the change log for 9.x.
+Go to [https://v9.ensocharts.com](https://v9.ensocharts.com) to check the change log for 9.x.
 
 ## 8.x
 
-Go to [https://v8.klinecharts.com](https://v8.klinecharts.com) to check the change log for 9.x.
+Go to [https://v8.ensocharts.com](https://v8.ensocharts.com) to check the change log for 9.x.
 
 ## 7.x
 

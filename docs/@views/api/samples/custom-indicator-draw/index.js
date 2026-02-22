@@ -1,4 +1,4 @@
-import { init, registerIndicator, getFigureClass } from 'klinecharts'
+import { init, registerIndicator, getFigureClass } from 'ensocharts'
 
 registerIndicator({
   name: 'customIndicatorDraw',
@@ -63,7 +63,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

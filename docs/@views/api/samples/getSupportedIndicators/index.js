@@ -1,3 +1,3 @@
-import { getSupportedIndicators } from 'klinecharts'
+import { getSupportedIndicators } from 'ensocharts'
 
 const supports = getSupportedIndicators()

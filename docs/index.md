@@ -12,7 +12,7 @@ layout: home
 #       link: /guide/quick-start
 #     - theme: alt
 #       text: 在 Github 上查看
-#       link: https://github.com/klinecharts/KLineChart
+#       link: https://github.com/ensocharts/KLineChart
 
 features:
   - icon:

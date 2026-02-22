@@ -1,6 +1,6 @@
 <div align="center">
-  <a href="https://klinecharts.com">
-    <img src="https://klinecharts.com/images/logo.svg?hash=89987fs7789" height="100"/>
+  <a href="https://ensocharts.com">
+    <img src="https://ensocharts.com/images/logo.svg?hash=89987fs7789" height="100"/>
   </a>
 </div>
 <h1 align="center">KLineChart</h1>
@@ -14,10 +14,10 @@
 <div align="center">
 
 [![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/liihuu/KLineChart/build.yml?logo=github)](https://github.com/liihuu/KLineChart/actions/workflows/build.yml)
-[![Version](https://badgen.net/npm/v/klinecharts)](https://www.npmjs.com/package/klinecharts)
-[![Size](https://badgen.net/bundlephobia/minzip/klinecharts@latest)](https://bundlephobia.com/result?p=klinecharts@latest)
-[![npms.io (maintenance)](https://img.shields.io/npms-io/quality-score/klinecharts)](https://www.npmjs.com/package/klinecharts)
-[![Typescript](https://badgen.net/npm/types/klinecharts)](types/index.d.ts)
+[![Version](https://badgen.net/npm/v/ensocharts)](https://www.npmjs.com/package/ensocharts)
+[![Size](https://badgen.net/bundlephobia/minzip/ensocharts@latest)](https://bundlephobia.com/result?p=ensocharts@latest)
+[![npms.io (maintenance)](https://img.shields.io/npms-io/quality-score/ensocharts)](https://www.npmjs.com/package/ensocharts)
+[![Typescript](https://badgen.net/npm/types/ensocharts)](types/index.d.ts)
 [![LICENSE](https://badgen.net/github/license/liihuu/KLineChart)](LICENSE)
 [![Docs](https://badgen.net/badge/docs%20by/vitepress/bd34fe)](https://vitepress.dev/)
 
@@ -27,10 +27,10 @@
 
 [![Issues](https://img.shields.io/static/v1?color=1f2328&logo=github&logoColor=fff&label&message=Github%20Issues)](https://github.com/liihuu/KLineChart/issues)
 [![Discussions](https://img.shields.io/static/v1?color=1f2328&logo=github&logoColor=fff&label&message=Github%20Discussions)](https://github.com/liihuu/KLineChart/discussions)
-[![Telegram](https://img.shields.io/static/v1?color=1296DB&logo=telegram&logoColor=fff&label&message=Telegram)](https://t.me/klinecharts)
-[![Wechat](https://img.shields.io/static/v1?color=1EBE1F&logo=wechat&logoColor=fff&label&message=微信)](https://klinecharts.com/guide/feedback.html)
+[![Telegram](https://img.shields.io/static/v1?color=1296DB&logo=telegram&logoColor=fff&label&message=Telegram)](https://t.me/ensocharts)
+[![Wechat](https://img.shields.io/static/v1?color=1EBE1F&logo=wechat&logoColor=fff&label&message=微信)](https://ensocharts.com/guide/feedback.html)
 <!-- [![Discord](https://img.shields.io/static/v1?color=738BD8&logo=discord&logoColor=fff&label&message=Discord)](https://discord.gg/7YjHYgvvvZ) -->
-<!-- [![Twitter](https://img.shields.io/static/v1?color=1D9BF0&logo=twitter&logoColor=fff&label&message=Twitter)](https://twitter.com/klinecharts) -->
+<!-- [![Twitter](https://img.shields.io/static/v1?color=1D9BF0&logo=twitter&logoColor=fff&label&message=Twitter)](https://twitter.com/ensocharts) -->
 
 </div>
 
@@ -47,28 +47,28 @@
 ## 📦 安装
 ### 使用 npm
 ```bash
-npm install klinecharts --save
+npm install ensocharts --save
 ```
 
 ### 使用 yarn
 ```bash
-yarn add klinecharts
+yarn add ensocharts
 ```
 
 ### CDNs
 #### [unpkg](https://unpkg.com)
 ```html
-<script type="text/javascript" src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/ensocharts/dist/ensocharts.min.js"></script>
 ```
 
 #### [jsDelivr](https://cdn.jsdelivr.net)
 ```html
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ensocharts/dist/ensocharts.min.js"></script>
 ```
 
 ## 📄 文档
 ### 在线文档
-[https://www.klinecharts.com](https://www.klinecharts.com)
+[https://www.ensocharts.com](https://www.ensocharts.com)
 
 ### 本地浏览
 在根目录下执行命令，需要 [Node.js](https://nodejs.org) 环境。
@@ -94,8 +94,8 @@ npm run build
 构建好的文件在`dist`文件夹。
 
 ## 🔗 链接
-+ [KLineChart 预览](https://preview.klinecharts.com): 一个功能比较完善 KLineChart 示例。
-+ [KLineChart Pro](https://pro.klinecharts.com): 基于 KLineChart 构建的开箱即用的金融图表.
++ [KLineChart 预览](https://preview.ensocharts.com): 一个功能比较完善 KLineChart 示例。
++ [KLineChart Pro](https://pro.ensocharts.com): 基于 KLineChart 构建的开箱即用的金融图表.
 + [openctp](https://github.com/openctp/openctp): 可替代 Simnow 的交易模拟环境。
 
 ## ©️ License

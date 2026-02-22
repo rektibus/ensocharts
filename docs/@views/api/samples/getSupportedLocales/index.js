@@ -1,3 +1,3 @@
-import { getSupportedLocales } from 'klinecharts'
+import { getSupportedLocales } from 'ensocharts'
 
 const supports = getSupportedLocales()

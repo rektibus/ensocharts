@@ -514,7 +514,7 @@ const ChartProComponent: Component<ChartProComponentProps> = (props) => {
 
   return (
     <>
-      <i class="icon-close equicharts-load-icon" />
+      <i class="icon-close ensocharts-load-icon" />
       <span id="date-tooltip" class="date-tooltip hidden">
         <div class="tooltip-arrow"></div>
       </span>
@@ -684,7 +684,7 @@ const ChartProComponent: Component<ChartProComponentProps> = (props) => {
           setselectedCandlestickType(type);
         }}
       />
-      <div class="equicharts-content">
+      <div class="ensocharts-content">
         <Show when={loadingVisible()}>
           <Loading />
         </Show>
@@ -741,12 +741,12 @@ const ChartProComponent: Component<ChartProComponentProps> = (props) => {
         </Show>
         <div
           ref={widgetRef}
-          class="equicharts-widget"
+          class="ensocharts-widget"
           id="tv-chart"
           data-drawing-bar-visible={drawingBarVisible()}
         />
       </div>
-      <div class="equicharts-footer">
+      <div class="ensocharts-footer">
         <Footer
           onTimezoneClick={() => {
             setTimezoneModalVisible((visible) => !visible);

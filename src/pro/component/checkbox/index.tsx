@@ -36,7 +36,7 @@ const Checkbox: Component<CheckboxProps> = (props) => {
   return (
     <div
       style={props.style}
-      class={`equicharts-checkbox ${(innerChecked() && 'checked') || ''} ${props.class || ''}`}
+      class={`ensocharts-checkbox ${(innerChecked() && 'checked') || ''} ${props.class || ''}`}
       onClick={(_) => {
         const ck = !innerChecked();
         props.onChange && props.onChange(ck);

@@ -9,15 +9,15 @@ There are many ways to contribute:
 + If you have good ideas, submit a feature requests
 + Submit pull requests
 + Help write some sample code
-+ Participate in [discussions](https://github.com/klinecharts/KLineChart/discussions)
++ Participate in [discussions](https://github.com/ensocharts/KLineChart/discussions)
 
 ### Report Bugs
 The template we provide helps you to quickly explain the problem and submit.
 
-Please see the [template](https://github.com/klinecharts/KLineChart/issues/new?assignees=&labels=&template=bug_report.yml&title=%5BBug%5D+)
+Please see the [template](https://github.com/ensocharts/KLineChart/issues/new?assignees=&labels=&template=bug_report.yml&title=%5BBug%5D+)
 
 ### Feature Requests
-The same, we also provide templates, is [here](https://github.com/klinecharts/KLineChart/issues/new?assignees=&labels=&template=feature_request.yml&title=%5BFeature%5D+)
+The same, we also provide templates, is [here](https://github.com/ensocharts/KLineChart/issues/new?assignees=&labels=&template=feature_request.yml&title=%5BFeature%5D+)
 
 ### Pull Requests
 Before submitting pull requests, several goals need to be identified:

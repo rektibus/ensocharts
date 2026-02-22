@@ -55,7 +55,7 @@ import Tip from '../../../@components/Tip.vue'
         - `createTicks` Create ticks information callback method.
   - `locale` Locale, with built-in support for `zh-CN` and `en-US` .
   - `timezone` Timezone name, such as `Asia/Shanghai` . If not set, the local time zone will be automatically obtained. For a list of time zone names, please refer to the [Timezone List](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List) .
-  - `styles` It can be a style name registered by `klinecharts.registerStyles` or `Styles` . For details about `Styles` , see [Styles](/en-US/guide/styles). Incremental values ​​are supported.
+  - `styles` It can be a style name registered by `ensocharts.registerStyles` or `Styles` . For details about `Styles` , see [Styles](/en-US/guide/styles). Incremental values ​​are supported.
   - `formatter` Some format APIs.
     - `formatDate` Formats a date.
     - `formatBigNumber` Format big numbers, such as 1000 is converted to 1k, 1000000 is converted to 1M, etc.

@@ -1,4 +1,4 @@
-import { init } from 'klinecharts'
+import { init } from 'ensocharts'
 
 const chart = init('zoomAtTimestamp-chart')
 
@@ -8,7 +8,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

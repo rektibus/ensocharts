@@ -1,4 +1,4 @@
-import { init, utils } from 'klinecharts'
+import { init, utils } from 'ensocharts'
 
 const chart = init('setFormatter-formatDate-chart')
 
@@ -29,7 +29,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

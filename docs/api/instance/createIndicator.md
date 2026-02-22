@@ -23,10 +23,10 @@ outline: deep
   - `series` 系列，支持 `normal` ， `price` 和 `volume` ，当是 `price` 并且没有设置 `precision` 时，精度将随着价格精度变化，当是 `volume` 并且没有设置 `precision` 时，精度将随数量精度变化。
   - `figures` 图形配置，是一个数组，子项是包含配置的 `object` 。
     - `key` 数据取值的标识，与 `calc` 返回的数据子项的 `key` 对应。
-    - `type` 图形类型，支持 `klinecharts.getSupportedFigures` 返回值存在的类型。
+    - `type` 图形类型，支持 `ensocharts.getSupportedFigures` 返回值存在的类型。
     - `baseValue` 基本对照值，目前仅仅作用于 `type` 是 `rect` 和 `bar` 的时候，当此值有效时，图形将会以此值为基准上下绘制。
-    - `attrs` 属性值，是一个方法，返回值是 `klinecharts.getFigureClass` 得到的对象所需要的属性。
-    - `styles` 样式，是一个方法，返回值是 `klinecharts.getFigureClass` 得到的对象所需要的样式。
+    - `attrs` 属性值，是一个方法，返回值是 `ensocharts.getFigureClass` 得到的对象所需要的属性。
+    - `styles` 样式，是一个方法，返回值是 `ensocharts.getFigureClass` 得到的对象所需要的样式。
   - `minValue` 指定最小值。
   - `maxValue` 指定最大值。
   - `styles` 样式配置，类型同通用样式 `Styles` 中的 `indicator` 。

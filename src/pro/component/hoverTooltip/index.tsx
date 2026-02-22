@@ -15,7 +15,7 @@ function Tooltip(props: TooltipProps) {
 
   return (
     <div
-      class="equicharts-tooltip-main"
+      class="ensocharts-tooltip-main"
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
     >

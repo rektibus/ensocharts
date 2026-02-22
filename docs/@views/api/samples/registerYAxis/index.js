@@ -1,4 +1,4 @@
-import { init, registerYAxis } from 'klinecharts'
+import { init, registerYAxis } from 'ensocharts'
 
 registerYAxis({
   name: 'customYAxisBasic',
@@ -54,7 +54,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

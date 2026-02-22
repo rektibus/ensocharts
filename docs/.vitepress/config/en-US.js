@@ -16,15 +16,15 @@ export default defineConfig({
           { text: 'Instance API', link: '/en-US/api/instance/getDom' }
         ]
       },
-      { text: 'Pro', link: 'https://pro.klinecharts.com/en-US' },
-      { text: 'Preview', link: 'https://preview.klinecharts.com/#en-US' },
+      { text: 'Pro', link: 'https://pro.ensocharts.com/en-US' },
+      { text: 'Preview', link: 'https://preview.ensocharts.com/#en-US' },
       { text: 'Customize', link: '/en-US/customize' },
       { text: 'Sponsor', link: '/en-US/sponsor' },
       {
         text: `${version}`,
         items: [
-          { text: '9.x Docs', link: 'https://v9.klinecharts.com/en-US' },
-          { text: '8.x Docs', link: 'https://v8.klinecharts.com' }
+          { text: '9.x Docs', link: 'https://v9.ensocharts.com/en-US' },
+          { text: '8.x Docs', link: 'https://v8.ensocharts.com' }
         ]
       }
     ],
@@ -74,7 +74,7 @@ export default defineConfig({
       '/en-US/api/instance/': getInstanceApiMenus('/en-US')
     },
     editLink: {
-      pattern: 'https://github.com/klinecharts/KLineChart/edit/main/docs/:path',
+      pattern: 'https://github.com/ensocharts/KLineChart/edit/main/docs/:path',
       text: 'Edit this page on GitHub'
     }
   }

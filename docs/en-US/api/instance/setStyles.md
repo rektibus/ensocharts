@@ -9,7 +9,7 @@ outline: deep
 <!--@include: @/@views/api/references/instance/setStyles.md-->
 
 ### Parameters {#parameters}
-- `styles` Style, which can be a style name registered by `klinecharts.registerStyles`, or `Styles`. For details about `Styles`, see [Styles](/en-US/guide/styles). Incremental values ​​are supported.
+- `styles` Style, which can be a style name registered by `ensocharts.registerStyles`, or `Styles`. For details about `Styles`, see [Styles](/en-US/guide/styles). Incremental values ​​are supported.
 
 ### Returns {#returns}
 `setStyles` returns `undefined` .

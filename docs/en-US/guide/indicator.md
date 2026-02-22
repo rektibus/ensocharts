@@ -22,4 +22,4 @@ This document introduces the built-in technical indicators in the chart and how 
 
 
 ## Custom Indicators
-To create a custom indicator, you only need to generate a indicator information, and then add it globally through the chart API [registerIndicator](/api/chart/registerIndicator) , add it to the chart and use it like a built-in indicator. For more examples, refer to the files under [https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator](https://github.com/klinecharts/KLineChart/tree/main/src/extension/indicator) .
+To create a custom indicator, you only need to generate a indicator information, and then add it globally through the chart API [registerIndicator](/api/chart/registerIndicator) , add it to the chart and use it like a built-in indicator. For more examples, refer to the files under [https://github.com/ensocharts/KLineChart/tree/main/src/extension/indicator](https://github.com/ensocharts/KLineChart/tree/main/src/extension/indicator) .

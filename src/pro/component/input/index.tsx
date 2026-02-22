@@ -26,7 +26,7 @@ const Input: Component<InputProps> = (p) => {
   return (
     <div
       style={props.style}
-      class={`equicharts-input ${props.class ?? ''}`}
+      class={`ensocharts-input ${props.class ?? ''}`}
       data-status={status()}
       onClick={() => {
         input?.focus();

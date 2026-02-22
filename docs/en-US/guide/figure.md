@@ -3,7 +3,7 @@ import Tip from '../../@components/Tip.vue'
 </script>
 
 # Figure
-Figure are an important part of the chart. All elements on the chart are composed of figures. If you need to make complex custom technical indicators and overlays, it is recommended to read carefully. This document describes the built-in figures and how to customize a figure. The basic figure can be obtained through the chart method `klinecharts.getFigureClass(name)`.
+Figure are an important part of the chart. All elements on the chart are composed of figures. If you need to make complex custom technical indicators and overlays, it is recommended to read carefully. This document describes the built-in figures and how to customize a figure. The basic figure can be obtained through the chart method `ensocharts.getFigureClass(name)`.
 
 ## Example of use
 <Tip type="warn" title="Note" tip="It needs to be used when there is a canvas context."/>
@@ -11,7 +11,7 @@ Figure are an important part of the chart. All elements on the chart are compose
 ```javascript
 // Get the figure class
 // name is the name of the figure, such as 'arc', 'circle', etc.
-const Figure = klinecharts.getFigureClass(name)
+const Figure = ensocharts.getFigureClass(name)
 // instantiate and draw
 // attrs attribute
 // styles styles
@@ -214,4 +214,4 @@ new ({
 ```
 
 ## Customize figure
-To create a custom figure, you only need to generate the basic figure information, and then add it globally through the chart API [registerFigure(figure)](/en-US/api/chart/registerFigure) , and add it to the chart to use it like a built-in basic figure. For more examples, refer to the files under [https://github.com/klinecharts/KLineChart/tree/main/src/extension/figure](https://github.com/klinecharts/KLineChart/tree/main/src/extension/figure) .
+To create a custom figure, you only need to generate the basic figure information, and then add it globally through the chart API [registerFigure(figure)](/en-US/api/chart/registerFigure) , and add it to the chart to use it like a built-in basic figure. For more examples, refer to the files under [https://github.com/ensocharts/KLineChart/tree/main/src/extension/figure](https://github.com/ensocharts/KLineChart/tree/main/src/extension/figure) .

@@ -34,12 +34,12 @@
 
 ## 9.x
 
-去 [https://v9.klinecharts.com](https://v9.klinecharts.com) 上查看。
+去 [https://v9.ensocharts.com](https://v9.ensocharts.com) 上查看。
 
 
 ## 8.x
 
-去 [https://v8.klinecharts.com](https://v8.klinecharts.com) 上查看。
+去 [https://v8.ensocharts.com](https://v8.ensocharts.com) 上查看。
 
 
 ## 7.x

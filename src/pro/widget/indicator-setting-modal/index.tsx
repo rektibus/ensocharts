@@ -53,7 +53,7 @@ const IndicatorSettingModal: Component<IndicatorSettingModalProps> = (
       ]}
       onClose={props.onClose}
     >
-      <div class="equicharts-indicator-setting-modal-content">
+      <div class="ensocharts-indicator-setting-modal-content">
         {getConfig(props.params.indicatorName).map((d, i) => {
           return (
             <>

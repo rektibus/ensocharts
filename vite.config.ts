@@ -17,7 +17,7 @@ export default defineConfig({
         target: 'esnext',
         lib: {
             entry: path.resolve(__dirname, 'src/index.ts'),
-            name: 'equicharts',
+            name: 'ensocharts',
             fileName: (format) => `index.${format === 'es' ? 'esm' : format}.js`,
             formats: ['es', 'cjs', 'umd']
         },

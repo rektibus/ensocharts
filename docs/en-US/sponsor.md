@@ -7,9 +7,9 @@ lastUpdated: false
 # ❤️ Sponsor
 KLineChart under the Apache License V2 and completely free to use.
 
-If you think the plugin is good, I hope you can click 🌟 on [GitHub](https://github.com/klinecharts/KLineChart). If you can reward a cup of ☕️, that would be very much appreciated.
+If you think the plugin is good, I hope you can click 🌟 on [GitHub](https://github.com/ensocharts/KLineChart). If you can reward a cup of ☕️, that would be very much appreciated.
 
-For organizations or individuals sponsoring KLineChart, no matter how much, if necessary, display the organization's official website or personal homepage on the https://klinecharts.com on the homepage, please provide payment account or address, logo, homepage link, and other information by sending an email to hu_li888@foxmail.com . Those with sponsor amount top three, will use large logo display.
+For organizations or individuals sponsoring KLineChart, no matter how much, if necessary, display the organization's official website or personal homepage on the https://ensocharts.com on the homepage, please provide payment account or address, logo, homepage link, and other information by sending an email to hu_li888@foxmail.com . Those with sponsor amount top three, will use large logo display.
 
 ## Sponsor Channels
 ### Alipay

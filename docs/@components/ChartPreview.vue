@@ -39,7 +39,7 @@ const codeHtml = ref(null)
 
 const copied = ref(false)
 
-const version = ref(window.klinecharts.version())
+const version = ref(window.ensocharts.version())
 
 const handlerMessage = (e) => {
   if (e.data === props.chartId) {
@@ -56,11 +56,11 @@ function openStackBlitz () {
     files['index.css'] = props.css
   }
   stackBlitz.openProject({
-    title: `${props.title} - klinecharts@${version.value}`,
+    title: `${props.title} - ensocharts@${version.value}`,
     description: props.description,
     template: 'javascript',
     dependencies: {
-      'klinecharts': version.value
+      'ensocharts': version.value
     },
     files
   })
@@ -69,11 +69,11 @@ function openStackBlitz () {
 function getCodePenParameters () {
   const js = props.code
   const parameters = {
-    title: `${props.title} - klinecharts@${version.value}`,
+    title: `${props.title} - ensocharts@${version.value}`,
     description: props.description,
     html: `<div id="${props.chartId}" style="height: 400px"/>`,
-    js: js.replace(/import\s+{(\s+[^}]*\s+)}\s+from\s+'klinecharts'/, 'const {$1} = klinecharts').replace(/import.*\'\.\/index\.css\'/, ''),
-    js_external: `https://unpkg.com/klinecharts@${version.value}/dist/klinecharts.min.js`
+    js: js.replace(/import\s+{(\s+[^}]*\s+)}\s+from\s+'ensocharts'/, 'const {$1} = ensocharts').replace(/import.*\'\.\/index\.css\'/, ''),
+    js_external: `https://unpkg.com/ensocharts@${version.value}/dist/ensocharts.min.js`
   }
   if (props.css) {
     parameters.css = props.css
@@ -94,9 +94,9 @@ function getCodeSandboxParameters () {
     },
     'package.json': {
       content: {
-        title: `${props.title} - klinecharts@${version.value}`,
+        title: `${props.title} - ensocharts@${version.value}`,
         dependencies: {
-          klinecharts: version.value
+          ensocharts: version.value
         }
       },
     },
@@ -239,8 +239,8 @@ onUnmounted(() => {
     if (observer.value && chartContainer.value) {
       observer.value.unobserve(chartContainer.value)
     }
-    if (window.klinecharts) {
-      window.klinecharts.dispose(props.chartId)
+    if (window.ensocharts) {
+      window.ensocharts.dispose(props.chartId)
     }
   }
   window.removeEventListener('message', handlerMessage)

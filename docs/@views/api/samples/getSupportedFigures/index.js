@@ -1,3 +1,3 @@
-import { getSupportedFigures } from 'klinecharts'
+import { getSupportedFigures } from 'ensocharts'
 
 const supports = getSupportedFigures()

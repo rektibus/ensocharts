@@ -50,7 +50,7 @@ const SettingModal: Component<SettingModalProps> = (props) => {
       ]}
       onClose={props.onClose}
     >
-      <div class="equicharts-setting-modal-content">
+      <div class="ensocharts-setting-modal-content">
         <For each={options()}>
           {(option) => {
             let component;

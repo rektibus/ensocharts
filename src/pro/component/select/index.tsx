@@ -20,7 +20,7 @@ const Select: Component<SelectProps> = (props) => {
   return (
     <div
       style={props.style}
-      class={`equicharts-select ${props.class ?? ''} ${open() ? 'equicharts-select-show' : ''}`}
+      class={`ensocharts-select ${props.class ?? ''} ${open() ? 'ensocharts-select-show' : ''}`}
       tabIndex="0"
       onClick={(_) => {
         setOpen((o) => !o);

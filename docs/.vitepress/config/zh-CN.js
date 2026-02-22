@@ -21,15 +21,15 @@ export default defineConfig({
           { text: '实例API', link: '/api/instance/getDom' }
         ]
       },
-      { text: 'Pro', link: 'https://pro.klinecharts.com' },
-      { text: '预览', link: 'https://preview.klinecharts.com' },
+      { text: 'Pro', link: 'https://pro.ensocharts.com' },
+      { text: '预览', link: 'https://preview.ensocharts.com' },
       { text: '定制', link: '/customize' },
       { text: '赞助', link: '/sponsor' },
       {
         text: `${version}`,
         items: [
-          { text: '9.x 文档', link: 'https://v9.klinecharts.com' },
-          { text: '8.x 文档', link: 'https://v8.klinecharts.com/zh-CN' }
+          { text: '9.x 文档', link: 'https://v9.ensocharts.com' },
+          { text: '8.x 文档', link: 'https://v8.ensocharts.com/zh-CN' }
         ]
       }
     ],
@@ -83,7 +83,7 @@ export default defineConfig({
       next: '下一篇'
     },
     editLink: {
-      pattern: 'https://github.com/klinecharts/KLineChart/edit/main/docs/:path',
+      pattern: 'https://github.com/ensocharts/KLineChart/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页面'
     },
     lastUpdated: {

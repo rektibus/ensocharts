@@ -1,5 +1,5 @@
 # 🛠️ From 9.x to 10.x
-This document will help you upgrade from klinecharts version 9.x to klinecharts version 10.x. If you are using version 8.x or older, please refer to [v8 to v9](https://v9.klinecharts.com/en-US/guide/v8-to-v9) to upgrade to 9.x first.
+This document will help you upgrade from ensocharts version 9.x to ensocharts version 10.x. If you are using version 8.x or older, please refer to [v8 to v9](https://v9.ensocharts.com/en-US/guide/v8-to-v9) to upgrade to 9.x first.
 
 ## Style configuration adjustment
 + Remove `yAxis.position` , `yAxis.type` , `yAxis.inside` and `yAxis.inside` . Please use the properties in the window configuration `axis` instead. For details, see the chart API [init(dcs, options)](/en-US/api/chart/init#parameters), instance API [createIndicator(value, isStack, paneOptions)](/en-US/api/instance/createIndicator#parameters) and [setPaneOptions(options)](/en-US/api/instance/setPaneOptions#parameters) .

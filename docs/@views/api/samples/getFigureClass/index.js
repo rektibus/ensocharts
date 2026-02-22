@@ -1,4 +1,4 @@
-import { getFigureClass } from 'klinecharts'
+import { getFigureClass } from 'ensocharts'
 
 const Figure = getFigureClass('rect')
 new Figure({

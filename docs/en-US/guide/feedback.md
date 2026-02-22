@@ -1,11 +1,11 @@
 # 💬 Feedback
 
 ## Github
-+ Issues: [https://github.com/klinecharts/KLineChart/issues](https://github.com/klinecharts/KLineChart/issues)
-+ Discussions: [https://github.com/klinecharts/KLineChart/discussions](https://github.com/klinecharts/KLineChart/discussions)
++ Issues: [https://github.com/ensocharts/KLineChart/issues](https://github.com/ensocharts/KLineChart/issues)
++ Discussions: [https://github.com/ensocharts/KLineChart/discussions](https://github.com/ensocharts/KLineChart/discussions)
 
 ## Telegram
-[https://t.me/klinecharts](https://t.me/klinecharts)
+[https://t.me/ensocharts](https://t.me/ensocharts)
 
 <!-- ## Discord
 https://discord.gg/7YjHYgvvvZ -->

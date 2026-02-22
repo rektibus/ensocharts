@@ -22,10 +22,10 @@ outline: deep
   - `series` Series, supports `normal` , `price` and `volume` , when `price` and `precision` is not set, the precision will follow the price precision, when `volume` and `precision` is not set, the precision will follow the volume precision.
   - `figures` Figure configuration, an array of items containing `object` configuration.
     - `key` The identifier of the data value, corresponding to the `key` of the data sub-item returned by `calc`.
-    - `type` The type of figure that supports the type returned by `klinecharts.getSupportedFigures` .
+    - `type` The type of figure that supports the type returned by `ensocharts.getSupportedFigures` .
     - `baseValue` The basic control value, currently only works when `type` is `rect` and `bar` . When this value is valid, the graphics will be drawn up and down based on this value.
-    - `attrs` The property value is a method, and the return value is the required property of the object obtained by `klinecharts.getFigureClass` .
-    - `styles` Style is a method that returns the style required by the object obtained by `klinecharts.getFigureClass` .
+    - `attrs` The property value is a method, and the return value is the required property of the object obtained by `ensocharts.getFigureClass` .
+    - `styles` Style is a method that returns the style required by the object obtained by `ensocharts.getFigureClass` .
   - `minValue` Specify a minimum value.
   - `maxValue` Specifies the maximum value.
   - `styles` Style configuration, the type is the same as `indicator` in the general style `Styles`.

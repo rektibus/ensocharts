@@ -1,3 +1,3 @@
-import { getSupportedOverlays } from 'klinecharts'
+import { getSupportedOverlays } from 'ensocharts'
 
 const supports = getSupportedOverlays()

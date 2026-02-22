@@ -1,4 +1,4 @@
-import { init } from 'klinecharts'
+import { init } from 'ensocharts'
 
 const chart = init(
   'init-decimalFold-none-chart',
@@ -11,7 +11,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline2.json')
+    fetch('https://ensocharts.com/datas/kline2.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

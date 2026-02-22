@@ -1,4 +1,4 @@
-import { init } from 'klinecharts'
+import { init } from 'ensocharts'
 
 const chart = init('setRightMinVisibleBarCount-chart')
 chart.setRightMinVisibleBarCount(6)
@@ -9,7 +9,7 @@ chart.setDataLoader({
   getBars: ({
     callback
   }) => {
-    fetch('https://klinecharts.com/datas/kline.json')
+    fetch('https://ensocharts.com/datas/kline.json')
       .then(res => res.json())
       .then(dataList => {
         callback(dataList)

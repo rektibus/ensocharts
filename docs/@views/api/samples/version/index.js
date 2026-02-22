@@ -1,3 +1,3 @@
-import { version } from 'klinecharts'
+import { version } from 'ensocharts'
 
 const v = version()

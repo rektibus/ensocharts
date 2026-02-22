@@ -8,13 +8,13 @@
     <meta name="keywords" content="Quick Start"/>
     <meta name="description" content="Quick Start"/>
     <title>Quick Start</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/klinecharts/dist/umd/klinecharts.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/ensocharts/dist/umd/ensocharts.min.js"></script>
   </head>
   <body>
     <div id="chart" style="width:600px;height:600px"></div>
     <script>
       window.onload = function () {
-        var chart = klinecharts.init('chart')
+        var chart = ensocharts.init('chart')
         chart.setSymbol({ ticker: 'TestSymbol' })
         chart.setPeriod({ span: 1, type: 'day' })
         chart.setDataLoader({
