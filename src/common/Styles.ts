@@ -266,8 +266,11 @@ export interface CandleBarColor extends ChangeColor {
   noChangeWickColor: string
 }
 
+export type CandleRenderer = 'internal' | 'external'
+
 export interface CandleStyle {
   type: CandleType
+  renderer: CandleRenderer
   bar: CandleBarColor
   area: CandleAreaStyle
   priceMark: CandlePriceMarkStyle
@@ -419,6 +422,7 @@ function getDefaultCandleStyle(): CandleStyle {
   }
   return {
     type: 'candle_solid',
+    renderer: 'internal',
     bar: {
       compareRule: 'current_open',
       upColor: Color.GREEN,

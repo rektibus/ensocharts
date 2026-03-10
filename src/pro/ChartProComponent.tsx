@@ -544,6 +544,7 @@ const ChartProComponent: Component<ChartProComponentProps> = (props) => {
           locale={props.locale}
           mainIndicators={mainIndicators()}
           subIndicators={subIndicators()}
+          customIndicators={props.customIndicators}
           onClose={() => {
             setIndicatorModalVisible(false);
           }}

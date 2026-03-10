@@ -7,7 +7,7 @@
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 typeof define === 'function' && define.amd ? define(['exports'], factory) :
-(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.klinecharts = {}));
+(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.ensocharts = {}));
 })(this, (function (exports) { 'use strict';
 
 /**
@@ -197,6 +197,7 @@ function getDefaultCandleStyle() {
     };
     return {
         type: 'candle_solid',
+        renderer: 'internal',
         bar: {
             compareRule: 'current_open',
             upColor: Color.GREEN,
@@ -1823,6 +1824,7 @@ class IndicatorImp {
     regenerateFigures = null;
     createTooltipDataSource = null;
     draw = null;
+    renderer = 'default';
     result = [];
     _prevIndicator;
     _lockSeriesPrecision = false;
@@ -4455,6 +4457,10 @@ const priceLine = {
             });
         }
         const { value = 0 } = (overlay.points)[0];
+        const textStr = chart.getDecimalFold().format(chart.getThousandsSeparator().format(value.toFixed(precision)));
+        const displayText = typeof overlay.extendData === 'string' && overlay.extendData.length > 0
+            ? `${overlay.extendData} (${textStr})`
+            : textStr;
         return [
             {
                 type: 'line',
@@ -4466,7 +4472,7 @@ const priceLine = {
                 attrs: {
                     x: coordinates[0].x,
                     y: coordinates[0].y,
-                    text: chart.getDecimalFold().format(chart.getThousandsSeparator().format(value.toFixed(precision))),
+                    text: displayText,
                     baseline: 'bottom'
                 }
             }
@@ -6933,13 +6939,13 @@ function log(templateText, tagStyle, messageStyle, api, invalidParam, append) {
     }
 }
 function logWarn(api, invalidParam, append) {
-    log('%c😑 klinecharts warning%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#FF9600', 'color:#FF9600', api, invalidParam, append ?? '');
+    log('%c😑 ensocharts warning%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#FF9600', 'color:#FF9600', api, invalidParam, append ?? '');
 }
 function logError(api, invalidParam, append) {
-    log('%c😟 klinecharts error%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#F92855;', 'color:#F92855;', api, invalidParam, append);
+    log('%c😟 ensocharts error%c %s%s%s', 'padding:3px 4px;border-radius:2px;color:#ffffff;background-color:#F92855;', 'color:#F92855;', api, invalidParam, append);
 }
 function logTag() {
-    log('%c❤️ Welcome to klinecharts. Version is 10.0.0-beta1', 'border-radius:4px;border:dashed 1px #1677FF;line-height:70px;padding:0 20px;margin:16px 0;font-size:14px;color:#1677FF;', '', '', '', '');
+    log('%c❤️ Welcome to ensocharts. Version is 10.0.0-beta1', 'border-radius:4px;border:dashed 1px #1677FF;line-height:70px;padding:0 20px;margin:16px 0;font-size:14px;color:#1677FF;', '', '', '', '');
 }
 
 /**
@@ -6984,7 +6990,7 @@ function createDefaultBounding(bounding) {
  * limitations under the License.
  */
 const DEFAULT_REQUEST_ID = -1;
-function requestAnimationFrame(fn) {
+function requestAnimationFrame$1(fn) {
     if (isFunction(window.requestAnimationFrame)) {
         return window.requestAnimationFrame(fn);
     }
@@ -7028,7 +7034,7 @@ class Animation {
                 const diffTime = new Date().getTime() - this._time;
                 if (diffTime < this._options.duration) {
                     this._doFrameCallback?.(diffTime);
-                    requestAnimationFrame(step);
+                    requestAnimationFrame$1(step);
                 }
                 else {
                     this.stop();
@@ -7039,7 +7045,7 @@ class Animation {
                 }
             }
         };
-        requestAnimationFrame(step);
+        requestAnimationFrame$1(step);
     }
     doFrame(callback) {
         this._doFrameCallback = callback;
@@ -7351,6 +7357,7 @@ class StoreImp {
      * Total space of drawing area
      */
     _totalBarSpace = 0;
+    getTotalBarSpace() { return this._totalBarSpace; }
     /**
      * Space occupied by a single piece of data
      */
@@ -8609,6 +8616,2515 @@ class StoreImp {
 }
 
 /**
+ * ZenithShaders.ts — All GLSL shader sources for the Zenith WebGL renderer.
+ *
+ * Centralized shader module (DI-21). Each primitive's vertex/fragment shader
+ * is a named constant. No inline shader strings in the renderer.
+ */
+const CANDLE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec4 a_ohlc;
+    layout(location = 2) in uint a_flags;
+
+    // Y-axis mapping (price → NDC)
+    uniform float u_scaleY;
+    uniform float u_transY;
+
+    // X-axis mapping (index → pixel → NDC)
+    uniform float u_totalBarSpace; // canvas width in CSS pixels
+    uniform float u_barSpace;      // width per bar in CSS pixels
+    uniform float u_rightOffset;   // dataCount + lastBarRightSideDiffBarCount
+
+    // Pixel-perfect sizing (TradingView-inspired)
+    uniform float u_bodyWidth;     // pre-computed optimal bar body width in device pixels
+    uniform float u_wickWidth;     // pre-computed wick width in device pixels
+    uniform float u_dpr;           // device pixel ratio
+    uniform vec2 u_viewportSize;   // viewport in device pixels (width, height)
+
+    uniform int u_mode; // 0 = body, 1 = wick, 2 = border
+    uniform float u_borderWidth; // border thickness in device pixels
+    uniform vec4 u_bullColor;
+    uniform vec4 u_bearColor;
+    uniform vec4 u_bullBorderColor;
+    uniform vec4 u_bearBorderColor;
+    out vec4 v_color;
+    flat out float f_borderWidth;
+    flat out vec4 f_bodyDevRect; // left, top, right, bottom in device pixels
+
+    void main() {
+        bool isBull = (a_flags & 1u) != 0u;
+
+        float open = a_ohlc.x;
+        float high = a_ohlc.y;
+        float low = a_ohlc.z;
+        float close = a_ohlc.w;
+
+        // ── X: Index → CSS pixel → device pixel (snapped) → NDC ──
+        float dataIndex = float(gl_InstanceID);
+        float deltaFromRight = u_rightOffset - dataIndex;
+        float xCss = u_totalBarSpace - (deltaFromRight - 0.5) * u_barSpace;
+        float xDev = floor(xCss * u_dpr + 0.5);
+
+        // Body rect in device pixels (always computed for border/body)
+        float bodyTop_price = max(open, close);
+        float bodyBottom_price = min(open, close);
+        float ndcBT = bodyTop_price * u_scaleY + u_transY;
+        float ndcBB = bodyBottom_price * u_scaleY + u_transY;
+        float bodyDevTop = floor((1.0 - ndcBT) * 0.5 * u_viewportSize.y + 0.5);
+        float bodyDevBottom = floor((1.0 - ndcBB) * 0.5 * u_viewportSize.y + 0.5);
+        if (bodyDevBottom <= bodyDevTop) bodyDevBottom = bodyDevTop + 1.0;
+        float bodyHalfW = floor(u_bodyWidth * 0.5);
+        float bodyDevLeft = xDev - bodyHalfW;
+        float bodyDevRight = xDev + bodyHalfW;
+
+        float vertX, vertY;
+
+        if (u_mode == 1) {
+            // ── WICK: high/low, narrow width ──
+            v_color = isBull ? u_bullColor : u_bearColor;
+            float ndcH = high * u_scaleY + u_transY;
+            float ndcL = low * u_scaleY + u_transY;
+            float devTop = floor((1.0 - ndcH) * 0.5 * u_viewportSize.y + 0.5);
+            float devBottom = floor((1.0 - ndcL) * 0.5 * u_viewportSize.y + 0.5);
+            if (devBottom <= devTop) devBottom = devTop + 1.0;
+            float wickHalfW = floor(u_wickWidth * 0.5);
+            vertX = xDev + a_pos.x * wickHalfW * 2.0;
+            vertY = mix(devTop, devBottom, a_pos.y + 0.5);
+            f_borderWidth = 0.0;
+            f_bodyDevRect = vec4(0.0);
+        } else if (u_mode == 2) {
+            // ── BORDER: body-sized rect, fragment shader hollows the inside ──
+            v_color = isBull ? u_bullBorderColor : u_bearBorderColor;
+            vertX = mix(bodyDevLeft, bodyDevRight, a_pos.x + 0.5);
+            vertY = mix(bodyDevTop, bodyDevBottom, a_pos.y + 0.5);
+            f_borderWidth = u_borderWidth;
+            f_bodyDevRect = vec4(bodyDevLeft, bodyDevTop, bodyDevRight, bodyDevBottom);
+        } else {
+            // ── BODY: inset by border width ──
+            v_color = isBull ? u_bullColor : u_bearColor;
+            float inset = u_borderWidth;
+            vertX = mix(bodyDevLeft + inset, bodyDevRight - inset, a_pos.x + 0.5);
+            vertY = mix(bodyDevTop + inset, bodyDevBottom - inset, a_pos.y + 0.5);
+            f_borderWidth = 0.0;
+            f_bodyDevRect = vec4(0.0);
+        }
+
+        float ndc_x = vertX / u_viewportSize.x * 2.0 - 1.0;
+        float ndc_y = 1.0 - vertY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
+    }
+`;
+const CANDLE_FS = `#version 300 es
+    precision highp float;
+    in vec4 v_color;
+    out vec4 outColor;
+    void main() {
+        outColor = v_color;
+    }
+`;
+// ─── Grid Shaders ───
+const GRID_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;    // unit quad [-1,1]
+    layout(location = 1) in float a_coord; // pixel coordinate of this grid line
+
+    uniform int u_direction;    // 0 = horizontal (a_coord is Y pixel), 1 = vertical (a_coord is X pixel)
+    uniform float u_canvasW;    // canvas width in CSS pixels
+    uniform float u_canvasH;    // canvas height in CSS pixels
+    uniform float u_lineWidth;  // line thickness in CSS pixels (typically 1.0)
+
+    void main() {
+        // Convert pixel coordinate to NDC
+        float coordNdc;
+        vec2 pos;
+
+        if (u_direction == 0) {
+            // Horizontal line: a_coord is Y pixel (0=top, H=bottom in DOM coords)
+            // WebGL Y is flipped: NDC_y = 1.0 - 2.0 * pixelY / height
+            coordNdc = 1.0 - 2.0 * a_coord / u_canvasH;
+            float halfThickness = u_lineWidth / u_canvasH;
+            pos.x = a_pos.x;  // spans full width [-1, 1]
+            pos.y = coordNdc + a_pos.y * halfThickness;
+        } else {
+            // Vertical line: a_coord is X pixel (0=left, W=right)
+            coordNdc = 2.0 * a_coord / u_canvasW - 1.0;
+            float halfThickness = u_lineWidth / u_canvasW;
+            pos.x = coordNdc + a_pos.x * halfThickness;
+            pos.y = a_pos.y;  // spans full height [-1, 1]
+        }
+
+        gl_Position = vec4(pos, 0.0, 1.0);
+    }
+`;
+const GRID_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_gridColor;
+    out vec4 outColor;
+    void main() {
+        outColor = u_gridColor;
+    }
+`;
+// ─── Heatmap Shaders ───
+const HEATMAP_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec2 a_uv;
+    uniform mat4 u_matrix;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_uv;
+        gl_Position = u_matrix * vec4(a_pos.x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const HEATMAP_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_heatmap;
+    uniform float u_time;
+    in vec2 v_uv;
+    out vec4 outColor;
+
+    float hash(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+    }
+
+    // Viridis-inspired 6-stage ramp: deep purple → indigo → teal → green → yellow → hot white
+    // Matches the Coinglass/Bookmap reference aesthetic
+    vec3 getColorRamp(float t) {
+        vec3 c1 = vec3(0.267, 0.004, 0.329);  // deep purple
+        vec3 c2 = vec3(0.282, 0.140, 0.458);  // indigo
+        vec3 c3 = vec3(0.127, 0.566, 0.551);  // teal
+        vec3 c4 = vec3(0.267, 0.678, 0.341);  // green
+        vec3 c5 = vec3(0.993, 0.906, 0.144);  // yellow
+        vec3 c6 = vec3(1.0, 1.0, 1.0);        // hot white
+
+        if (t < 0.15) return mix(c1, c2, t / 0.15);
+        if (t < 0.30) return mix(c2, c3, (t - 0.15) / 0.15);
+        if (t < 0.50) return mix(c3, c4, (t - 0.30) / 0.20);
+        if (t < 0.75) return mix(c4, c5, (t - 0.50) / 0.25);
+        return mix(c5, c6, (t - 0.75) / 0.25);
+    }
+
+    void main() {
+        // Subtle noise displacement for organic feel
+        float n = hash(v_uv * 200.0 + u_time * 0.005) * 0.003;
+        vec2 noisyUv = v_uv + n;
+
+        float intensity = texture(u_heatmap, noisyUv).r;
+        if (intensity < 0.02) discard;
+
+        // Gamma-adjusted intensity for more visible mid-tones
+        float t = pow(clamp(intensity, 0.0, 1.0), 0.55);
+        vec3 color = getColorRamp(t);
+
+        // Stronger alpha for vibrant rendering, especially hot zones
+        float alpha = smoothstep(0.0, 0.15, intensity) * 0.85;
+        outColor = vec4(color * (1.0 + t * 0.3), alpha);
+    }
+`;
+// ─── LOB Depth Overlay Heatmap Shaders ───
+const LOB_HEATMAP_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec2 a_uv;
+    uniform mat4 u_matrix;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_uv;
+        gl_Position = u_matrix * vec4(a_pos.x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const LOB_HEATMAP_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_lob_density;
+    uniform float u_mid_price;
+    uniform float u_range;
+    in vec2 v_uv;
+    out vec4 outColor;
+    
+    void main() {
+        // v_uv.y is time (horizontal across chart), v_uv.x maps to price from bottom to top
+        // u_lob_density holds normalized bid/ask volumes at price buckets
+        float density = texture(u_lob_density, v_uv).r;
+        if (density < 0.01) discard;
+        
+        // Heatmap color mapping (Bids are green, Asks are red)
+        // Price > mid = ask (red), Price < mid = bid (green)
+        float currentPrice = u_mid_price + (v_uv.x - 0.5) * u_range;
+        
+        vec3 color = currentPrice > u_mid_price ? vec3(0.9, 0.2, 0.2) : vec3(0.2, 0.8, 0.3);
+        float alpha = clamp(density * density, 0.05, 0.4);
+        
+        outColor = vec4(color, alpha);
+    }
+`;
+// ─── Cumulative Depth Curve Shaders (Orderbook Profile Overlay) ───
+const DEPTH_OVERLAY_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec2 a_uv;
+    uniform mat4 u_matrix;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_uv;
+        gl_Position = u_matrix * vec4(a_pos.x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const DEPTH_OVERLAY_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_lob_density;
+    uniform float u_mid_price;
+    uniform float u_range;
+    in vec2 v_uv;
+    out vec4 outColor;
+    
+    void main() {
+        // v_uv mapping: x is price (0 to 1 scaling across u_range relative to mid)
+        // y is cumulative depth normalized
+        
+        // For simplicity in a basic shader, we sample the density across the price axis
+        // and build a cumulative sum approximation, or we expect the texture to already 
+        // hold cumulative values (which WASM calculates/stores).
+        // Let's assume texture holds normalized CUMULATIVE depth where red channel is value.
+        
+        float cumDepth = texture(u_lob_density, vec2(v_uv.x, 0.5)).r; // Sample 1D profile
+        
+        if (v_uv.y > cumDepth) discard; // Area fill under the curve
+        
+        float currentPrice = v_uv.x * u_range; 
+        
+        vec3 color = currentPrice > u_mid_price ? vec3(0.9, 0.2, 0.2) : vec3(0.2, 0.8, 0.3);
+        float alpha = 0.15; // Semi-transparent area fill
+        
+        // Add a solid line at the boundary (top of the fill)
+        if (v_uv.y > cumDepth - 0.02) {
+            alpha = 0.8; 
+        }
+        
+        outColor = vec4(color, alpha);
+    }
+`;
+// ─── Liquidation Shaders ───
+const LIQ_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec4 a_data;
+    uniform mat4 u_matrix;
+    out float v_side;
+    void main() {
+        v_side = a_data.w;
+        float sizeScale = sqrt(a_data.z) * 0.1;
+        vec2 pos = a_pos * sizeScale + a_data.xy;
+        gl_Position = u_matrix * vec4(pos, 0.0, 1.0);
+    }
+`;
+const LIQ_FS = `#version 300 es
+    precision highp float;
+    in float v_side;
+    out vec4 outColor;
+    void main() {
+        vec3 color = v_side > 0.5 ? vec3(0.1, 1.0, 0.4) : vec3(1.0, 0.1, 0.2);
+        outColor = vec4(color, 0.6);
+    }
+`;
+// ─── Footprint Shaders ───
+const FOOTPRINT_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec2 a_uv;
+    uniform mat4 u_matrix;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_uv;
+        gl_Position = u_matrix * vec4(a_pos.x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const FOOTPRINT_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_buy_v;
+    uniform sampler2D u_sell_v;
+    in vec2 v_uv;
+    out vec4 outColor;
+    void main() {
+        float buyV = texture(u_buy_v, v_uv).r;
+        float sellV = texture(u_sell_v, v_uv).r;
+        float total = buyV + sellV;
+        if (total < 0.1) discard;
+        float delta = (buyV - sellV) / (total + 1e-9);
+        vec3 color = delta > 0.0 ? vec3(0.2, 0.8, 0.4) : vec3(0.9, 0.3, 0.3);
+        outColor = vec4(color, clamp(total * 0.01, 0.1, 0.6));
+    }
+`;
+// ─── Histogram (VPSV) Shaders ───
+const HISTOGRAM_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    uniform float u_side;
+    out vec2 v_uv;
+    void main() {
+        v_uv = (a_pos + 1.0) * 0.5;
+        float x = u_side > 0.0 ? 0.8 + a_pos.x * 0.2 : -1.0 + a_pos.x * 0.2;
+        gl_Position = vec4(x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const HISTOGRAM_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_profile;
+    uniform vec4 u_color;
+    in vec2 v_uv;
+    out vec4 outColor;
+    void main() {
+        float val = texture(u_profile, vec2(v_uv.y, 0.5)).r;
+        float norm_x = 1.0 - v_uv.x;
+        if (norm_x > val * 0.05) discard;
+        outColor = vec4(u_color.rgb, u_color.a);
+    }
+`;
+// ─── Indicator Line Strip Shaders ───
+const INDICATOR_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos; // x = NDC x, y = price value
+    uniform mat4 u_matrix;
+    uniform float u_barWidth;
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    void main() {
+        // Price → NDC Y
+        float ndc_y = a_pos.y * u_matrix[1][1] + u_matrix[3][1];
+        // Snap Y to device pixel + 0.5 offset for crisp 1px lines
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5) + 0.5;
+        float snapped_ndc_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(a_pos.x, snapped_ndc_y, 0.0, 1.0);
+    }
+`;
+const INDICATOR_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    out vec4 outColor;
+    void main() {
+        outColor = u_color;
+    }
+`;
+// ─── Bar Figure (Histogram Column) Shaders ───
+const BAR_FIGURE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;  // unit quad [-0.5, 0.5]
+    layout(location = 1) in vec3 a_barData; // x = left NDC, y = right NDC, z = price value
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_baseline;    // baseline price (0 for most histograms)
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    void main() {
+        float ndc_x = mix(a_barData.x, a_barData.y, a_pos.x + 0.5);
+        // Price Y → NDC → device pixel snap
+        float valNdc = a_barData.z * u_scaleY + u_transY;
+        float baseNdc = u_baseline * u_scaleY + u_transY;
+        float devTop = floor((1.0 - max(valNdc, baseNdc)) * 0.5 * u_viewportSize.y + 0.5);
+        float devBottom = floor((1.0 - min(valNdc, baseNdc)) * 0.5 * u_viewportSize.y + 0.5);
+        if (devBottom <= devTop) devBottom = devTop + 1.0;
+        float devY = mix(devTop, devBottom, a_pos.y + 0.5);
+        float ndc_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
+    }
+`;
+const BAR_FIGURE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    out vec4 outColor;
+    void main() {
+        outColor = u_color;
+    }
+`;
+// ─── Circle Figure (Dot Marker) Shaders ───
+const CIRCLE_FIGURE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;  // unit quad [-0.5, 0.5]
+    layout(location = 1) in vec2 a_data; // x = NDC x center, y = price value
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_radius;       // radius in device pixels
+    uniform vec2 u_viewportSize;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_pos * 2.0; // [-1, 1] for circle test
+        float ndc_x = a_data.x;
+        float ndc_y = a_data.y * u_scaleY + u_transY;
+        // Snap center to device pixel
+        float devX = floor((ndc_x + 1.0) * 0.5 * u_viewportSize.x + 0.5);
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        // Offset by quad vertex * radius
+        devX += a_pos.x * u_radius * 2.0;
+        devY += a_pos.y * u_radius * 2.0;
+        float out_x = devX / u_viewportSize.x * 2.0 - 1.0;
+        float out_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(out_x, out_y, 0.0, 1.0);
+    }
+`;
+const CIRCLE_FIGURE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    in vec2 v_uv;
+    out vec4 outColor;
+    void main() {
+        float dist = length(v_uv);
+        if (dist > 1.0) discard;
+        // Smooth edge for anti-aliased circle
+        float alpha = 1.0 - smoothstep(0.85, 1.0, dist);
+        outColor = vec4(u_color.rgb, u_color.a * alpha);
+    }
+`;
+// ─── SHM (Stochastic Heat Map) Shaders ───
+// Renders 28 rows of colored cells, each representing an EMA-smoothed stochastic oscillator.
+// Color ramp: deep blue (oversold) → cyan → green → yellow → orange → deep red (overbought)
+const SHM_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos;
+    layout(location = 1) in vec2 a_uv;
+    uniform mat4 u_matrix;
+    out vec2 v_uv;
+    void main() {
+        v_uv = a_uv;
+        gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0);
+    }
+`;
+const SHM_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D u_shm;
+    out vec4 outColor;
+    in vec2 v_uv;
+
+    vec3 shmColorRamp(float t) {
+        // 12-stop diverging ramp: cold blue → hot red
+        vec3 c01 = vec3(0.012, 0.094, 0.396);  // deep blue (0%)
+        vec3 c02 = vec3(0.008, 0.145, 0.612);  // blue (5%)
+        vec3 c03 = vec3(0.067, 0.463, 0.949);  // bright blue (10%)
+        vec3 c04 = vec3(0.067, 0.686, 0.949);  // cyan (20%)
+        vec3 c05 = vec3(0.067, 0.780, 0.612);  // teal (30%)
+        vec3 c06 = vec3(0.227, 0.949, 0.067);  // green (40%)
+        vec3 c07 = vec3(0.933, 0.949, 0.067);  // yellow (50%)
+        vec3 c08 = vec3(0.949, 0.596, 0.067);  // orange (60%)
+        vec3 c09 = vec3(0.949, 0.376, 0.067);  // dark orange (70%)
+        vec3 c10 = vec3(0.949, 0.173, 0.067);  // red-orange (80%)
+        vec3 c11 = vec3(0.812, 0.000, 0.000);  // red (90%)
+        vec3 c12 = vec3(0.600, 0.000, 0.000);  // deep red (95%+)
+
+        if (t < 0.05) return mix(c01, c02, t / 0.05);
+        if (t < 0.10) return mix(c02, c03, (t - 0.05) / 0.05);
+        if (t < 0.20) return mix(c03, c04, (t - 0.10) / 0.10);
+        if (t < 0.30) return mix(c04, c05, (t - 0.20) / 0.10);
+        if (t < 0.40) return mix(c05, c06, (t - 0.30) / 0.10);
+        if (t < 0.50) return mix(c06, c07, (t - 0.40) / 0.10);
+        if (t < 0.60) return mix(c07, c08, (t - 0.50) / 0.10);
+        if (t < 0.70) return mix(c08, c09, (t - 0.60) / 0.10);
+        if (t < 0.80) return mix(c09, c10, (t - 0.70) / 0.10);
+        if (t < 0.90) return mix(c10, c11, (t - 0.80) / 0.10);
+        return mix(c11, c12, (t - 0.90) / 0.10);
+    }
+
+    void main() {
+        float val = texture(u_shm, v_uv).r;
+        vec3 color = shmColorRamp(clamp(val, 0.0, 1.0));
+        outColor = vec4(color, 1.0);
+    }
+`;
+// ─── Band/Channel Shaders (Bollinger, Keltner, Donchian) ───
+// Triangle strip between two value series (upper + lower).
+// Data: interleaved [x_ndc, upper_price, lower_price] per bar.
+// Vertices: even = upper, odd = lower → GL_TRIANGLE_STRIP fills the band.
+const BAND_VS = `#version 300 es
+    layout(location = 0) in vec3 a_data; // x = NDC x, y = upper price, z = lower price
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    void main() {
+        float ndc_x = a_data.x;
+        // Even vertex = upper, odd vertex = lower
+        bool isUpper = (gl_VertexID % 2) == 0;
+        float price = isUpper ? a_data.y : a_data.z;
+        float ndc_y = price * u_scaleY + u_transY;
+        // Snap Y to device pixel
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        float snapped_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, snapped_y, 0.0, 1.0);
+    }
+`;
+const BAND_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_fillColor;
+    out vec4 outColor;
+    void main() {
+        outColor = u_fillColor;
+    }
+`;
+// ─── Area Fill Shaders (line to baseline) ───
+// Triangle strip from line values to a baseline Y.
+// Data: [x_ndc, price_value] per bar. Vertices: even = value, odd = baseline.
+const AREA_VS = `#version 300 es
+    layout(location = 0) in vec2 a_data; // x = NDC x, y = price value
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_baseline;
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    void main() {
+        float ndc_x = a_data.x;
+        bool isValue = (gl_VertexID % 2) == 0;
+        float price = isValue ? a_data.y : u_baseline;
+        float ndc_y = price * u_scaleY + u_transY;
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        float snapped_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, snapped_y, 0.0, 1.0);
+    }
+`;
+const AREA_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_fillColor;
+    out vec4 outColor;
+    void main() {
+        outColor = u_fillColor;
+    }
+`;
+// ─── Horizontal Line Shader (support/resistance, zero line) ───
+const HLINE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos; // x: [-1, 1], y: [-0.5, 0.5]
+    uniform float u_priceY;
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    uniform float u_lineWidth;
+    void main() {
+        float ndc_y = u_priceY * u_scaleY + u_transY;
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        float halfThickDev = floor(u_lineWidth * u_dpr * 0.5);
+        float vertDevY = devY + a_pos.y * halfThickDev;
+        float out_y = 1.0 - vertDevY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(a_pos.x, out_y, 0.0, 1.0);
+    }
+`;
+const HLINE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    out vec4 outColor;
+    void main() {
+        outColor = u_color;
+    }
+`;
+// ─── Baseline Area Shaders (dual-color fill above/below reference) ───
+// Triangle strip from line values to a baseline Y, but color changes
+// depending on whether the value is above or below the baseline.
+// Data: [x_ndc, price_value] per bar. Vertices: even = value, odd = baseline.
+const BASELINE_AREA_VS = `#version 300 es
+    layout(location = 0) in vec2 a_data; // x = NDC x, y = price value
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_baseline;
+    uniform vec2 u_viewportSize;
+    flat out float f_value;
+    flat out float f_baseline;
+    void main() {
+        float ndc_x = a_data.x;
+        bool isValue = (gl_VertexID % 2) == 0;
+        float price = isValue ? a_data.y : u_baseline;
+        float ndc_y = price * u_scaleY + u_transY;
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        float snapped_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, snapped_y, 0.0, 1.0);
+        f_value = a_data.y;
+        f_baseline = u_baseline;
+    }
+`;
+const BASELINE_AREA_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_topFillColor;
+    uniform vec4 u_bottomFillColor;
+    flat in float f_value;
+    flat in float f_baseline;
+    out vec4 outColor;
+    void main() {
+        if (f_value >= f_baseline) {
+            outColor = u_topFillColor;
+        } else {
+            outColor = u_bottomFillColor;
+        }
+    }
+`;
+// ─── Baseline Line Shaders (dual-color stroke over baseline area) ───
+const BASELINE_LINE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_data; // x = NDC x, y = price value
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_baseline;
+    uniform vec2 u_viewportSize;
+    flat out float f_value;
+    flat out float f_baseline;
+    void main() {
+        float ndc_x = a_data.x;
+        float price = a_data.y; // line values directly
+        float ndc_y = price * u_scaleY + u_transY;
+        float devY = floor((1.0 - ndc_y) * 0.5 * u_viewportSize.y + 0.5);
+        float snapped_y = 1.0 - devY / u_viewportSize.y * 2.0;
+        gl_Position = vec4(ndc_x, snapped_y, 0.0, 1.0);
+        f_value = a_data.y;
+        f_baseline = u_baseline;
+    }
+`;
+const BASELINE_LINE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_topLineColor;
+    uniform vec4 u_bottomLineColor;
+    flat in float f_value;
+    flat in float f_baseline;
+    out vec4 outColor;
+    void main() {
+        if (f_value >= f_baseline) {
+            outColor = u_topLineColor;
+        } else {
+            outColor = u_bottomLineColor;
+        }
+    }
+`;
+// ─── OHLC Bar Shaders (Classic Bar Chart) ───
+// Vertical stem from High to Low, left tick at Open, right tick at Close.
+// Drawn as instanced quads. 
+// u_mode: 0 = stem (H to L), 1 = open tick (left), 2 = close tick (right)
+const OHLC_BAR_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos; // unit quad [-0.5, 0.5]
+    layout(location = 1) in vec4 a_ohlc; // open, high, low, close
+    layout(location = 2) in uint a_flags;
+
+    uniform float u_scaleY;
+    uniform float u_transY;
+    uniform float u_totalBarSpace;
+    uniform float u_barSpace;
+    uniform float u_rightOffset;
+    
+    uniform float u_bodyWidth; // thickest part in dev px
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    uniform int u_mode; // 0=stem, 1=open tick, 2=close tick
+
+    uniform vec4 u_bullColor;
+    uniform vec4 u_bearColor;
+    
+    out vec4 v_color;
+    
+    void main() {
+        bool isBull = (a_flags & 1u) != 0u;
+        v_color = isBull ? u_bullColor : u_bearColor;
+        
+        float open = a_ohlc.x;
+        float high = a_ohlc.y;
+        float low = a_ohlc.z;
+        float close = a_ohlc.w;
+        
+        float dataIndex = float(gl_InstanceID);
+        float deltaFromRight = u_rightOffset - dataIndex;
+        float xCss = u_totalBarSpace - (deltaFromRight - 0.5) * u_barSpace;
+        float xDevCenter = floor(xCss * u_dpr + 0.5);
+        
+        float tickLen = floor(u_bodyWidth * 0.5);
+        // stem is always 1px (or minimal thick)
+        float stemWidth = max(1.0, floor(u_dpr));
+        float halfStem = floor(stemWidth * 0.5);
+        
+        float vertDevX, vertDevY;
+        
+        if (u_mode == 0) { // Stem
+            float ndcH = high * u_scaleY + u_transY;
+            float ndcL = low * u_scaleY + u_transY;
+            float devTop = floor((1.0 - ndcH) * 0.5 * u_viewportSize.y + 0.5);
+            float devBottom = floor((1.0 - ndcL) * 0.5 * u_viewportSize.y + 0.5);
+            if (devBottom <= devTop) devBottom = devTop + 1.0;
+            
+            vertDevX = xDevCenter + a_pos.x * stemWidth;
+            vertDevY = mix(devTop, devBottom, a_pos.y + 0.5);
+        } else if (u_mode == 1) { // Open Tick (Left)
+            float ndcO = open * u_scaleY + u_transY;
+            float devY = floor((1.0 - ndcO) * 0.5 * u_viewportSize.y + 0.5);
+            
+            float left = xDevCenter - tickLen - halfStem;
+            float right = xDevCenter;
+            
+            vertDevX = mix(left, right, a_pos.x + 0.5);
+            vertDevY = devY + a_pos.y * stemWidth;
+        } else { // Close Tick (Right)
+            float ndcC = close * u_scaleY + u_transY;
+            float devY = floor((1.0 - ndcC) * 0.5 * u_viewportSize.y + 0.5);
+            
+            float left = xDevCenter;
+            float right = xDevCenter + tickLen + halfStem;
+            
+            vertDevX = mix(left, right, a_pos.x + 0.5);
+            vertDevY = devY + a_pos.y * stemWidth;
+        }
+        
+        float ndc_x = (vertDevX / u_viewportSize.x) * 2.0 - 1.0;
+        float ndc_y = 1.0 - (vertDevY / u_viewportSize.y) * 2.0;
+        gl_Position = vec4(ndc_x, ndc_y, 0.0, 1.0);
+    }
+`;
+const OHLC_BAR_FS = `#version 300 es
+    precision highp float;
+    in vec4 v_color;
+    out vec4 outColor;
+    void main() {
+        outColor = v_color;
+    }
+`;
+// ─── Vertical Line Shader (session boundaries, event markers) ───
+// Full-height line at a given X coordinate, pixel-snapped.
+const VLINE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos; // x: [-0.5, 0.5], y: [-1, 1]
+    uniform float u_xNdc;        // X position in NDC
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    uniform float u_lineWidth;   // line width in CSS pixels
+    void main() {
+        // Snap X center to device pixel
+        float devX = floor((u_xNdc + 1.0) * 0.5 * u_viewportSize.x + 0.5);
+        float halfThickDev = floor(u_lineWidth * u_dpr * 0.5);
+        float vertDevX = devX + a_pos.x * halfThickDev;
+        float out_x = vertDevX / u_viewportSize.x * 2.0 - 1.0;
+        gl_Position = vec4(out_x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const VLINE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    out vec4 outColor;
+    void main() {
+        outColor = u_color;
+    }
+`;
+// ─── Background Shade Shader (session highlighting, time range markers) ───
+// Full-height rectangle between two X NDC coordinates.
+const BGSHADE_VS = `#version 300 es
+    layout(location = 0) in vec2 a_pos; // unit quad [0, 1] x [-1, 1]
+    uniform float u_x0Ndc;       // left edge NDC
+    uniform float u_x1Ndc;       // right edge NDC
+    uniform float u_dpr;
+    uniform vec2 u_viewportSize;
+    void main() {
+        // Interpolate X between x0 and x1, snap to device pixel
+        float xNdc = mix(u_x0Ndc, u_x1Ndc, a_pos.x);
+        float devX = floor((xNdc + 1.0) * 0.5 * u_viewportSize.x + 0.5);
+        float out_x = devX / u_viewportSize.x * 2.0 - 1.0;
+        gl_Position = vec4(out_x, a_pos.y, 0.0, 1.0);
+    }
+`;
+const BGSHADE_FS = `#version 300 es
+    precision highp float;
+    uniform vec4 u_color;
+    out vec4 outColor;
+    void main() {
+        outColor = u_color;
+    }
+`;
+
+/** AUTO-GENERATED from configs/schema.json — do not edit manually **/
+const ZenithSchema = {
+    // WASM Engine Constants
+    MAX_BINS: 512,
+    FIELD_COUNT: 53,
+    OFFSETS: {
+        timestamp: 0,
+        open: 1,
+        high: 2,
+        low: 3,
+        close: 4}
+};
+
+/**
+ * Shared types for ZenithRenderer layer extraction.
+ *
+ * Each render layer is a standalone function that receives a RendererContext
+ * containing all the GL resources it needs (programs, uniforms, VBOs, textures).
+ * This avoids "god class" coupling while keeping zero-allocation rendering.
+ */
+// Re-export constants for layer convenience
+const FC = ZenithSchema.FIELD_COUNT;
+const O = ZenithSchema.OFFSETS;
+const MAX_BARS$1 = 100000;
+const MAX_LIQS$1 = 10000;
+
+/**
+ * Optimal candlestick width calculation — ported from TradingView lightweight-charts.
+ * Source: lightweight-charts/src/renderers/optimal-bar-width.ts
+ */
+function optimalCandlestickWidth$1(barSpacing, pixelRatio) {
+    const barSpacingSpecialCaseFrom = 2.5;
+    const barSpacingSpecialCaseTo = 4;
+    const barSpacingSpecialCaseCoeff = 3;
+    if (barSpacing >= barSpacingSpecialCaseFrom && barSpacing <= barSpacingSpecialCaseTo) {
+        return Math.floor(barSpacingSpecialCaseCoeff * pixelRatio);
+    }
+    const barSpacingReducingCoeff = 0.2;
+    const coeff = 1 - barSpacingReducingCoeff * Math.atan(Math.max(barSpacingSpecialCaseTo, barSpacing) - barSpacingSpecialCaseTo) / (Math.PI * 0.5);
+    const res = Math.floor(barSpacing * coeff * pixelRatio);
+    const scaledBarSpacing = Math.floor(barSpacing * pixelRatio);
+    const optimal = Math.min(res, scaledBarSpacing);
+    return Math.max(Math.floor(pixelRatio), optimal);
+}
+function renderCandles(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    const barView = wasm.getFloat64View(id);
+    const n = Math.min(count, MAX_BARS$1);
+    const dpr = window.devicePixelRatio || 1;
+    const barSpacing = matrix[1]; // CSS pixels per bar
+    // TradingView-inspired bar width calculation
+    let barWidth = optimalCandlestickWidth$1(barSpacing, dpr);
+    // Wick width: 1 CSS pixel = Math.floor(dpr) device pixels
+    let wickWidth = Math.min(Math.floor(dpr), Math.floor(barSpacing * dpr));
+    wickWidth = Math.max(Math.floor(dpr), Math.min(wickWidth, barWidth));
+    // Parity matching: wick and body must have same odd/even width
+    if (barWidth >= 2) {
+        if ((wickWidth % 2) !== (barWidth % 2)) {
+            barWidth--;
+        }
+    }
+    // Border width calculation (from TradingView _calculateBorderWidth)
+    const BarBorderWidth = 1;
+    let borderWidth = Math.floor(BarBorderWidth * dpr);
+    if (barWidth <= 2 * borderWidth) {
+        borderWidth = Math.floor((barWidth - 1) * 0.5);
+    }
+    borderWidth = Math.max(Math.floor(dpr), borderWidth);
+    const drawBorder = barWidth > borderWidth * 2;
+    const drawBody = !drawBorder || barWidth > borderWidth * 2;
+    // Fill staging array: [open, high, low, close, isBull] (5 floats per bar)
+    for (let i = 0; i < n; i++) {
+        const src = i * FC;
+        const dst = i * 5;
+        ctx.candleStaging[dst + 0] = barView[src + O.open];
+        ctx.candleStaging[dst + 1] = barView[src + O.high];
+        ctx.candleStaging[dst + 2] = barView[src + O.low];
+        ctx.candleStaging[dst + 3] = barView[src + O.close];
+        ctx.candleStaging[dst + 4] = barView[src + O.close] > barView[src + O.open] ? 1 : 0;
+    }
+    // Update persistent VBO
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.candleDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.candleStaging.subarray(0, n * 5));
+    // Setup VAO + attribs
+    gl.bindVertexArray(ctx.vao);
+    // Quad vertices (location 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    // Instance data: OHLC (location 1) + flags (location 2)
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.candleDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 20, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribIPointer(2, 1, gl.UNSIGNED_INT, 20, 16);
+    gl.vertexAttribDivisor(2, 1);
+    gl.useProgram(ctx.programs.candle);
+    const u = ctx.uniforms.candle;
+    // Y-axis uniforms
+    gl.uniform1f(u.scaleY, matrix[5]);
+    gl.uniform1f(u.transY, matrix[13]);
+    // X-axis uniforms
+    gl.uniform1f(u.totalBarSpace, matrix[0]);
+    gl.uniform1f(u.barSpace, matrix[1]);
+    gl.uniform1f(u.rightOffset, matrix[2]);
+    // Pixel-perfect sizing uniforms
+    gl.uniform1f(u.bodyWidth, barWidth);
+    gl.uniform1f(u.wickWidth, wickWidth);
+    gl.uniform1f(u.dpr, dpr);
+    // Viewport size in device pixels
+    const vpWidth = ctx.vpWidth;
+    const vpHeight = ctx.vpHeight;
+    gl.uniform2f(u.viewportSize, vpWidth, vpHeight);
+    // Border width
+    gl.uniform1f(u.borderWidth, drawBorder ? borderWidth : 0);
+    // Theme colors — read from CSS variables
+    const root = document.documentElement;
+    const bullCss = getComputedStyle(root).getPropertyValue('--enso-buy').trim() || '#29ab87';
+    const bearCss = getComputedStyle(root).getPropertyValue('--enso-sell').trim() || '#eb4d4d';
+    const bullRgb = ctx.cssColorToFloat4(bullCss);
+    const bearRgb = ctx.cssColorToFloat4(bearCss);
+    gl.uniform4fv(u.bullColor, bullRgb);
+    gl.uniform4fv(u.bearColor, bearRgb);
+    // Border colors — slightly darker for visual definition
+    const bullBorderRgb = ctx.cssColorToFloat4(bullCss);
+    const bearBorderRgb = ctx.cssColorToFloat4(bearCss);
+    for (let c = 0; c < 3; c++) {
+        bullBorderRgb[c] *= 0.7;
+        bearBorderRgb[c] *= 0.7;
+    }
+    gl.uniform4fv(u.bullBorderColor, bullBorderRgb);
+    gl.uniform4fv(u.bearBorderColor, bearBorderRgb);
+    // Pass 1: Draw wicks (behind everything)
+    gl.uniform1i(u.mode, 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+    // Pass 2: Draw borders (if bar wide enough)
+    if (drawBorder) {
+        gl.uniform1i(u.mode, 2);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+    }
+    // Pass 3: Draw bodies (on top, inset by border)
+    if (drawBody) {
+        gl.uniform1i(u.mode, 0);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+    }
+}
+
+function renderHeatmap(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    if (!wasm.getLiqHeatmapView)
+        return;
+    const view = wasm.getLiqHeatmapView(id);
+    if (!view || view.length === 0)
+        return;
+    const width = ZenithSchema.MAX_BINS;
+    const height = count;
+    gl.bindTexture(gl.TEXTURE_2D, ctx.heatmapTexture);
+    const filter = ctx.layers.heatmapPixelated ? gl.NEAREST : gl.LINEAR;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, height, 0, gl.RED, gl.FLOAT, view);
+    gl.useProgram(ctx.programs.heatmap);
+    gl.uniformMatrix4fv(ctx.uniforms.heatmap.matrix, false, ctx.identity);
+    gl.uniform1f(ctx.uniforms.heatmap.time, performance.now());
+    // Compute NDC corners from data indices and price range
+    const barView = wasm.getFloat64View(id);
+    let minP = Infinity, maxP = -Infinity;
+    for (let i = 0; i < count; i++) {
+        const lo = barView[i * FC + O.low];
+        const hi = barView[i * FC + O.high];
+        if (lo < minP)
+            minP = lo;
+        if (hi > maxP)
+            maxP = hi;
+    }
+    const padding = (maxP - minP) * 0.05;
+    minP -= padding;
+    maxP += padding;
+    const x0 = ctx.indexToNdcX(0, matrix);
+    const x1 = ctx.indexToNdcX(count - 1, matrix);
+    const y0 = ctx.priceToNdcY(minP, matrix);
+    const y1 = ctx.priceToNdcY(maxP, matrix);
+    ctx.heatmapQuadStaging[0] = x0;
+    ctx.heatmapQuadStaging[1] = y0;
+    ctx.heatmapQuadStaging[2] = 0;
+    ctx.heatmapQuadStaging[3] = 0;
+    ctx.heatmapQuadStaging[4] = x1;
+    ctx.heatmapQuadStaging[5] = y0;
+    ctx.heatmapQuadStaging[6] = 0;
+    ctx.heatmapQuadStaging[7] = 1;
+    ctx.heatmapQuadStaging[8] = x0;
+    ctx.heatmapQuadStaging[9] = y1;
+    ctx.heatmapQuadStaging[10] = 1;
+    ctx.heatmapQuadStaging[11] = 0;
+    ctx.heatmapQuadStaging[12] = x1;
+    ctx.heatmapQuadStaging[13] = y1;
+    ctx.heatmapQuadStaging[14] = 1;
+    ctx.heatmapQuadStaging[15] = 1;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.heatmapQuadVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.heatmapQuadStaging);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
+    gl.vertexAttribDivisor(1, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function renderLiquidations(ctx, id, wasm, _count, matrix) {
+    const gl = ctx.gl;
+    const liqCount = wasm.getLiquidationCount(id);
+    if (liqCount === 0)
+        return;
+    const view = wasm.getLiquidationView(id);
+    const barView = wasm.getFloat64View(id);
+    const n = Math.min(liqCount, MAX_LIQS$1);
+    const barCount = wasm.getBarCount?.(_count) || _count;
+    gl.useProgram(ctx.programs.liq);
+    gl.uniformMatrix4fv(ctx.uniforms.liq.matrix, false, ctx.identity);
+    gl.bindVertexArray(ctx.vao);
+    // Quad vertices
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    // Convert liq data to NDC coordinates
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.liqDataVbo);
+    const liqF32 = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) {
+        const liqTs = view[i * 4 + 0];
+        const liqPrice = view[i * 4 + 1];
+        // Find closest bar index by timestamp (bars are sorted)
+        let barIdx = 0;
+        for (let j = 0; j < barCount; j++) {
+            if (barView[j * FC + O.timestamp] <= liqTs)
+                barIdx = j;
+            else
+                break;
+        }
+        liqF32[i * 4 + 0] = ctx.indexToNdcX(barIdx, matrix);
+        liqF32[i * 4 + 1] = ctx.priceToNdcY(liqPrice, matrix);
+        liqF32[i * 4 + 2] = view[i * 4 + 2]; // Size
+        liqF32[i * 4 + 3] = view[i * 4 + 3]; // Side
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqF32);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+}
+
+function renderFootprint(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    const buyView = wasm.getVBuyView(id);
+    const sellView = wasm.getVSellView(id);
+    if (!buyView || buyView.length === 0)
+        return;
+    const barView = wasm.getFloat64View(id);
+    const n = Math.min(count, MAX_BARS$1);
+    const width = ZenithSchema.MAX_BINS;
+    gl.bindTexture(gl.TEXTURE_2D, ctx.buyDensityTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, n, 0, gl.RED, gl.FLOAT, buyView);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.sellDensityTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, n, 0, gl.RED, gl.FLOAT, sellView);
+    // Compute NDC X per bar, keep price data for Y
+    for (let i = 0; i < n; i++) {
+        const src = i * FC;
+        const ndcX = ctx.indexToNdcX(i, matrix);
+        const bottom = Math.min(barView[src + O.open], barView[src + O.close]);
+        const top = Math.max(barView[src + O.open], barView[src + O.close]);
+        const h = Math.max(top - bottom, 1.0);
+        ctx.footprintStaging[i * 4 + 0] = ndcX;
+        ctx.footprintStaging[i * 4 + 1] = h;
+        ctx.footprintStaging[i * 4 + 2] = ctx.priceToNdcY((top + bottom) * 0.5, matrix);
+        ctx.footprintStaging[i * 4 + 3] = (i + 0.5) / n;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.footprintDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.footprintStaging.subarray(0, n * 4));
+    gl.useProgram(ctx.programs.footprint);
+    gl.uniformMatrix4fv(ctx.uniforms.footprint.matrix, false, ctx.identity);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.buyDensityTexture);
+    gl.uniform1i(ctx.uniforms.footprint.buyTex, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.sellDensityTexture);
+    gl.uniform1i(ctx.uniforms.footprint.sellTex, 1);
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.footprintDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 16, 4);
+    gl.vertexAttribDivisor(2, 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+}
+
+function renderHistograms(ctx, id, wasm, count, _matrix) {
+    const gl = ctx.gl;
+    wasm.aggregateVpsv(id, 0, count);
+    const aggrView = wasm.getAggrView(id);
+    if (!aggrView)
+        return;
+    gl.bindTexture(gl.TEXTURE_2D, ctx.histogramTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, ZenithSchema.MAX_BINS, 1, 0, gl.RED, gl.FLOAT, aggrView);
+    gl.useProgram(ctx.programs.histogram);
+    gl.uniform1f(ctx.uniforms.histogram.side, 1.0);
+    gl.uniform4f(ctx.uniforms.histogram.color, 0.3, 0.6, 0.9, 0.4);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.histogramTexture);
+    gl.uniform1i(ctx.uniforms.histogram.profile, 0);
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function renderLobHeatmap(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    if (!wasm.getLobHeatmapView)
+        return;
+    const view = wasm.getLobHeatmapView(id);
+    if (!view || view.length === 0)
+        return;
+    const width = ZenithSchema.MAX_BINS;
+    const height = count;
+    gl.bindTexture(gl.TEXTURE_2D, ctx.lobDensityTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, height, 0, gl.RED, gl.FLOAT, view);
+    gl.useProgram(ctx.programs.lobHeatmap);
+    gl.uniformMatrix4fv(ctx.uniforms.lobHeatmap.matrix, false, matrix);
+    const barView = wasm.getFloat64View(id);
+    const lastTsIdx = (count - 1) * FC;
+    const midPrice = (barView[lastTsIdx + O.high] + barView[lastTsIdx + O.low]) * 0.5;
+    gl.uniform1f(ctx.uniforms.lobHeatmap.midPrice, midPrice);
+    gl.uniform1f(ctx.uniforms.lobHeatmap.range, barView[lastTsIdx + O.high] * 1.5);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.lobDensityTexture);
+    gl.uniform1i(ctx.uniforms.lobHeatmap.lobTex, 0);
+    const firstTs = barView[O.timestamp];
+    const lastTs = barView[lastTsIdx + O.timestamp];
+    const minP = barView[lastTsIdx + O.low] * 0.5;
+    const maxP = barView[lastTsIdx + O.high] * 1.5;
+    ctx.heatmapQuadStaging[0] = firstTs;
+    ctx.heatmapQuadStaging[1] = minP;
+    ctx.heatmapQuadStaging[2] = 0;
+    ctx.heatmapQuadStaging[3] = 0;
+    ctx.heatmapQuadStaging[4] = lastTs;
+    ctx.heatmapQuadStaging[5] = minP;
+    ctx.heatmapQuadStaging[6] = 0;
+    ctx.heatmapQuadStaging[7] = 1;
+    ctx.heatmapQuadStaging[8] = firstTs;
+    ctx.heatmapQuadStaging[9] = maxP;
+    ctx.heatmapQuadStaging[10] = 1;
+    ctx.heatmapQuadStaging[11] = 0;
+    ctx.heatmapQuadStaging[12] = lastTs;
+    ctx.heatmapQuadStaging[13] = maxP;
+    ctx.heatmapQuadStaging[14] = 1;
+    ctx.heatmapQuadStaging[15] = 1;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.heatmapQuadVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.heatmapQuadStaging);
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
+    gl.vertexAttribDivisor(1, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+function renderDepthOverlay(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    if (!wasm.getLobHeatmapView)
+        return;
+    const view = wasm.getLobHeatmapView(id);
+    if (!view || view.length === 0)
+        return;
+    const width = ZenithSchema.MAX_BINS;
+    const height = count;
+    gl.bindTexture(gl.TEXTURE_2D, ctx.lobDensityTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, height, 0, gl.RED, gl.FLOAT, view);
+    gl.useProgram(ctx.programs.depthOverlay);
+    gl.uniformMatrix4fv(ctx.uniforms.depthOverlay.matrix, false, ctx.identity);
+    const barView = wasm.getFloat64View(id);
+    const lastTsIdx = (count - 1) * FC;
+    const midPrice = (barView[lastTsIdx + O.high] + barView[lastTsIdx + O.low]) * 0.5;
+    gl.uniform1f(ctx.uniforms.depthOverlay.midPrice, midPrice);
+    gl.uniform1f(ctx.uniforms.depthOverlay.range, barView[lastTsIdx + O.high] * 1.5);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.lobDensityTexture);
+    gl.uniform1i(ctx.uniforms.depthOverlay.lobTex, 0);
+    const minP = barView[lastTsIdx + O.low] * 0.1;
+    const maxP = barView[lastTsIdx + O.high] * 1.5;
+    const x0 = ctx.indexToNdcX(0, matrix);
+    const x1 = ctx.indexToNdcX(count - 1, matrix);
+    const y0 = ctx.priceToNdcY(minP, matrix);
+    const y1 = ctx.priceToNdcY(maxP, matrix);
+    ctx.heatmapQuadStaging[0] = x0;
+    ctx.heatmapQuadStaging[1] = y0;
+    ctx.heatmapQuadStaging[2] = 0;
+    ctx.heatmapQuadStaging[3] = 0;
+    ctx.heatmapQuadStaging[4] = x1;
+    ctx.heatmapQuadStaging[5] = y0;
+    ctx.heatmapQuadStaging[6] = 0;
+    ctx.heatmapQuadStaging[7] = 1;
+    ctx.heatmapQuadStaging[8] = x0;
+    ctx.heatmapQuadStaging[9] = y1;
+    ctx.heatmapQuadStaging[10] = 1;
+    ctx.heatmapQuadStaging[11] = 0;
+    ctx.heatmapQuadStaging[12] = x1;
+    ctx.heatmapQuadStaging[13] = y1;
+    ctx.heatmapQuadStaging[14] = 1;
+    ctx.heatmapQuadStaging[15] = 1;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.heatmapQuadVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.heatmapQuadStaging);
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
+    gl.vertexAttribDivisor(1, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function renderGrid(ctx, hTicks, vTicks, canvasW, canvasH) {
+    const gl = ctx.gl;
+    gl.useProgram(ctx.programs.grid);
+    gl.uniform1f(ctx.uniforms.grid.canvasW, canvasW);
+    gl.uniform1f(ctx.uniforms.grid.canvasH, canvasH);
+    gl.uniform1f(ctx.uniforms.grid.lineWidth, 1.0);
+    // Grid color — read from CSS or use a subtle default
+    const root = document.documentElement;
+    const gridCss = getComputedStyle(root).getPropertyValue('--enso-grid').trim();
+    const gridRgb = gridCss ? ctx.cssColorToFloat4(gridCss) : new Float32Array([1, 1, 1, 0.06]);
+    gl.uniform4fv(ctx.uniforms.grid.gridColor, gridRgb);
+    gl.bindVertexArray(ctx.vao);
+    // Quad vertices (location 0) — spans [-1,1]
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    // Instance data: tick coordinates (location 1)
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.gridDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 4, 0);
+    gl.vertexAttribDivisor(1, 1);
+    // Draw horizontal lines
+    const nh = Math.min(hTicks.length, 64);
+    if (nh > 0) {
+        for (let i = 0; i < nh; i++)
+            ctx.gridStaging[i] = hTicks[i];
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.gridStaging.subarray(0, nh));
+        gl.uniform1i(ctx.uniforms.grid.direction, 0);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, nh);
+    }
+    // Draw vertical lines
+    const nv = Math.min(vTicks.length, 64);
+    if (nv > 0) {
+        for (let i = 0; i < nv; i++)
+            ctx.gridStaging[i] = vTicks[i];
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.gridStaging.subarray(0, nv));
+        gl.uniform1i(ctx.uniforms.grid.direction, 1);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, nv);
+    }
+}
+function renderCrosshair(ctx, mouseXNdc, mousePriceY, matrix, color = 'rgba(255, 255, 255, 0.4)', lineWidth = 1) {
+    renderHorizontalLine(ctx, mousePriceY, matrix, color, lineWidth);
+    renderVerticalLine(ctx, mouseXNdc, color, lineWidth);
+}
+function renderHorizontalLine(ctx, priceY, matrix, color = '#ffffff', lineWidth = 1) {
+    const gl = ctx.gl;
+    const u = ctx.uniforms.hline;
+    const dpr = window.devicePixelRatio || 1;
+    gl.useProgram(ctx.programs.hline);
+    gl.uniform1f(u.priceY, priceY);
+    gl.uniform1f(u.scaleY, matrix[5]);
+    gl.uniform1f(u.transY, matrix[13]);
+    gl.uniform1f(u.dpr, dpr);
+    gl.uniform2f(u.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    gl.uniform1f(u.lineWidth, lineWidth);
+    gl.uniform4fv(u.color, ctx.cssColorToFloat4(color));
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+function renderVerticalLine(ctx, xNdc, color = '#ffffff', lineWidth = 1) {
+    const gl = ctx.gl;
+    const u = ctx.uniforms.vline;
+    const dpr = window.devicePixelRatio || 1;
+    gl.useProgram(ctx.programs.vline);
+    gl.uniform1f(u.xNdc, xNdc);
+    gl.uniform1f(u.dpr, dpr);
+    gl.uniform2f(u.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    gl.uniform1f(u.lineWidth, lineWidth);
+    gl.uniform4fv(u.color, ctx.cssColorToFloat4(color));
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+function renderHighlightBar(ctx, barIndex, matrix, color = 'rgba(255, 255, 255, 0.06)') {
+    const x0 = ctx.indexToNdcX(barIndex - 0.5, matrix);
+    const x1 = ctx.indexToNdcX(barIndex + 0.5, matrix);
+    renderBackgroundShade(ctx, x0, x1, color);
+}
+function renderBackgroundShade(ctx, x0Ndc, x1Ndc, color = 'rgba(255, 255, 255, 0.05)') {
+    const gl = ctx.gl;
+    const u = ctx.uniforms.bgshade;
+    const dpr = window.devicePixelRatio || 1;
+    gl.useProgram(ctx.programs.bgshade);
+    gl.uniform1f(u.x0Ndc, x0Ndc);
+    gl.uniform1f(u.x1Ndc, x1Ndc);
+    gl.uniform1f(u.dpr, dpr);
+    gl.uniform2f(u.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    gl.uniform4fv(u.color, ctx.cssColorToFloat4(color));
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function renderSHM(ctx, id, wasm, count, matrix) {
+    const gl = ctx.gl;
+    if (count < 2)
+        return;
+    const shmView = wasm.getShmView?.(id);
+    if (!shmView || shmView.length === 0)
+        return;
+    const oscCount = 28;
+    const width = oscCount;
+    const height = Math.min(count, 2000);
+    gl.bindTexture(gl.TEXTURE_2D, ctx.shmTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, width, height, 0, gl.RED, gl.FLOAT, new Float32Array(shmView.buffer, shmView.byteOffset, width * height));
+    gl.useProgram(ctx.programs.shm);
+    gl.uniformMatrix4fv(ctx.uniforms.shm.matrix, false, ctx.identity);
+    gl.uniform1i(ctx.uniforms.shm.texture, 0);
+    // Compute price range for SHM positioning
+    const barView = wasm.getFloat64View(id);
+    let minP = Infinity, maxP = -Infinity;
+    for (let i = 0; i < count; i++) {
+        const lo = barView[i * FC + O.low];
+        const hi = barView[i * FC + O.high];
+        if (lo < minP)
+            minP = lo;
+        if (hi > maxP)
+            maxP = hi;
+    }
+    const padding = (maxP - minP) * 0.05;
+    minP -= padding;
+    maxP += padding;
+    // SHM lives in the bottom 15% of the price range
+    const shmTop = minP + (maxP - minP) * 0.15;
+    const shmBottom = minP;
+    // Compute NDC corners
+    const x0 = ctx.indexToNdcX(0, matrix);
+    const x1 = ctx.indexToNdcX(count - 1, matrix);
+    const y0 = ctx.priceToNdcY(shmBottom, matrix);
+    const y1 = ctx.priceToNdcY(shmTop, matrix);
+    ctx.heatmapQuadStaging[0] = x0;
+    ctx.heatmapQuadStaging[1] = y0;
+    ctx.heatmapQuadStaging[2] = 0;
+    ctx.heatmapQuadStaging[3] = 0;
+    ctx.heatmapQuadStaging[4] = x1;
+    ctx.heatmapQuadStaging[5] = y0;
+    ctx.heatmapQuadStaging[6] = 1;
+    ctx.heatmapQuadStaging[7] = 0;
+    ctx.heatmapQuadStaging[8] = x0;
+    ctx.heatmapQuadStaging[9] = y1;
+    ctx.heatmapQuadStaging[10] = 0;
+    ctx.heatmapQuadStaging[11] = 1;
+    ctx.heatmapQuadStaging[12] = x1;
+    ctx.heatmapQuadStaging[13] = y1;
+    ctx.heatmapQuadStaging[14] = 1;
+    ctx.heatmapQuadStaging[15] = 1;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.heatmapQuadVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.heatmapQuadStaging);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
+    gl.vertexAttribDivisor(1, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+/**
+ * ZenithHelpers.ts — Ported TradingView dimension helpers for pixel-perfect rendering.
+ *
+ * These functions handle the tricky problem of rendering columns (histogram bars)
+ * at pixel-perfect widths that don't alias or overlap. The core insight is:
+ *
+ *   1. Compute desired column width from bar spacing × DPR
+ *   2. Per-column: snap center to device pixel, expand left/right by half-width
+ *   3. Multi-pass correction: ensure consistent gaps between adjacent columns
+ *   4. Narrow-column pass: trim wider columns to match the narrowest
+ *
+ * Source: TradingView's lightweight-charts plugin-examples/helpers/dimensions/
+ */
+/**
+ * Snap a center coordinate to a device-pixel-aligned line/bar.
+ * Returns { position, length } in device pixels.
+ */
+// ─── Column Position Helpers ───
+const ALIGN_TO_MINIMAL_WIDTH_LIMIT = 4;
+const SHOW_SPACING_MINIMAL_BAR_WIDTH = 1;
+function columnSpacing(barSpacingMedia, horizontalPixelRatio) {
+    return Math.ceil(barSpacingMedia * horizontalPixelRatio) <= SHOW_SPACING_MINIMAL_BAR_WIDTH
+        ? 0
+        : Math.max(1, Math.floor(horizontalPixelRatio));
+}
+function desiredColumnWidth(barSpacingMedia, horizontalPixelRatio, spacing) {
+    return (Math.round(barSpacingMedia * horizontalPixelRatio) -
+        (spacing ?? columnSpacing(barSpacingMedia, horizontalPixelRatio)));
+}
+function columnCommon(barSpacingMedia, horizontalPixelRatio) {
+    const spacing = columnSpacing(barSpacingMedia, horizontalPixelRatio);
+    const columnWidthBitmap = desiredColumnWidth(barSpacingMedia, horizontalPixelRatio, spacing);
+    const shiftLeft = columnWidthBitmap % 2 === 0;
+    const columnHalfWidthBitmap = (columnWidthBitmap - (shiftLeft ? 0 : 1)) / 2;
+    return { spacing, shiftLeft, columnHalfWidthBitmap, horizontalPixelRatio };
+}
+function calculateColumnPosition(xMedia, columnData, previousPosition) {
+    const xBitmapUnRounded = xMedia * columnData.horizontalPixelRatio;
+    const xBitmap = Math.round(xBitmapUnRounded);
+    const xPositions = {
+        left: xBitmap - columnData.columnHalfWidthBitmap,
+        right: xBitmap + columnData.columnHalfWidthBitmap - (columnData.shiftLeft ? 1 : 0),
+        shiftLeft: xBitmap > xBitmapUnRounded,
+    };
+    const expectedAlignmentShift = columnData.spacing + 1;
+    if (previousPosition) {
+        if (xPositions.left - previousPosition.right !== expectedAlignmentShift) {
+            if (previousPosition.shiftLeft) {
+                previousPosition.right = xPositions.left - expectedAlignmentShift;
+            }
+            else {
+                xPositions.left = previousPosition.right + expectedAlignmentShift;
+            }
+        }
+    }
+    return xPositions;
+}
+/**
+ * Multi-pass column position calculation that ensures all columns have
+ * consistent widths and gaps. This is the key to pixel-perfect histograms.
+ *
+ * @param xMediaPositions - center X of each bar in CSS pixels
+ * @param barSpacingMedia - distance between bar centers in CSS pixels
+ * @param horizontalPixelRatio - device pixel ratio
+ * @returns Device-pixel-aligned column positions (left, right, shiftLeft)
+ */
+function calculateColumnPositions(xMediaPositions, barSpacingMedia, horizontalPixelRatio) {
+    const common = columnCommon(barSpacingMedia, horizontalPixelRatio);
+    const positions = new Array(xMediaPositions.length);
+    let previous = undefined;
+    for (let i = 0; i < xMediaPositions.length; i++) {
+        positions[i] = calculateColumnPosition(xMediaPositions[i], common, previous);
+        previous = positions[i];
+    }
+    const initialMinWidth = Math.ceil(barSpacingMedia * horizontalPixelRatio);
+    const minColumnWidth = positions.reduce((smallest, position) => {
+        if (position.right < position.left) {
+            position.right = position.left;
+        }
+        const width = position.right - position.left + 1;
+        return Math.min(smallest, width);
+    }, initialMinWidth);
+    if (common.spacing > 0 && minColumnWidth < ALIGN_TO_MINIMAL_WIDTH_LIMIT) {
+        return positions.map((position) => {
+            const width = position.right - position.left + 1;
+            if (width <= minColumnWidth)
+                return position;
+            if (position.shiftLeft) {
+                position.right -= 1;
+            }
+            else {
+                position.left += 1;
+            }
+            return position;
+        });
+    }
+    return positions;
+}
+
+/**
+ * Optimal candlestick width — used by OHLC bar figure renderer.
+ * Ported from TradingView lightweight-charts.
+ */
+function optimalCandlestickWidth(barSpacing, pixelRatio) {
+    const barSpacingSpecialCaseFrom = 2.5;
+    const barSpacingSpecialCaseTo = 4;
+    const barSpacingSpecialCaseCoeff = 3;
+    if (barSpacing >= barSpacingSpecialCaseFrom && barSpacing <= barSpacingSpecialCaseTo) {
+        return Math.floor(barSpacingSpecialCaseCoeff * pixelRatio);
+    }
+    const barSpacingReducingCoeff = 0.2;
+    const coeff = 1 - barSpacingReducingCoeff * Math.atan(Math.max(barSpacingSpecialCaseTo, barSpacing) - barSpacingSpecialCaseTo) / (Math.PI * 0.5);
+    const res = Math.floor(barSpacing * coeff * pixelRatio);
+    const scaledBarSpacing = Math.floor(barSpacing * pixelRatio);
+    const optimal = Math.min(res, scaledBarSpacing);
+    return Math.max(Math.floor(pixelRatio), optimal);
+}
+// ─── Main entry point ───
+function renderAllIndicators(ctx, chart, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    gl.useProgram(ctx.programs.indicator);
+    gl.uniformMatrix4fv(ctx.uniforms.indicator.matrix, false, ctx.identity);
+    // barWidth in NDC for the indicator shader
+    const barSpace = matrix[1];
+    const totalBarSpace = matrix[0];
+    const barWidthNdc = (barSpace * 0.8) / totalBarSpace * 2.0;
+    gl.uniform1f(ctx.uniforms.indicator.barWidth, barWidthNdc);
+    // Pixel-perfect uniforms for indicator snapping
+    const dpr = window.devicePixelRatio || 1;
+    gl.uniform1f(ctx.uniforms.indicator.dpr, dpr);
+    gl.uniform2f(ctx.uniforms.indicator.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    gl.bindVertexArray(ctx.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    const chartInternal = chart;
+    const store = chartInternal.getChartStore();
+    const panes = chartInternal.getDrawPanes() || [];
+    for (const pane of panes) {
+        const indicators = store.getIndicatorsByPaneId(pane.getId()) || [];
+        for (const indicator of indicators) {
+            if (!indicator.visible || indicator.renderer !== 'external')
+                continue;
+            if (!indicator.result || indicator.result.length === 0)
+                continue;
+            for (const figure of indicator.figures) {
+                if (figure.type === 'line') {
+                    renderLineFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'bar') {
+                    renderBarFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'circle') {
+                    renderCircleFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'band') {
+                    renderBandFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'area') {
+                    renderAreaFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'baseline_area') {
+                    renderBaselineAreaFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'ohlc_bar') {
+                    renderOhlcBarFigure(ctx, indicator, figure, n, matrix);
+                }
+                else if (figure.type === 'stepped_line') {
+                    renderSteppedLineFigure(ctx, indicator, figure, n, matrix);
+                }
+            }
+        }
+    }
+}
+// ─── Line Figure ───
+function renderLineFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    let validCount = 0;
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        ctx.indicatorStaging[validCount * 2] = ctx.indexToNdcX(i, matrix);
+        ctx.indicatorStaging[validCount * 2 + 1] = val;
+        validCount++;
+    }
+    if (validCount < 2)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 2));
+    gl.useProgram(ctx.programs.indicator);
+    gl.uniformMatrix4fv(ctx.uniforms.indicator.matrix, false, matrix);
+    const color = figure.styles?.color || '#ffffff';
+    gl.uniform4fv(ctx.uniforms.indicator.color, ctx.cssColorToFloat4(color));
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+}
+// ─── Bar Figure (histogram columns) ───
+function renderBarFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    const dpr = window.devicePixelRatio || 1;
+    const barSpace = matrix[1];
+    const totalBarSpaceCss = ctx.vpWidth / dpr;
+    const rightOffset = (matrix[12] + 1) / matrix[0];
+    const xCssPositions = [];
+    const values = [];
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        const deltaFromRight = rightOffset - i;
+        const xCss = totalBarSpaceCss - (deltaFromRight - 0.5) * barSpace;
+        xCssPositions.push(xCss);
+        values.push(val);
+    }
+    if (values.length === 0)
+        return;
+    const columns = calculateColumnPositions(xCssPositions, barSpace, dpr);
+    if (ctx.indicatorStaging.length < columns.length * 3) {
+        ctx.indicatorStaging = new Float32Array(columns.length * 3);
+    }
+    for (let i = 0; i < columns.length; i++) {
+        const col = columns[i];
+        const leftNdc = (col.left / ctx.vpWidth) * 2.0 - 1.0;
+        const rightNdc = ((col.right + 1) / ctx.vpWidth) * 2.0 - 1.0;
+        ctx.indicatorStaging[i * 3] = leftNdc;
+        ctx.indicatorStaging[i * 3 + 1] = rightNdc;
+        ctx.indicatorStaging[i * 3 + 2] = values[i];
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, columns.length * 3));
+    gl.useProgram(ctx.programs.barFigure);
+    gl.uniform1f(ctx.uniforms.barFigure.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.barFigure.transY, matrix[13]);
+    gl.uniform1f(ctx.uniforms.barFigure.baseline, figure.styles?.baseline ?? 0);
+    gl.uniform1f(ctx.uniforms.barFigure.dpr, dpr);
+    gl.uniform2f(ctx.uniforms.barFigure.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    const color = figure.styles?.color || '#5470c6';
+    gl.uniform4fv(ctx.uniforms.barFigure.color, ctx.cssColorToFloat4(color));
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, columns.length);
+}
+// ─── Circle Figure (dot markers) ───
+function renderCircleFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    const dpr = window.devicePixelRatio || 1;
+    let validCount = 0;
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        ctx.indicatorStaging[validCount * 2] = ctx.indexToNdcX(i, matrix);
+        ctx.indicatorStaging[validCount * 2 + 1] = val;
+        validCount++;
+    }
+    if (validCount === 0)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 2));
+    gl.useProgram(ctx.programs.circleFigure);
+    gl.uniform1f(ctx.uniforms.circleFigure.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.circleFigure.transY, matrix[13]);
+    const radiusCss = figure.styles?.radius ?? 4;
+    gl.uniform1f(ctx.uniforms.circleFigure.radius, radiusCss * dpr);
+    gl.uniform2f(ctx.uniforms.circleFigure.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    const color = figure.styles?.color || '#ffffff';
+    gl.uniform4fv(ctx.uniforms.circleFigure.color, ctx.cssColorToFloat4(color));
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, validCount);
+}
+// ─── Band/Channel Figure (Bollinger, Keltner, Donchian) ───
+function renderBandFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const upperKey = figure.keys?.upper;
+    const lowerKey = figure.keys?.lower;
+    if (!upperKey || !lowerKey)
+        return;
+    let validCount = 0;
+    for (let i = 0; i < n; i++) {
+        const upper = data[i]?.[upperKey];
+        const lower = data[i]?.[lowerKey];
+        if (upper === undefined || lower === undefined || isNaN(upper) || isNaN(lower))
+            continue;
+        const x = ctx.indexToNdcX(i, matrix);
+        ctx.indicatorStaging[validCount * 3] = x;
+        ctx.indicatorStaging[validCount * 3 + 1] = upper;
+        ctx.indicatorStaging[validCount * 3 + 2] = lower;
+        validCount++;
+    }
+    if (validCount < 2)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 3));
+    gl.useProgram(ctx.programs.band);
+    gl.uniform1f(ctx.uniforms.band.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.band.transY, matrix[13]);
+    const dpr = window.devicePixelRatio || 1;
+    gl.uniform1f(ctx.uniforms.band.dpr, dpr);
+    gl.uniform2f(ctx.uniforms.band.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    const fillColor = figure.styles?.fillColor || 'rgba(25, 200, 100, 0.25)';
+    gl.uniform4fv(ctx.uniforms.band.fillColor, ctx.cssColorToFloat4(fillColor));
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 12, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // Expand data from back to front to avoid overwriting
+    for (let i = validCount - 1; i >= 0; i--) {
+        const x = ctx.indicatorStaging[i * 3];
+        const upper = ctx.indicatorStaging[i * 3 + 1];
+        const lower = ctx.indicatorStaging[i * 3 + 2];
+        const ndcUpper = upper * matrix[5] + matrix[13];
+        const devYUpper = Math.round((1.0 - ndcUpper) * 0.5 * ctx.vpHeight);
+        const snappedUpper = 1.0 - devYUpper / ctx.vpHeight * 2.0;
+        const ndcLower = lower * matrix[5] + matrix[13];
+        const devYLower = Math.round((1.0 - ndcLower) * 0.5 * ctx.vpHeight);
+        const snappedLower = 1.0 - devYLower / ctx.vpHeight * 2.0;
+        ctx.indicatorStaging[i * 4] = x;
+        ctx.indicatorStaging[i * 4 + 1] = snappedUpper;
+        ctx.indicatorStaging[i * 4 + 2] = x;
+        ctx.indicatorStaging[i * 4 + 3] = snappedLower;
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 4));
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, validCount * 2);
+    // Stroke lines
+    const lineColor = figure.styles?.lineColor || 'rgba(25, 200, 100, 1.0)';
+    gl.useProgram(ctx.programs.indicator);
+    gl.uniformMatrix4fv(ctx.uniforms.indicator.matrix, false, ctx.identity);
+    gl.uniform4fv(ctx.uniforms.indicator.color, ctx.cssColorToFloat4(lineColor));
+    const upperOffset = validCount * 4;
+    for (let i = 0; i < validCount; i++) {
+        ctx.indicatorStaging[upperOffset + i * 2] = ctx.indicatorStaging[i * 4];
+        ctx.indicatorStaging[upperOffset + i * 2 + 1] = ctx.indicatorStaging[i * 4 + 1];
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(upperOffset, upperOffset + validCount * 2));
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+    for (let i = 0; i < validCount; i++) {
+        ctx.indicatorStaging[upperOffset + i * 2] = ctx.indicatorStaging[i * 4 + 2];
+        ctx.indicatorStaging[upperOffset + i * 2 + 1] = ctx.indicatorStaging[i * 4 + 3];
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(upperOffset, upperOffset + validCount * 2));
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+}
+// ─── Area Fill Figure ───
+function renderAreaFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    const baseline = figure.styles?.baseline ?? 0;
+    let validCount = 0;
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        const x = ctx.indexToNdcX(i, matrix);
+        const ndcVal = val * matrix[5] + matrix[13];
+        const devYVal = Math.round((1.0 - ndcVal) * 0.5 * ctx.vpHeight);
+        const snappedVal = 1.0 - devYVal / ctx.vpHeight * 2.0;
+        const ndcBase = baseline * matrix[5] + matrix[13];
+        const devYBase = Math.round((1.0 - ndcBase) * 0.5 * ctx.vpHeight);
+        const snappedBase = 1.0 - devYBase / ctx.vpHeight * 2.0;
+        ctx.indicatorStaging[validCount * 4] = x;
+        ctx.indicatorStaging[validCount * 4 + 1] = snappedVal;
+        ctx.indicatorStaging[validCount * 4 + 2] = x;
+        ctx.indicatorStaging[validCount * 4 + 3] = snappedBase;
+        validCount++;
+    }
+    if (validCount < 2)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 4));
+    gl.useProgram(ctx.programs.indicator);
+    gl.uniformMatrix4fv(ctx.uniforms.indicator.matrix, false, ctx.identity);
+    const fillColor = figure.styles?.fillColor || 'rgba(0, 150, 255, 0.2)';
+    gl.uniform4fv(ctx.uniforms.indicator.color, ctx.cssColorToFloat4(fillColor));
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, validCount * 2);
+    const lineColor = figure.styles?.lineColor || 'rgba(0, 150, 255, 1.0)';
+    gl.uniform4fv(ctx.uniforms.indicator.color, ctx.cssColorToFloat4(lineColor));
+    const lineOffset = validCount * 4;
+    for (let i = 0; i < validCount; i++) {
+        ctx.indicatorStaging[lineOffset + i * 2] = ctx.indicatorStaging[i * 4];
+        ctx.indicatorStaging[lineOffset + i * 2 + 1] = ctx.indicatorStaging[i * 4 + 1];
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(lineOffset, lineOffset + validCount * 2));
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+}
+// ─── Baseline Area Figure (dual-color fill) ───
+function renderBaselineAreaFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    const baseline = figure.styles?.baseline ?? 0;
+    let validCount = 0;
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        const x = ctx.indexToNdcX(i, matrix);
+        ctx.indicatorStaging[validCount * 4] = x;
+        ctx.indicatorStaging[validCount * 4 + 1] = val;
+        ctx.indicatorStaging[validCount * 4 + 2] = x;
+        ctx.indicatorStaging[validCount * 4 + 3] = baseline;
+        validCount++;
+    }
+    if (validCount < 2)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 4));
+    gl.useProgram(ctx.programs.baselineArea);
+    gl.uniform1f(ctx.uniforms.baselineArea.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.baselineArea.transY, matrix[13]);
+    gl.uniform1f(ctx.uniforms.baselineArea.baseline, baseline);
+    gl.uniform2f(ctx.uniforms.baselineArea.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    const topCol = figure.styles?.topFillColor || 'rgba(0, 200, 100, 0.4)';
+    const botCol = figure.styles?.bottomFillColor || 'rgba(255, 50, 50, 0.4)';
+    gl.uniform4fv(ctx.uniforms.baselineArea.topFillColor, ctx.cssColorToFloat4(topCol));
+    gl.uniform4fv(ctx.uniforms.baselineArea.bottomFillColor, ctx.cssColorToFloat4(botCol));
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, validCount * 2);
+    // Stroke dual-color line
+    const topLineCol = figure.styles?.topLineColor || 'rgba(0, 200, 100, 1.0)';
+    const botLineCol = figure.styles?.bottomLineColor || 'rgba(255, 50, 50, 1.0)';
+    gl.useProgram(ctx.programs.baselineLine);
+    gl.uniform1f(ctx.uniforms.baselineLine.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.baselineLine.transY, matrix[13]);
+    gl.uniform1f(ctx.uniforms.baselineLine.baseline, baseline);
+    gl.uniform2f(ctx.uniforms.baselineLine.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    gl.uniform4fv(ctx.uniforms.baselineLine.topLineColor, ctx.cssColorToFloat4(topLineCol));
+    gl.uniform4fv(ctx.uniforms.baselineLine.bottomLineColor, ctx.cssColorToFloat4(botLineCol));
+    const lineOffset = validCount * 4;
+    for (let i = 0; i < validCount; i++) {
+        ctx.indicatorStaging[lineOffset + i * 2] = ctx.indicatorStaging[i * 4];
+        ctx.indicatorStaging[lineOffset + i * 2 + 1] = ctx.indicatorStaging[i * 4 + 1];
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(lineOffset, lineOffset + validCount * 2));
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+}
+// ─── Stepped Line Figure (staircase) ───
+function renderSteppedLineFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const key = figure.key;
+    let validCount = 0;
+    let prevY = 0;
+    for (let i = 0; i < n; i++) {
+        const val = data[i]?.[key];
+        if (val === undefined || isNaN(val))
+            continue;
+        const x = ctx.indexToNdcX(i, matrix);
+        const ndcY = val * matrix[5] + matrix[13];
+        const devY = Math.round((1.0 - ndcY) * 0.5 * ctx.vpHeight);
+        const snappedY = 1.0 - devY / ctx.vpHeight * 2.0;
+        if (validCount === 0) {
+            ctx.indicatorStaging[0] = x;
+            ctx.indicatorStaging[1] = snappedY;
+            validCount++;
+        }
+        else {
+            ctx.indicatorStaging[validCount * 2] = x;
+            ctx.indicatorStaging[validCount * 2 + 1] = prevY;
+            validCount++;
+            ctx.indicatorStaging[validCount * 2] = x;
+            ctx.indicatorStaging[validCount * 2 + 1] = snappedY;
+            validCount++;
+        }
+        prevY = snappedY;
+    }
+    if (validCount < 2)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.indicatorDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.indicatorStaging.subarray(0, validCount * 2));
+    gl.useProgram(ctx.programs.indicator);
+    gl.uniformMatrix4fv(ctx.uniforms.indicator.matrix, false, ctx.identity);
+    const color = figure.styles?.color || '#ffffff';
+    gl.uniform4fv(ctx.uniforms.indicator.color, ctx.cssColorToFloat4(color));
+    gl.bindVertexArray(ctx.vao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.drawArrays(gl.LINE_STRIP, 0, validCount);
+}
+// ─── OHLC Bar Figure (stem + open/close ticks) ───
+function renderOhlcBarFigure(ctx, indicator, figure, count, matrix) {
+    const gl = ctx.gl;
+    const n = Math.min(count, MAX_BARS$1);
+    const data = indicator.result;
+    const k = figure.keys;
+    if (!k || !k.open || !k.high || !k.low || !k.close)
+        return;
+    const dpr = window.devicePixelRatio || 1;
+    let validCount = 0;
+    const floatView = new Float32Array(ctx.candleStaging.buffer);
+    const uintView = new Uint32Array(ctx.candleStaging.buffer);
+    for (let i = 0; i < n; i++) {
+        const row = data[i];
+        const o = row?.[k.open];
+        const h = row?.[k.high];
+        const l = row?.[k.low];
+        const c = row?.[k.close];
+        if (o === undefined || isNaN(o))
+            continue;
+        const isBull = c >= o;
+        const flags = isBull ? 1 : 0;
+        const bI = validCount * 5;
+        floatView[bI] = o;
+        floatView[bI + 1] = h;
+        floatView[bI + 2] = l;
+        floatView[bI + 3] = c;
+        uintView[bI + 4] = flags;
+        validCount++;
+    }
+    if (validCount === 0)
+        return;
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.candleDataVbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, ctx.candleStaging.subarray(0, validCount * 5));
+    gl.useProgram(ctx.programs.ohlcBar);
+    gl.uniform1f(ctx.uniforms.ohlcBar.scaleY, matrix[5]);
+    gl.uniform1f(ctx.uniforms.ohlcBar.transY, matrix[13]);
+    gl.uniform1f(ctx.uniforms.ohlcBar.totalBarSpace, ctx.vpWidth / dpr);
+    const barSpaceCss = matrix[1];
+    gl.uniform1f(ctx.uniforms.ohlcBar.barSpace, barSpaceCss);
+    const rightOffset = (matrix[12] + 1) / matrix[0] + count;
+    gl.uniform1f(ctx.uniforms.ohlcBar.rightOffset, rightOffset);
+    gl.uniform1f(ctx.uniforms.ohlcBar.dpr, dpr);
+    gl.uniform2f(ctx.uniforms.ohlcBar.viewportSize, ctx.vpWidth, ctx.vpHeight);
+    const bodyWidthCss = figure.styles?.width || optimalCandlestickWidth(barSpaceCss, dpr);
+    gl.uniform1f(ctx.uniforms.ohlcBar.bodyWidth, bodyWidthCss * dpr);
+    const bullColor = figure.styles?.bullColor || '#26A69A';
+    const bearColor = figure.styles?.bearColor || '#EF5350';
+    gl.uniform4fv(ctx.uniforms.ohlcBar.bullColor, ctx.cssColorToFloat4(bullColor));
+    gl.uniform4fv(ctx.uniforms.ohlcBar.bearColor, ctx.cssColorToFloat4(bearColor));
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, ctx.candleDataVbo);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 20, 0);
+    gl.vertexAttribDivisor(1, 1);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribIPointer(2, 1, gl.UNSIGNED_INT, 20, 16);
+    gl.vertexAttribDivisor(2, 1);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // Mode 0: Stem (High to Low)
+    gl.uniform1i(ctx.uniforms.ohlcBar.mode, 0);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, validCount);
+    // Mode 1: Open Tick (Left)
+    gl.uniform1i(ctx.uniforms.ohlcBar.mode, 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, validCount);
+    // Mode 2: Close Tick (Right)
+    gl.uniform1i(ctx.uniforms.ohlcBar.mode, 2);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, validCount);
+}
+
+/**
+ * ZenithRenderer.ts — High-performance WebGL2 market data renderer.
+ *
+ * Thin wrapper that owns GL state (programs, uniforms, VBOs, textures)
+ * and delegates all rendering to extracted layer functions in `zenith/layers/`.
+ *
+ * DESIGN PRINCIPLES (DI-18 through DI-24):
+ * - PERSISTENT VBOs: All buffers created once at init, updated via bufferSubData
+ * - ZERO-ALLOCATION RENDER: Pre-allocated staging arrays, no per-frame JS objects
+ * - DUAL COORDINATE SYSTEM: Index-based X → NDC, price-based Y → NDC
+ * - INSTANCED RENDERING: Candles/liqs use per-instance buffers
+ * - WASM INTEGRATION: SAB provides Float64Array bar data, WASM manages indicators
+ */
+// const FC = ZenithSchema.FIELD_COUNT;
+// const O = ZenithSchema.OFFSETS;
+// Maximum bars/liq the renderer can handle without reallocation
+const MAX_BARS = 100000;
+const MAX_LIQS = 10000;
+class ZenithRenderer {
+    gl;
+    // ─── Shader programs ───
+    candleProgram;
+    heatmapProgram;
+    liqProgram;
+    footprintProgram;
+    histogramProgram;
+    lobHeatmapProgram;
+    depthOverlayProgram;
+    indicatorProgram;
+    shmProgram;
+    gridProgram;
+    barFigureProgram;
+    circleFigureProgram;
+    bandProgram;
+    areaProgram;
+    hlineProgram;
+    ohlcBarProgram;
+    baselineAreaProgram;
+    baselineLineProgram;
+    vlineProgram;
+    bgshadeProgram;
+    // ─── Cached uniform locations (W8 fix) ───
+    uniforms;
+    // ─── Persistent VBOs (W1/W7 fix) ───
+    quadVbo;
+    candleDataVbo;
+    heatmapQuadVbo;
+    liqDataVbo;
+    footprintDataVbo;
+    indicatorDataVbo;
+    vao;
+    gridDataVbo;
+    // ─── Pre-allocated staging arrays (W2 fix) ───
+    candleStaging;
+    heatmapQuadStaging;
+    footprintStaging;
+    indicatorStaging;
+    gridStaging;
+    _identity;
+    // ─── Textures (persistent) ───
+    heatmapTexture;
+    buyDensityTexture;
+    sellDensityTexture;
+    histogramTexture;
+    lobDensityTexture;
+    shmTexture;
+    // ─── Layer toggles (W12 fix) ───
+    layers = {
+        candles: true,
+        heatmap: true,
+        footprint: false,
+        histogram: true,
+        liquidations: true,
+        lobHeatmap: true,
+        depthOverlay: true,
+        indicators: true,
+        heatmapPixelated: false, // false = smooth (Bookmap), true = discrete grid (Coinglass)
+        shm: true,
+        patterns: true,
+    };
+    // Pattern-specific rendering sub-settings (set by ChartPane.applySettings)
+    patternSettings = {
+        showNecklines: true,
+        showTargets: true,
+        showStops: true,
+        tf15m: true,
+        tf1h: true,
+        tf4h: true,
+    };
+    constructor(gl) {
+        this.gl = gl;
+        // ─── Compile all shader programs ───
+        this.candleProgram = this.createProgram(CANDLE_VS, CANDLE_FS);
+        this.heatmapProgram = this.createProgram(HEATMAP_VS, HEATMAP_FS);
+        this.liqProgram = this.createProgram(LIQ_VS, LIQ_FS);
+        this.footprintProgram = this.createProgram(FOOTPRINT_VS, FOOTPRINT_FS);
+        this.histogramProgram = this.createProgram(HISTOGRAM_VS, HISTOGRAM_FS);
+        this.lobHeatmapProgram = this.createProgram(LOB_HEATMAP_VS, LOB_HEATMAP_FS);
+        this.depthOverlayProgram = this.createProgram(DEPTH_OVERLAY_VS, DEPTH_OVERLAY_FS);
+        this.indicatorProgram = this.createProgram(INDICATOR_VS, INDICATOR_FS);
+        this.shmProgram = this.createProgram(SHM_VS, SHM_FS);
+        this.gridProgram = this.createProgram(GRID_VS, GRID_FS);
+        this.barFigureProgram = this.createProgram(BAR_FIGURE_VS, BAR_FIGURE_FS);
+        this.circleFigureProgram = this.createProgram(CIRCLE_FIGURE_VS, CIRCLE_FIGURE_FS);
+        this.bandProgram = this.createProgram(BAND_VS, BAND_FS);
+        this.areaProgram = this.createProgram(AREA_VS, AREA_FS);
+        this.hlineProgram = this.createProgram(HLINE_VS, HLINE_FS);
+        this.ohlcBarProgram = this.createProgram(OHLC_BAR_VS, OHLC_BAR_FS);
+        this.baselineAreaProgram = this.createProgram(BASELINE_AREA_VS, BASELINE_AREA_FS);
+        this.baselineLineProgram = this.createProgram(BASELINE_LINE_VS, BASELINE_LINE_FS);
+        this.vlineProgram = this.createProgram(VLINE_VS, VLINE_FS);
+        this.bgshadeProgram = this.createProgram(BGSHADE_VS, BGSHADE_FS);
+        // ─── Cache ALL uniform locations once (W8 fix) ───
+        this.uniforms = {
+            candle: {
+                scaleY: gl.getUniformLocation(this.candleProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.candleProgram, 'u_transY'),
+                totalBarSpace: gl.getUniformLocation(this.candleProgram, 'u_totalBarSpace'),
+                barSpace: gl.getUniformLocation(this.candleProgram, 'u_barSpace'),
+                rightOffset: gl.getUniformLocation(this.candleProgram, 'u_rightOffset'),
+                bodyWidth: gl.getUniformLocation(this.candleProgram, 'u_bodyWidth'),
+                wickWidth: gl.getUniformLocation(this.candleProgram, 'u_wickWidth'),
+                dpr: gl.getUniformLocation(this.candleProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.candleProgram, 'u_viewportSize'),
+                mode: gl.getUniformLocation(this.candleProgram, 'u_mode'),
+                borderWidth: gl.getUniformLocation(this.candleProgram, 'u_borderWidth'),
+                bullColor: gl.getUniformLocation(this.candleProgram, 'u_bullColor'),
+                bearColor: gl.getUniformLocation(this.candleProgram, 'u_bearColor'),
+                bullBorderColor: gl.getUniformLocation(this.candleProgram, 'u_bullBorderColor'),
+                bearBorderColor: gl.getUniformLocation(this.candleProgram, 'u_bearBorderColor')
+            },
+            grid: {
+                direction: gl.getUniformLocation(this.gridProgram, 'u_direction'),
+                canvasW: gl.getUniformLocation(this.gridProgram, 'u_canvasW'),
+                canvasH: gl.getUniformLocation(this.gridProgram, 'u_canvasH'),
+                lineWidth: gl.getUniformLocation(this.gridProgram, 'u_lineWidth'),
+                gridColor: gl.getUniformLocation(this.gridProgram, 'u_gridColor')
+            },
+            heatmap: {
+                matrix: gl.getUniformLocation(this.heatmapProgram, 'u_matrix'),
+                time: gl.getUniformLocation(this.heatmapProgram, 'u_time')
+            },
+            liq: {
+                matrix: gl.getUniformLocation(this.liqProgram, 'u_matrix')
+            },
+            footprint: {
+                matrix: gl.getUniformLocation(this.footprintProgram, 'u_matrix'),
+                buyTex: gl.getUniformLocation(this.footprintProgram, 'u_buy_v'),
+                sellTex: gl.getUniformLocation(this.footprintProgram, 'u_sell_v')
+            },
+            histogram: {
+                side: gl.getUniformLocation(this.histogramProgram, 'u_side'),
+                color: gl.getUniformLocation(this.histogramProgram, 'u_color'),
+                profile: gl.getUniformLocation(this.histogramProgram, 'u_profile')
+            },
+            lobHeatmap: {
+                matrix: gl.getUniformLocation(this.lobHeatmapProgram, 'u_matrix'),
+                lobTex: gl.getUniformLocation(this.lobHeatmapProgram, 'u_lob_density'),
+                midPrice: gl.getUniformLocation(this.lobHeatmapProgram, 'u_mid_price'),
+                range: gl.getUniformLocation(this.lobHeatmapProgram, 'u_range')
+            },
+            depthOverlay: {
+                matrix: gl.getUniformLocation(this.depthOverlayProgram, 'u_matrix'),
+                lobTex: gl.getUniformLocation(this.depthOverlayProgram, 'u_lob_density'),
+                midPrice: gl.getUniformLocation(this.depthOverlayProgram, 'u_mid_price'),
+                range: gl.getUniformLocation(this.depthOverlayProgram, 'u_range')
+            },
+            indicator: {
+                matrix: gl.getUniformLocation(this.indicatorProgram, 'u_matrix'),
+                barWidth: gl.getUniformLocation(this.indicatorProgram, 'u_barWidth'),
+                color: gl.getUniformLocation(this.indicatorProgram, 'u_color'),
+                dpr: gl.getUniformLocation(this.indicatorProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.indicatorProgram, 'u_viewportSize')
+            },
+            shm: {
+                texture: gl.getUniformLocation(this.shmProgram, 'u_shm'),
+                matrix: gl.getUniformLocation(this.shmProgram, 'u_matrix')
+            },
+            barFigure: {
+                scaleY: gl.getUniformLocation(this.barFigureProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.barFigureProgram, 'u_transY'),
+                baseline: gl.getUniformLocation(this.barFigureProgram, 'u_baseline'),
+                color: gl.getUniformLocation(this.barFigureProgram, 'u_color'),
+                dpr: gl.getUniformLocation(this.barFigureProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.barFigureProgram, 'u_viewportSize')
+            },
+            circleFigure: {
+                scaleY: gl.getUniformLocation(this.circleFigureProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.circleFigureProgram, 'u_transY'),
+                radius: gl.getUniformLocation(this.circleFigureProgram, 'u_radius'),
+                color: gl.getUniformLocation(this.circleFigureProgram, 'u_color'),
+                viewportSize: gl.getUniformLocation(this.circleFigureProgram, 'u_viewportSize')
+            },
+            band: {
+                scaleY: gl.getUniformLocation(this.bandProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.bandProgram, 'u_transY'),
+                dpr: gl.getUniformLocation(this.bandProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.bandProgram, 'u_viewportSize'),
+                fillColor: gl.getUniformLocation(this.bandProgram, 'u_fillColor'),
+                lineColor: gl.getUniformLocation(this.bandProgram, 'u_lineColor')
+            },
+            area: {
+                scaleY: gl.getUniformLocation(this.areaProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.areaProgram, 'u_transY'),
+                baseline: gl.getUniformLocation(this.areaProgram, 'u_baseline'),
+                dpr: gl.getUniformLocation(this.areaProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.areaProgram, 'u_viewportSize'),
+                fillColor: gl.getUniformLocation(this.areaProgram, 'u_fillColor')
+            },
+            hline: {
+                priceY: gl.getUniformLocation(this.hlineProgram, 'u_priceY'),
+                scaleY: gl.getUniformLocation(this.hlineProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.hlineProgram, 'u_transY'),
+                dpr: gl.getUniformLocation(this.hlineProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.hlineProgram, 'u_viewportSize'),
+                lineWidth: gl.getUniformLocation(this.hlineProgram, 'u_lineWidth'),
+                color: gl.getUniformLocation(this.hlineProgram, 'u_color')
+            },
+            ohlcBar: {
+                scaleY: gl.getUniformLocation(this.ohlcBarProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.ohlcBarProgram, 'u_transY'),
+                totalBarSpace: gl.getUniformLocation(this.ohlcBarProgram, 'u_totalBarSpace'),
+                barSpace: gl.getUniformLocation(this.ohlcBarProgram, 'u_barSpace'),
+                rightOffset: gl.getUniformLocation(this.ohlcBarProgram, 'u_rightOffset'),
+                bodyWidth: gl.getUniformLocation(this.ohlcBarProgram, 'u_bodyWidth'),
+                dpr: gl.getUniformLocation(this.ohlcBarProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.ohlcBarProgram, 'u_viewportSize'),
+                mode: gl.getUniformLocation(this.ohlcBarProgram, 'u_mode'),
+                bullColor: gl.getUniformLocation(this.ohlcBarProgram, 'u_bullColor'),
+                bearColor: gl.getUniformLocation(this.ohlcBarProgram, 'u_bearColor')
+            },
+            baselineArea: {
+                scaleY: gl.getUniformLocation(this.baselineAreaProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.baselineAreaProgram, 'u_transY'),
+                baseline: gl.getUniformLocation(this.baselineAreaProgram, 'u_baseline'),
+                viewportSize: gl.getUniformLocation(this.baselineAreaProgram, 'u_viewportSize'),
+                topFillColor: gl.getUniformLocation(this.baselineAreaProgram, 'u_topFillColor'),
+                bottomFillColor: gl.getUniformLocation(this.baselineAreaProgram, 'u_bottomFillColor')
+            },
+            baselineLine: {
+                scaleY: gl.getUniformLocation(this.baselineLineProgram, 'u_scaleY'),
+                transY: gl.getUniformLocation(this.baselineLineProgram, 'u_transY'),
+                baseline: gl.getUniformLocation(this.baselineLineProgram, 'u_baseline'),
+                viewportSize: gl.getUniformLocation(this.baselineLineProgram, 'u_viewportSize'),
+                topLineColor: gl.getUniformLocation(this.baselineLineProgram, 'u_topLineColor'),
+                bottomLineColor: gl.getUniformLocation(this.baselineLineProgram, 'u_bottomLineColor')
+            },
+            vline: {
+                xNdc: gl.getUniformLocation(this.vlineProgram, 'u_xNdc'),
+                dpr: gl.getUniformLocation(this.vlineProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.vlineProgram, 'u_viewportSize'),
+                lineWidth: gl.getUniformLocation(this.vlineProgram, 'u_lineWidth'),
+                color: gl.getUniformLocation(this.vlineProgram, 'u_color')
+            },
+            bgshade: {
+                x0Ndc: gl.getUniformLocation(this.bgshadeProgram, 'u_x0Ndc'),
+                x1Ndc: gl.getUniformLocation(this.bgshadeProgram, 'u_x1Ndc'),
+                dpr: gl.getUniformLocation(this.bgshadeProgram, 'u_dpr'),
+                viewportSize: gl.getUniformLocation(this.bgshadeProgram, 'u_viewportSize'),
+                color: gl.getUniformLocation(this.bgshadeProgram, 'u_color')
+            }
+        };
+        // ─── Create persistent VBOs (W1/W7 fix) ───
+        this.vao = gl.createVertexArray();
+        // Unit quad for instancing (static — never changes)
+        const quad = new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]);
+        this.quadVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+        // Dynamic VBOs — pre-allocated at max size, updated via bufferSubData
+        this.candleDataVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.candleDataVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, MAX_BARS * 6 * 4, gl.DYNAMIC_DRAW);
+        this.heatmapQuadVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.heatmapQuadVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, 16 * 4, gl.DYNAMIC_DRAW);
+        this.liqDataVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.liqDataVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, MAX_LIQS * 4 * 4, gl.DYNAMIC_DRAW);
+        this.footprintDataVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.footprintDataVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, MAX_BARS * 4 * 4, gl.DYNAMIC_DRAW);
+        this.indicatorDataVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.indicatorDataVbo);
+        // Indicators are X, Y per point. 2 floats per point.
+        gl.bufferData(gl.ARRAY_BUFFER, MAX_BARS * 2 * 4, gl.DYNAMIC_DRAW);
+        this.gridDataVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.gridDataVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, 64 * 4, gl.DYNAMIC_DRAW); // max 64 lines
+        // ─── Pre-allocated staging arrays (W2 fix) ───
+        this.candleStaging = new Float32Array(MAX_BARS * 6);
+        this.heatmapQuadStaging = new Float32Array(16);
+        this.footprintStaging = new Float32Array(MAX_BARS * 4);
+        this.indicatorStaging = new Float32Array(MAX_BARS * 6); // Max 6 floats per bar needed by band rendering
+        this.gridStaging = new Float32Array(64); // max 64 grid lines per direction
+        // ─── Create persistent textures ───
+        this.heatmapTexture = this.createR32FTexture(gl.LINEAR);
+        this.buyDensityTexture = this.createR32FTexture(gl.NEAREST);
+        this.sellDensityTexture = this.createR32FTexture(gl.NEAREST);
+        this.histogramTexture = this.createR32FTexture(gl.LINEAR);
+        this.lobDensityTexture = this.createR32FTexture(gl.LINEAR);
+        this.shmTexture = this.createR32FTexture(gl.NEAREST); // NEAREST for discrete pixel cells
+        // Identity matrix for renderers that compute NDC on the JS side
+        this._identity = new Float32Array([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+    }
+    // ─── Coordinate helpers: index-based X, price-based Y → NDC ───
+    indexToNdcX(dataIndex, matrix) {
+        const totalBarSpace = matrix[0];
+        const barSpace = matrix[1];
+        const rightOffset = matrix[2];
+        const xPx = totalBarSpace - (rightOffset - dataIndex - 0.5) * barSpace;
+        return xPx / totalBarSpace * 2.0 - 1.0;
+    }
+    priceToNdcY(price, matrix) {
+        return price * matrix[5] + matrix[13];
+    }
+    // ─── Context Builder ───
+    // Exposes the class's private GL state as a RendererContext
+    // that standalone layer functions can consume.
+    vpWidth = 0;
+    vpHeight = 0;
+    setViewportSize(w, h) {
+        this.vpWidth = Math.max(1, w);
+        this.vpHeight = Math.max(1, h);
+        if (this._ctx) {
+            this._ctx.vpWidth = this.vpWidth || this.gl.drawingBufferWidth;
+            this._ctx.vpHeight = this.vpHeight || this.gl.drawingBufferHeight;
+        }
+    }
+    _ctx = null;
+    getContext() {
+        if (this._ctx)
+            return this._ctx;
+        this._ctx = {
+            gl: this.gl,
+            vpWidth: this.vpWidth || this.gl.drawingBufferWidth,
+            vpHeight: this.vpHeight || this.gl.drawingBufferHeight,
+            programs: {
+                candle: this.candleProgram,
+                heatmap: this.heatmapProgram,
+                liq: this.liqProgram,
+                footprint: this.footprintProgram,
+                histogram: this.histogramProgram,
+                lobHeatmap: this.lobHeatmapProgram,
+                depthOverlay: this.depthOverlayProgram,
+                indicator: this.indicatorProgram,
+                shm: this.shmProgram,
+                grid: this.gridProgram,
+                barFigure: this.barFigureProgram,
+                circleFigure: this.circleFigureProgram,
+                band: this.bandProgram,
+                area: this.areaProgram,
+                hline: this.hlineProgram,
+                ohlcBar: this.ohlcBarProgram,
+                baselineArea: this.baselineAreaProgram,
+                baselineLine: this.baselineLineProgram,
+                vline: this.vlineProgram,
+                bgshade: this.bgshadeProgram,
+            },
+            uniforms: this.uniforms,
+            vao: this.vao,
+            quadVbo: this.quadVbo,
+            candleDataVbo: this.candleDataVbo,
+            heatmapQuadVbo: this.heatmapQuadVbo,
+            liqDataVbo: this.liqDataVbo,
+            footprintDataVbo: this.footprintDataVbo,
+            indicatorDataVbo: this.indicatorDataVbo,
+            gridDataVbo: this.gridDataVbo,
+            candleStaging: this.candleStaging,
+            heatmapQuadStaging: this.heatmapQuadStaging,
+            footprintStaging: this.footprintStaging,
+            indicatorStaging: this.indicatorStaging,
+            gridStaging: this.gridStaging,
+            heatmapTexture: this.heatmapTexture,
+            buyDensityTexture: this.buyDensityTexture,
+            sellDensityTexture: this.sellDensityTexture,
+            histogramTexture: this.histogramTexture,
+            lobDensityTexture: this.lobDensityTexture,
+            shmTexture: this.shmTexture,
+            identity: this._identity,
+            layers: this.layers,
+            patternSettings: this.patternSettings,
+            indexToNdcX: this.indexToNdcX.bind(this),
+            priceToNdcY: this.priceToNdcY.bind(this),
+            cssColorToFloat4: this.cssColorToFloat4.bind(this),
+            createR32FTexture: this.createR32FTexture.bind(this),
+        };
+        return this._ctx;
+    }
+    // ─── Main Render Entry Point ───
+    render(symbol, wasmState, matrix, chart) {
+        const storeId = wasmState.getStoreId?.(symbol);
+        if (storeId === undefined)
+            return;
+        const count = wasmState.getBarCount?.(symbol) || 0;
+        if (count === 0)
+            return;
+        const ctx = this.getContext();
+        if (this.layers.candles)
+            renderCandles(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.heatmap)
+            renderHeatmap(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.liquidations)
+            renderLiquidations(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.footprint)
+            renderFootprint(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.histogram)
+            renderHistograms(ctx, storeId, wasmState, count);
+        if (this.layers.lobHeatmap)
+            renderLobHeatmap(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.depthOverlay)
+            renderDepthOverlay(ctx, storeId, wasmState, count, matrix);
+        if (this.layers.shm)
+            renderSHM(ctx, storeId, wasmState, count, matrix);
+        if (chart)
+            renderAllIndicators(ctx, chart, count, matrix);
+    }
+    // ─── Public API — Thin wrappers for external callers ───
+    renderGrid(hTicks, vTicks, canvasW, canvasH) {
+        renderGrid(this.getContext(), hTicks, vTicks, canvasW, canvasH);
+    }
+    renderCrosshair(mouseXNdc, mousePriceY, matrix, color = 'rgba(255, 255, 255, 0.4)', lineWidth = 1) {
+        renderCrosshair(this.getContext(), mouseXNdc, mousePriceY, matrix, color, lineWidth);
+    }
+    renderHorizontalLine(priceY, matrix, color = '#ffffff', lineWidth = 1) {
+        renderHorizontalLine(this.getContext(), priceY, matrix, color, lineWidth);
+    }
+    renderVerticalLine(xNdc, color = '#ffffff', lineWidth = 1) {
+        renderVerticalLine(this.getContext(), xNdc, color, lineWidth);
+    }
+    renderHighlightBar(barIndex, matrix, color = 'rgba(255, 255, 255, 0.06)') {
+        renderHighlightBar(this.getContext(), barIndex, matrix, color);
+    }
+    renderBackgroundShade(x0Ndc, x1Ndc, color = 'rgba(255, 255, 255, 0.05)') {
+        renderBackgroundShade(this.getContext(), x0Ndc, x1Ndc, color);
+    }
+    // ─── Color Utility (used by context + external callers) ───
+    cssColorToFloat4(css) {
+        const out = new Float32Array(4);
+        if (css.startsWith('#')) {
+            const hex = css.length === 4
+                ? css[1] + css[1] + css[2] + css[2] + css[3] + css[3]
+                : css.slice(1);
+            out[0] = parseInt(hex.slice(0, 2), 16) / 255;
+            out[1] = parseInt(hex.slice(2, 4), 16) / 255;
+            out[2] = parseInt(hex.slice(4, 6), 16) / 255;
+            out[3] = 1.0;
+        }
+        else {
+            const m = css.match(/[\d.]+/g);
+            if (m) {
+                out[0] = parseFloat(m[0]) / 255;
+                out[1] = parseFloat(m[1]) / 255;
+                out[2] = parseFloat(m[2]) / 255;
+                out[3] = m[3] ? parseFloat(m[3]) : 1.0;
+            }
+            else {
+                out[0] = 0.16;
+                out[1] = 0.67;
+                out[2] = 0.53;
+                out[3] = 1.0;
+            }
+        }
+        return out;
+    }
+    // ─── GL Helpers ───
+    createR32FTexture(filter) {
+        const gl = this.gl;
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return tex;
+    }
+    createProgram(vs, fs) {
+        const gl = this.gl;
+        const v = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(v, vs);
+        gl.compileShader(v);
+        if (!gl.getShaderParameter(v, gl.COMPILE_STATUS)) {
+            console.error('[ZenithRenderer] VS compile error:', gl.getShaderInfoLog(v));
+        }
+        const f = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(f, fs);
+        gl.compileShader(f);
+        if (!gl.getShaderParameter(f, gl.COMPILE_STATUS)) {
+            console.error('[ZenithRenderer] FS compile error:', gl.getShaderInfoLog(f));
+        }
+        const p = gl.createProgram();
+        gl.attachShader(p, v);
+        gl.attachShader(p, f);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+            console.error('[ZenithRenderer] Link error:', gl.getProgramInfoLog(p));
+        }
+        gl.detachShader(p, v);
+        gl.detachShader(p, f);
+        gl.deleteShader(v);
+        gl.deleteShader(f);
+        return p;
+    }
+}
+
+/**
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -8715,7 +11231,7 @@ class Canvas {
     }
     _executeListener(fn) {
         if (this._requestAnimationId === DEFAULT_REQUEST_ID) {
-            this._requestAnimationId = requestAnimationFrame(() => {
+            this._requestAnimationId = requestAnimationFrame$1(() => {
                 this._ctx.clearRect(0, 0, this._width, this._height);
                 fn?.();
                 this._listener();
@@ -9085,252 +11601,8 @@ class ChildrenView extends View {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class CandleBarView extends ChildrenView {
-    _boundCandleBarClickEvent = (data) => () => {
-        this.getWidget().getPane().getChart().getChartStore().executeAction('onCandleBarClick', data);
-        return false;
-    };
+class IndicatorView extends ChildrenView {
     drawImp(ctx) {
-        const pane = this.getWidget().getPane();
-        const isMain = pane.getId() === PaneIdConstants.CANDLE;
-        const chartStore = pane.getChart().getChartStore();
-        const candleBarOptions = this.getCandleBarOptions();
-        if (candleBarOptions !== null) {
-            const { type, styles } = candleBarOptions;
-            let ohlcSize = 0;
-            let halfOhlcSize = 0;
-            if (candleBarOptions.type === 'ohlc') {
-                const { gapBar } = chartStore.getBarSpace();
-                ohlcSize = Math.min(Math.max(Math.round(gapBar * 0.2), 1), 8);
-                if (ohlcSize > 2 && ohlcSize % 2 === 1) {
-                    ohlcSize--;
-                }
-                halfOhlcSize = Math.floor(ohlcSize / 2);
-            }
-            const yAxis = pane.getAxisComponent();
-            this.eachChildren((visibleData, barSpace) => {
-                const { x, data: { current, prev } } = visibleData;
-                if (isValid(current)) {
-                    const { open, high, low, close } = current;
-                    const comparePrice = styles.compareRule === 'current_open' ? open : (prev?.close ?? close);
-                    const colors = [];
-                    if (close > comparePrice) {
-                        colors[0] = styles.upColor;
-                        colors[1] = styles.upBorderColor;
-                        colors[2] = styles.upWickColor;
-                    }
-                    else if (close < comparePrice) {
-                        colors[0] = styles.downColor;
-                        colors[1] = styles.downBorderColor;
-                        colors[2] = styles.downWickColor;
-                    }
-                    else {
-                        colors[0] = styles.noChangeColor;
-                        colors[1] = styles.noChangeBorderColor;
-                        colors[2] = styles.noChangeWickColor;
-                    }
-                    const openY = yAxis.convertToPixel(open);
-                    const closeY = yAxis.convertToPixel(close);
-                    const priceY = [
-                        openY, closeY,
-                        yAxis.convertToPixel(high),
-                        yAxis.convertToPixel(low)
-                    ];
-                    priceY.sort((a, b) => a - b);
-                    const correction = barSpace.gapBar % 2 === 0 ? 1 : 0;
-                    let rects = [];
-                    switch (type) {
-                        case 'candle_solid': {
-                            rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
-                            break;
-                        }
-                        case 'candle_stroke': {
-                            rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
-                            break;
-                        }
-                        case 'candle_up_stroke': {
-                            if (close > open) {
-                                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
-                            }
-                            else {
-                                rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
-                            }
-                            break;
-                        }
-                        case 'candle_down_stroke': {
-                            if (open > close) {
-                                rects = this._createStrokeBar(x, priceY, barSpace, colors, correction);
-                            }
-                            else {
-                                rects = this._createSolidBar(x, priceY, barSpace, colors, correction);
-                            }
-                            break;
-                        }
-                        case 'ohlc': {
-                            rects = [
-                                {
-                                    name: 'rect',
-                                    attrs: [
-                                        {
-                                            x: x - halfOhlcSize,
-                                            y: priceY[0],
-                                            width: ohlcSize,
-                                            height: priceY[3] - priceY[0]
-                                        },
-                                        {
-                                            x: x - barSpace.halfGapBar,
-                                            y: openY + ohlcSize > priceY[3] ? priceY[3] - ohlcSize : openY,
-                                            width: barSpace.halfGapBar - halfOhlcSize,
-                                            height: ohlcSize
-                                        },
-                                        {
-                                            x: x + halfOhlcSize,
-                                            y: closeY + ohlcSize > priceY[3] ? priceY[3] - ohlcSize : closeY,
-                                            width: barSpace.halfGapBar - halfOhlcSize,
-                                            height: ohlcSize
-                                        }
-                                    ],
-                                    styles: { color: colors[0] }
-                                }
-                            ];
-                            break;
-                        }
-                    }
-                    rects.forEach(rect => {
-                        let handler = null;
-                        if (isMain) {
-                            handler = {
-                                mouseClickEvent: this._boundCandleBarClickEvent(visibleData)
-                            };
-                        }
-                        this.createFigure(rect, handler ?? undefined)?.draw(ctx);
-                    });
-                }
-            });
-        }
-    }
-    getCandleBarOptions() {
-        const candleStyles = this.getWidget().getPane().getChart().getStyles().candle;
-        return {
-            type: candleStyles.type,
-            styles: candleStyles.bar
-        };
-    }
-    _createSolidBar(x, priceY, barSpace, colors, correction) {
-        return [
-            {
-                name: 'rect',
-                attrs: {
-                    x,
-                    y: priceY[0],
-                    width: 1,
-                    height: priceY[3] - priceY[0]
-                },
-                styles: { color: colors[2] }
-            },
-            {
-                name: 'rect',
-                attrs: {
-                    x: x - barSpace.halfGapBar,
-                    y: priceY[1],
-                    width: barSpace.gapBar + correction,
-                    height: Math.max(1, priceY[2] - priceY[1])
-                },
-                styles: {
-                    style: 'stroke_fill',
-                    color: colors[0],
-                    borderColor: colors[1]
-                }
-            }
-        ];
-    }
-    _createStrokeBar(x, priceY, barSpace, colors, correction) {
-        return [
-            {
-                name: 'rect',
-                attrs: [
-                    {
-                        x,
-                        y: priceY[0],
-                        width: 1,
-                        height: priceY[1] - priceY[0]
-                    },
-                    {
-                        x,
-                        y: priceY[2],
-                        width: 1,
-                        height: priceY[3] - priceY[2]
-                    }
-                ],
-                styles: { color: colors[2] }
-            },
-            {
-                name: 'rect',
-                attrs: {
-                    x: x - barSpace.halfGapBar,
-                    y: priceY[1],
-                    width: barSpace.gapBar + correction,
-                    height: Math.max(1, priceY[2] - priceY[1])
-                },
-                styles: {
-                    style: 'stroke',
-                    borderColor: colors[1]
-                }
-            }
-        ];
-    }
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-class IndicatorView extends CandleBarView {
-    getCandleBarOptions() {
-        const pane = this.getWidget().getPane();
-        const yAxis = pane.getAxisComponent();
-        if (!yAxis.isInCandle()) {
-            const chartStore = pane.getChart().getChartStore();
-            const indicators = chartStore.getIndicatorsByPaneId(pane.getId());
-            for (const indicator of indicators) {
-                if (indicator.shouldOhlc && indicator.visible) {
-                    const indicatorStyles = indicator.styles;
-                    const defaultStyles = chartStore.getStyles().indicator;
-                    const compareRule = formatValue(indicatorStyles, 'ohlc.compareRule', defaultStyles.ohlc.compareRule);
-                    const upColor = formatValue(indicatorStyles, 'ohlc.upColor', defaultStyles.ohlc.upColor);
-                    const downColor = formatValue(indicatorStyles, 'ohlc.downColor', defaultStyles.ohlc.downColor);
-                    const noChangeColor = formatValue(indicatorStyles, 'ohlc.noChangeColor', defaultStyles.ohlc.noChangeColor);
-                    return {
-                        type: 'ohlc',
-                        styles: {
-                            compareRule,
-                            upColor,
-                            downColor,
-                            noChangeColor,
-                            upBorderColor: upColor,
-                            downBorderColor: downColor,
-                            noChangeBorderColor: noChangeColor,
-                            upWickColor: upColor,
-                            downWickColor: downColor,
-                            noChangeWickColor: noChangeColor
-                        }
-                    };
-                }
-            }
-        }
-        return null;
-    }
-    drawImp(ctx) {
-        super.drawImp(ctx);
         const widget = this.getWidget();
         const pane = widget.getPane();
         const chart = pane.getChart();
@@ -9343,6 +11615,10 @@ class IndicatorView extends CandleBarView {
         ctx.save();
         indicators.forEach(indicator => {
             if (indicator.visible) {
+                // When renderer is 'external', skip Canvas2D drawing entirely.
+                // An external renderer (e.g. WebGL) reads indicator.result + figures.
+                if (indicator.renderer === 'external')
+                    return;
                 if (indicator.zLevel < 0) {
                     ctx.globalCompositeOperation = 'destination-over';
                 }
@@ -10455,138 +12731,6 @@ class IndicatorWidget extends DrawWidget {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class CandleAreaView extends ChildrenView {
-    _ripplePoint = this.createFigure({
-        name: 'circle',
-        attrs: {
-            x: 0,
-            y: 0,
-            r: 0
-        },
-        styles: {
-            style: 'fill'
-        }
-    });
-    _animationFrameTime = 0;
-    _animation = new Animation({ iterationCount: Infinity }).doFrame((time) => {
-        this._animationFrameTime = time;
-        const pane = this.getWidget().getPane();
-        pane.getChart().updatePane(0 /* UpdateLevel.Main */, pane.getId());
-    });
-    drawImp(ctx) {
-        const widget = this.getWidget();
-        const pane = widget.getPane();
-        const chart = pane.getChart();
-        const dataList = chart.getDataList();
-        const lastDataIndex = dataList.length - 1;
-        const bounding = widget.getBounding();
-        const yAxis = pane.getAxisComponent();
-        const styles = chart.getStyles().candle.area;
-        const coordinates = [];
-        let minY = Number.MAX_SAFE_INTEGER;
-        let areaStartX = Number.MIN_SAFE_INTEGER;
-        let ripplePointCoordinate = null;
-        this.eachChildren((data) => {
-            const x = data.x;
-            const { current: kLineData } = data.data;
-            const value = kLineData?.[styles.value];
-            if (isNumber(value)) {
-                const y = yAxis.convertToPixel(value);
-                if (areaStartX === Number.MIN_SAFE_INTEGER) {
-                    areaStartX = x;
-                }
-                coordinates.push({ x, y });
-                minY = Math.min(minY, y);
-                if (data.dataIndex === lastDataIndex) {
-                    ripplePointCoordinate = { x, y };
-                }
-            }
-        });
-        if (coordinates.length > 0) {
-            this.createFigure({
-                name: 'line',
-                attrs: { coordinates },
-                styles: {
-                    color: styles.lineColor,
-                    size: styles.lineSize,
-                    smooth: styles.smooth
-                }
-            })?.draw(ctx);
-            // render area
-            const backgroundColor = styles.backgroundColor;
-            let color = '';
-            if (isArray(backgroundColor)) {
-                const gradient = ctx.createLinearGradient(0, bounding.height, 0, minY);
-                try {
-                    backgroundColor.forEach(({ offset, color }) => {
-                        gradient.addColorStop(offset, color);
-                    });
-                }
-                catch (e) {
-                }
-                color = gradient;
-            }
-            else {
-                color = backgroundColor;
-            }
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(areaStartX, bounding.height);
-            ctx.lineTo(coordinates[0].x, coordinates[0].y);
-            lineTo(ctx, coordinates, styles.smooth);
-            ctx.lineTo(coordinates[coordinates.length - 1].x, bounding.height);
-            ctx.closePath();
-            ctx.fill();
-        }
-        const pointStyles = styles.point;
-        if (pointStyles.show && isValid(ripplePointCoordinate)) {
-            this.createFigure({
-                name: 'circle',
-                attrs: {
-                    x: ripplePointCoordinate.x,
-                    y: ripplePointCoordinate.y,
-                    r: pointStyles.radius
-                },
-                styles: {
-                    style: 'fill',
-                    color: pointStyles.color
-                }
-            })?.draw(ctx);
-            let rippleRadius = pointStyles.rippleRadius;
-            if (pointStyles.animation) {
-                rippleRadius = pointStyles.radius + this._animationFrameTime / pointStyles.animationDuration * (pointStyles.rippleRadius - pointStyles.radius);
-                this._animation.setDuration(pointStyles.animationDuration).start();
-            }
-            this._ripplePoint
-                ?.setAttrs({
-                x: ripplePointCoordinate.x,
-                y: ripplePointCoordinate.y,
-                r: rippleRadius
-            })
-                .setStyles({ style: 'fill', color: pointStyles.rippleColor }).draw(ctx);
-        }
-        else {
-            this.stopAnimation();
-        }
-    }
-    stopAnimation() {
-        this._animation.stop();
-    }
-}
-
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
-
- * http://www.apache.org/licenses/LICENSE-2.0
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 class CandleHighLowPriceView extends View {
     drawImp(ctx) {
         const widget = this.getWidget();
@@ -11226,25 +13370,17 @@ class CrosshairFeatureView extends View {
  * limitations under the License.
  */
 class CandleWidget extends IndicatorWidget {
-    _candleBarView = new CandleBarView(this);
-    _candleAreaView = new CandleAreaView(this);
     _candleHighLowPriceView = new CandleHighLowPriceView(this);
     _candleLastPriceLineView = new CandleLastPriceView(this);
     _crosshairFeatureView = new CrosshairFeatureView(this);
     constructor(rootContainer, pane) {
         super(rootContainer, pane);
-        this.addChild(this._candleBarView);
         this.addChild(this._crosshairFeatureView);
     }
     updateMainContent(ctx) {
         const candleStyles = this.getPane().getChart().getStyles().candle;
         if (candleStyles.type !== 'area') {
-            this._candleBarView.draw(ctx);
             this._candleHighLowPriceView.draw(ctx);
-            this._candleAreaView.stopAnimation();
-        }
-        else {
-            this._candleAreaView.draw(ctx);
         }
         this._candleLastPriceLineView.draw(ctx);
     }
@@ -12107,6 +14243,46 @@ class XAxisView extends AxisView {
             align: 'center',
             baseline: 'top'
         }));
+    }
+    drawImp(ctx, extend) {
+        const widget = this.getWidget();
+        const pane = widget.getPane();
+        const bounding = widget.getBounding();
+        const axis = pane.getAxisComponent();
+        const styles = this.getAxisStyles(pane.getChart().getStyles());
+        if (!styles.show) {
+            return;
+        }
+        const pixelRatio = pane.getChart().getContainer().ownerDocument.defaultView?.devicePixelRatio ?? 1;
+        if (styles.axisLine.show) {
+            const lineSize = Math.max(1, Math.floor(styles.axisLine.size * pixelRatio));
+            ctx.fillStyle = styles.axisLine.color;
+            ctx.fillRect(0, 0, bounding.width, lineSize / pixelRatio);
+        }
+        if (!extend[0]) {
+            const ticks = axis.getTicks();
+            if (styles.tickLine.show) {
+                ctx.fillStyle = styles.tickLine.color;
+                const tickWidth = Math.max(1, Math.floor(pixelRatio));
+                const tickOffset = Math.floor(tickWidth / 2);
+                const tickLen = Math.round(styles.tickLine.length * pixelRatio);
+                const axisLineW = Math.max(1, Math.floor(styles.axisLine.size * pixelRatio));
+                ctx.beginPath();
+                for (const tick of ticks) {
+                    const x = Math.round(tick.coord * pixelRatio);
+                    ctx.rect((x - tickOffset) / pixelRatio, axisLineW / pixelRatio, tickWidth / pixelRatio, tickLen / pixelRatio);
+                }
+                ctx.fill();
+            }
+            if (styles.tickText.show) {
+                const texts = this.createTickTexts(ticks, bounding, styles);
+                this.createFigure({
+                    name: 'text',
+                    attrs: texts,
+                    styles: styles.tickText
+                })?.draw(ctx);
+            }
+        }
     }
 }
 
@@ -13386,6 +15562,11 @@ class Event {
                         const range = yAxis.getRange();
                         this._prevYAxisRange = { ...range };
                     }
+                    if (this._flingScrollRequestId !== null) {
+                        cancelAnimationFrame(this._flingScrollRequestId);
+                        this._flingScrollRequestId = null;
+                    }
+                    this._flingStartTime = new Date().getTime();
                     this._startScrollCoordinate = { x: event.x, y: event.y };
                     this._chart.getChartStore().startScroll();
                     return widget.dispatchEvent('mouseDownEvent', event);
@@ -13479,7 +15660,35 @@ class Event {
             const event = this._makeWidgetEvent(e, widget);
             const name = widget.getName();
             switch (name) {
-                case WidgetNameConstants.MAIN:
+                case WidgetNameConstants.MAIN: {
+                    consumed = widget.dispatchEvent('mouseUpEvent', event);
+                    if (this._startScrollCoordinate !== null) {
+                        const time = new Date().getTime() - this._flingStartTime;
+                        const distance = event.x - this._startScrollCoordinate.x;
+                        let v = distance / (time > 0 ? time : 1) * 20;
+                        if (time < 200 && Math.abs(v) > 0) {
+                            const store = this._chart.getChartStore();
+                            const flingScroll = () => {
+                                this._flingScrollRequestId = requestAnimationFrame$1(() => {
+                                    store.startScroll();
+                                    store.scroll(v);
+                                    v = v * (1 - 0.025);
+                                    if (Math.abs(v) < 1) {
+                                        if (this._flingScrollRequestId !== null) {
+                                            cancelAnimationFrame(this._flingScrollRequestId);
+                                            this._flingScrollRequestId = null;
+                                        }
+                                    }
+                                    else {
+                                        flingScroll();
+                                    }
+                                });
+                            };
+                            flingScroll();
+                        }
+                    }
+                    break;
+                }
                 case WidgetNameConstants.SEPARATOR:
                 case WidgetNameConstants.X_AXIS:
                 case WidgetNameConstants.Y_AXIS: {
@@ -13662,7 +15871,7 @@ class Event {
                         if (time < 200 && Math.abs(v) > 0) {
                             const store = this._chart.getChartStore();
                             const flingScroll = () => {
-                                this._flingScrollRequestId = requestAnimationFrame(() => {
+                                this._flingScrollRequestId = requestAnimationFrame$1(() => {
                                     store.startScroll();
                                     store.scroll(v);
                                     v = v * (1 - 0.025);
@@ -13786,7 +15995,7 @@ class Event {
             this._chart.updatePane(1 /* UpdateLevel.Overlay */);
         }
         this._xAxisStartScaleCoordinate = { x: event.x, y: event.y };
-        this._xAxisStartScaleDistance = event.pageX;
+        this._xAxisStartScaleDistance = Math.max(1, widget.getBounding().width - event.x);
         return consumed;
     }
     _processXAxisScrollingEvent(widget, event) {
@@ -13794,7 +16003,8 @@ class Event {
         if (!consumed) {
             const xAxis = widget.getPane().getAxisComponent();
             if (xAxis.scrollZoomEnabled && this._xAxisStartScaleDistance !== 0) {
-                const scale = this._xAxisStartScaleDistance / event.pageX;
+                const currentDistance = Math.max(1, widget.getBounding().width - event.x);
+                const scale = this._xAxisStartScaleDistance / currentDistance;
                 if (Number.isFinite(scale)) {
                     const zoomScale = (scale - this._xAxisScale) * 10;
                     this._xAxisScale = scale;
@@ -13940,6 +16150,10 @@ class ChartImp {
     _candlePane;
     _xAxisPane;
     _separatorPanes = new Map();
+    _webglCanvas;
+    _zenithRenderer = null;
+    _wasmState = null;
+    _webglAnimationFrame = 0;
     _layoutOptions = {
         sort: true,
         measureHeight: true,
@@ -13978,6 +16192,20 @@ class ChartImp {
             webkitTapHighlightColor: 'transparent'
         });
         this._chartContainer.tabIndex = 1;
+        this._webglCanvas = createDom('canvas', {
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            zIndex: '0',
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none'
+        });
+        this._chartContainer.appendChild(this._webglCanvas);
+        const gl = this._webglCanvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: false });
+        if (gl) {
+            this._zenithRenderer = new ZenithRenderer(gl);
+        }
         container.appendChild(this._chartContainer);
         this._cacheChartBounding();
     }
@@ -14280,6 +16508,19 @@ class ChartImp {
             cacheYAxisWidth: false,
             forceBuildYAxisTick: false
         };
+        this._resizeWebGL();
+    }
+    _resizeWebGL() {
+        if (!this._webglCanvas || !this._zenithRenderer)
+            return;
+        const pixelRatio = getPixelRatio(this._webglCanvas);
+        const w = this._chartBounding.width;
+        const h = this._chartBounding.height;
+        if (this._webglCanvas.width !== w * pixelRatio || this._webglCanvas.height !== h * pixelRatio) {
+            this._webglCanvas.width = w * pixelRatio;
+            this._webglCanvas.height = h * pixelRatio;
+            this._zenithRenderer.setViewportSize(w * pixelRatio, h * pixelRatio);
+        }
     }
     updatePane(level, paneId) {
         if (isValid(paneId)) {
@@ -14292,6 +16533,64 @@ class ChartImp {
                 this._separatorPanes.get(pane)?.update(level);
             });
         }
+        if (this._zenithRenderer && this._wasmState) {
+            if (this._webglAnimationFrame === 0) {
+                this._webglAnimationFrame = requestAnimationFrame(() => {
+                    this._renderWebGL();
+                    this._webglAnimationFrame = 0;
+                });
+            }
+        }
+    }
+    _renderWebGL() {
+        if (!this._zenithRenderer || !this._wasmState)
+            return;
+        const symbolObj = this.getSymbol();
+        const symbol = symbolObj?.ticker ?? '';
+        const gl = this._zenithRenderer.getContext().gl;
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        const pixelRatio = getPixelRatio(this._webglCanvas);
+        const barSpaceOptions = this.getBarSpace();
+        const totalBarSpace = this._chartStore.getTotalBarSpace();
+        const rightOffset = this._chartStore.getOffsetRightDistance();
+        const matrix = new Float32Array(16);
+        matrix[0] = totalBarSpace * pixelRatio;
+        matrix[1] = barSpaceOptions.bar * pixelRatio;
+        matrix[2] = rightOffset * pixelRatio;
+        matrix[3] = pixelRatio;
+        this._drawPanes.forEach(pane => {
+            const paneId = pane.getId();
+            if (paneId === PaneIdConstants.X_AXIS)
+                return;
+            const bounding = pane.getBounding();
+            const mainBounding = pane.getMainWidget().getBounding();
+            const yBottom = this._chartBounding.height - (bounding.top + bounding.height);
+            const vw = mainBounding.width * pixelRatio;
+            const vh = bounding.height * pixelRatio;
+            if (vw <= 0 || vh <= 0)
+                return;
+            gl.enable(gl.SCISSOR_TEST);
+            gl.viewport(mainBounding.left * pixelRatio, yBottom * pixelRatio, vw, vh);
+            gl.scissor(mainBounding.left * pixelRatio, yBottom * pixelRatio, vw, vh);
+            const yAxis = pane.getAxisComponent();
+            const min = yAxis.getMin();
+            const max = yAxis.getMax();
+            const range = max - min;
+            if (range > 0) {
+                matrix[5] = 2.0 / range;
+                matrix[13] = -(max + min) / range;
+            }
+            else {
+                matrix[5] = 0;
+                matrix[13] = 0;
+            }
+            if (paneId === PaneIdConstants.CANDLE && symbol) {
+                this._zenithRenderer.render(symbol, this._wasmState, matrix, this);
+            }
+        });
+        gl.disable(gl.SCISSOR_TEST);
     }
     getDom(paneId, position) {
         if (isValid(paneId)) {
@@ -14500,6 +16799,13 @@ class ChartImp {
     }
     getIndicators(filter) {
         return this._chartStore.getIndicatorsByFilter(filter ?? {});
+    }
+    setWasmState(wasmState) {
+        this._wasmState = wasmState;
+        this.updatePane(4 /* UpdateLevel.All */);
+    }
+    getWebGLRenderer() {
+        return this._zenithRenderer;
     }
     removeIndicator(filter) {
         const removed = this._chartStore.removeIndicator(filter ?? {});
@@ -16685,4 +18991,4 @@ exports.utils = utils;
 exports.version = version;
 
 }));
-//# sourceMappingURL=klinecharts.js.map
+//# sourceMappingURL=ensocharts.js.map

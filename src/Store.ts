@@ -108,6 +108,7 @@ export interface Store {
   setPeriod: (period: Period) => void
   getPeriod: () => Nullable<Period>
   getDataList: () => KLineData[]
+  getTotalBarSpace: () => number
   setOffsetRightDistance: (distance: number) => void
   getOffsetRightDistance: () => number
   setMaxOffsetLeftDistance: (distance: number) => void
@@ -250,6 +251,7 @@ export default class StoreImp implements Store {
    * Total space of drawing area
    */
   private _totalBarSpace = 0
+  getTotalBarSpace(): number { return this._totalBarSpace }
 
   /**
    * Space occupied by a single piece of data

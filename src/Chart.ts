@@ -41,6 +41,8 @@ import type { Period } from './common/Period'
 
 import ChartStore, { SCALE_MULTIPLIER, type Store } from './Store'
 
+import { ZenithRenderer } from './webgl/ZenithRenderer'
+
 import CandlePane from './pane/CandlePane'
 import IndicatorPane from './pane/IndicatorPane'
 import XAxisPane from './pane/XAxisPane'
@@ -102,6 +104,8 @@ export interface Chart extends Store {
   getYScrolling: () => boolean
   loadMore: (cb: (timestamp: Nullable<number>) => void) => void
   setPriceVolumePrecision: (pricePrecision: number, volumePrecision: number) => void
+  setWasmState: (wasmState: any) => void
+  getWebGLRenderer: () => Nullable<ZenithRenderer>
 }
 
 export default class ChartImp implements Chart {
@@ -116,6 +120,11 @@ export default class ChartImp implements Chart {
   private _candlePane: CandlePane
   private _xAxisPane: XAxisPane
   private readonly _separatorPanes = new Map<DrawPane, SeparatorPane>()
+
+  private _webglCanvas: HTMLCanvasElement
+  private _zenithRenderer: Nullable<ZenithRenderer> = null
+  private _wasmState: any = null
+  private _webglAnimationFrame: number = 0
 
   private _layoutOptions = {
     sort: true,
@@ -159,6 +168,23 @@ export default class ChartImp implements Chart {
       webkitTapHighlightColor: 'transparent'
     })
     this._chartContainer.tabIndex = 1
+
+    this._webglCanvas = createDom('canvas', {
+      position: 'absolute',
+      top: '0',
+      left: '0',
+      zIndex: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none'
+    }) as HTMLCanvasElement
+    this._chartContainer.appendChild(this._webglCanvas)
+    
+    const gl = this._webglCanvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: false })
+    if (gl) {
+      this._zenithRenderer = new ZenithRenderer(gl as WebGL2RenderingContext)
+    }
+
     container.appendChild(this._chartContainer)
     this._cacheChartBounding()
   }
@@ -498,6 +524,19 @@ export default class ChartImp implements Chart {
       cacheYAxisWidth: false,
       forceBuildYAxisTick: false
     }
+    this._resizeWebGL()
+  }
+
+  private _resizeWebGL(): void {
+    if (!this._webglCanvas || !this._zenithRenderer) return
+    const pixelRatio = getPixelRatio(this._webglCanvas)
+    const w = this._chartBounding.width
+    const h = this._chartBounding.height
+    if (this._webglCanvas.width !== w * pixelRatio || this._webglCanvas.height !== h * pixelRatio) {
+        this._webglCanvas.width = w * pixelRatio
+        this._webglCanvas.height = h * pixelRatio
+        this._zenithRenderer.setViewportSize(w * pixelRatio, h * pixelRatio)
+    }
   }
 
   updatePane(level: UpdateLevel, paneId?: string): void {
@@ -510,6 +549,73 @@ export default class ChartImp implements Chart {
         this._separatorPanes.get(pane)?.update(level)
       })
     }
+
+    if (this._zenithRenderer && this._wasmState) {
+       if (this._webglAnimationFrame === 0) {
+          this._webglAnimationFrame = requestAnimationFrame(() => {
+              this._renderWebGL()
+              this._webglAnimationFrame = 0
+          })
+       }
+    }
+  }
+
+  private _renderWebGL(): void {
+    if (!this._zenithRenderer || !this._wasmState) return
+    const symbolObj = this.getSymbol()
+    const symbol = symbolObj?.ticker ?? ''
+
+    const gl = this._zenithRenderer.getContext().gl
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)
+    gl.clearColor(0, 0, 0, 0)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+
+    const pixelRatio = getPixelRatio(this._webglCanvas)
+    const barSpaceOptions = this.getBarSpace()
+    const totalBarSpace = this._chartStore.getTotalBarSpace()
+    const rightOffset = this._chartStore.getOffsetRightDistance()
+    
+    const matrix = new Float32Array(16)
+    matrix[0] = totalBarSpace * pixelRatio
+    matrix[1] = barSpaceOptions.bar * pixelRatio
+    matrix[2] = rightOffset * pixelRatio
+    matrix[3] = pixelRatio
+
+    this._drawPanes.forEach(pane => {
+      const paneId = pane.getId()
+      if (paneId === PaneIdConstants.X_AXIS) return
+
+      const bounding = pane.getBounding()
+      const mainBounding = pane.getMainWidget().getBounding()
+      
+      const yBottom = this._chartBounding.height - (bounding.top + bounding.height)
+      const vw = mainBounding.width * pixelRatio
+      const vh = bounding.height * pixelRatio
+      
+      if (vw <= 0 || vh <= 0) return
+
+      gl.enable(gl.SCISSOR_TEST)
+      gl.viewport(mainBounding.left * pixelRatio, yBottom * pixelRatio, vw, vh)
+      gl.scissor(mainBounding.left * pixelRatio, yBottom * pixelRatio, vw, vh)
+
+      const yAxis = pane.getAxisComponent() as any
+      const min = yAxis.getMin()
+      const max = yAxis.getMax()
+      const range = max - min
+      if (range > 0) {
+         matrix[5] = 2.0 / range
+         matrix[13] = -(max + min) / range
+      } else {
+         matrix[5] = 0
+         matrix[13] = 0
+      }
+
+      if (paneId === PaneIdConstants.CANDLE && symbol) {
+          this._zenithRenderer!.render(symbol, this._wasmState, matrix, this as any)
+      }
+    })
+    
+    gl.disable(gl.SCISSOR_TEST)
   }
 
   getDom(paneId?: string, position?: DomPosition): Nullable<HTMLElement> {
@@ -753,6 +859,15 @@ export default class ChartImp implements Chart {
 
   getIndicators(filter?: IndicatorFilter): Indicator[] {
     return this._chartStore.getIndicatorsByFilter(filter ?? {})
+  }
+
+  setWasmState(wasmState: any) {
+      this._wasmState = wasmState
+      this.updatePane(UpdateLevel.All)
+  }
+
+  getWebGLRenderer(): Nullable<ZenithRenderer> {
+      return this._zenithRenderer
   }
 
   removeIndicator(filter?: IndicatorFilter): boolean {

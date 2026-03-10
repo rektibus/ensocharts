@@ -20,46 +20,11 @@ import type Coordinate from '../common/Coordinate'
 
 import { eachFigures, type IndicatorFigure, type IndicatorFigureAttrs, type IndicatorFigureStyle } from '../component/Indicator'
 
-import CandleBarView, { type CandleBarOptions } from './CandleBarView'
+import ChildrenView from './ChildrenView'
 
-export default class IndicatorView extends CandleBarView {
-  override getCandleBarOptions (): Nullable<CandleBarOptions> {
-    const pane = this.getWidget().getPane()
-    const yAxis = pane.getAxisComponent()
-    if (!yAxis.isInCandle()) {
-      const chartStore = pane.getChart().getChartStore()
-      const indicators = chartStore.getIndicatorsByPaneId(pane.getId())
-      for (const indicator of indicators) {
-        if (indicator.shouldOhlc && indicator.visible) {
-          const indicatorStyles = indicator.styles
-          const defaultStyles = chartStore.getStyles().indicator
-          const compareRule = formatValue(indicatorStyles, 'ohlc.compareRule', defaultStyles.ohlc.compareRule) as CandleColorCompareRule
-          const upColor = formatValue(indicatorStyles, 'ohlc.upColor', defaultStyles.ohlc.upColor) as string
-          const downColor = formatValue(indicatorStyles, 'ohlc.downColor', defaultStyles.ohlc.downColor) as string
-          const noChangeColor = formatValue(indicatorStyles, 'ohlc.noChangeColor', defaultStyles.ohlc.noChangeColor) as string
-          return {
-            type: 'ohlc',
-            styles: {
-              compareRule,
-              upColor,
-              downColor,
-              noChangeColor,
-              upBorderColor: upColor,
-              downBorderColor: downColor,
-              noChangeBorderColor: noChangeColor,
-              upWickColor: upColor,
-              downWickColor: downColor,
-              noChangeWickColor: noChangeColor
-            }
-          }
-        }
-      }
-    }
-    return null
-  }
-
-  override drawImp (ctx: CanvasRenderingContext2D): void {
-    super.drawImp(ctx)
+export default class IndicatorView extends ChildrenView {
+  override drawImp(ctx: CanvasRenderingContext2D): void {
+    
     const widget = this.getWidget()
     const pane = widget.getPane()
     const chart = pane.getChart()
@@ -72,6 +37,10 @@ export default class IndicatorView extends CandleBarView {
     ctx.save()
     indicators.forEach(indicator => {
       if (indicator.visible) {
+        // When renderer is 'external', skip Canvas2D drawing entirely.
+        // An external renderer (e.g. WebGL) reads indicator.result + figures.
+        if (indicator.renderer === 'external') return
+
         if (indicator.zLevel < 0) {
           ctx.globalCompositeOperation = 'destination-over'
         } else {

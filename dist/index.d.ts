@@ -239,8 +239,10 @@ export interface CandleBarColor extends ChangeColor {
 	downWickColor: string;
 	noChangeWickColor: string;
 }
+export type CandleRenderer = "internal" | "external";
 export interface CandleStyle {
 	type: CandleType;
+	renderer: CandleRenderer;
 	bar: CandleBarColor;
 	area: CandleAreaStyle;
 	priceMark: CandlePriceMarkStyle;
@@ -1196,6 +1198,13 @@ export declare function init(ds: HTMLElement | string, options?: Options): Nulla
  * @param dcs
  */
 export declare function dispose(dcs: HTMLElement | Chart | string): void;
+export type IndicatorPlacement = "main" | "sub" | "both";
+export interface IndicatorEntry {
+	name: string;
+	label: string;
+	category: string;
+	placement: IndicatorPlacement;
+}
 export interface DatafeedSubscribeCallback {
 	(data: KLineData): void;
 }
@@ -1218,6 +1227,7 @@ export interface ChartProOptions {
 	timezone?: string;
 	mainIndicators?: string[];
 	subIndicators?: string[];
+	customIndicators?: IndicatorEntry[];
 	datafeed: Datafeed;
 	yScrolling?: boolean;
 }
@@ -1261,6 +1271,6 @@ export {
 	overlays as proOverlays,
 };
 
-export as namespace klinecharts;
+export as namespace ensocharts;
 
 export {};

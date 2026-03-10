@@ -24,11 +24,11 @@ import type { XAxis } from '../component/XAxis'
 import AxisView from './AxisView'
 
 export default class XAxisView extends AxisView<XAxis> {
-  override getAxisStyles (styles: Styles): AxisStyle {
+  override getAxisStyles(styles: Styles): AxisStyle {
     return styles.xAxis
   }
 
-  override createAxisLine (bounding: Bounding): LineAttrs {
+  override createAxisLine(bounding: Bounding): LineAttrs {
     return {
       coordinates: [
         { x: 0, y: 0 },
@@ -37,7 +37,7 @@ export default class XAxisView extends AxisView<XAxis> {
     }
   }
 
-  override createTickLines (ticks: AxisTick[], _bounding: Bounding, styles: AxisStyle): LineAttrs[] {
+  override createTickLines(ticks: AxisTick[], _bounding: Bounding, styles: AxisStyle): LineAttrs[] {
     const tickLineStyles = styles.tickLine
     const axisLineSize = styles.axisLine.size
     return ticks.map(tick => ({
@@ -48,7 +48,7 @@ export default class XAxisView extends AxisView<XAxis> {
     }))
   }
 
-  override createTickTexts (ticks: AxisTick[], _bounding: Bounding, styles: AxisStyle): TextAttrs[] {
+  override createTickTexts(ticks: AxisTick[], _bounding: Bounding, styles: AxisStyle): TextAttrs[] {
     const tickTickStyles = styles.tickText
     const axisLineSize = styles.axisLine.size
     const tickLineLength = styles.tickLine.length
@@ -59,5 +59,58 @@ export default class XAxisView extends AxisView<XAxis> {
       align: 'center',
       baseline: 'top'
     }))
+  }
+
+  override drawImp(ctx: CanvasRenderingContext2D, extend: unknown[]): void {
+    const widget = this.getWidget()
+    const pane = widget.getPane()
+    const bounding = widget.getBounding()
+    const axis = pane.getAxisComponent()
+    const styles = this.getAxisStyles(pane.getChart().getStyles())
+
+    if (!styles.show) {
+      return
+    }
+
+    const pixelRatio = pane.getChart().getContainer().ownerDocument.defaultView?.devicePixelRatio ?? 1
+
+    if (styles.axisLine.show) {
+      const lineSize = Math.max(1, Math.floor(styles.axisLine.size * pixelRatio))
+      ctx.fillStyle = styles.axisLine.color
+      ctx.fillRect(0, 0, bounding.width, lineSize / pixelRatio)
+    }
+
+    if (!(extend[0] as boolean)) {
+      const ticks = axis.getTicks()
+
+      if (styles.tickLine.show) {
+        ctx.fillStyle = styles.tickLine.color
+        const tickWidth = Math.max(1, Math.floor(pixelRatio))
+        const tickOffset = Math.floor(tickWidth / 2)
+        const tickLen = Math.round(styles.tickLine.length * pixelRatio)
+        const axisLineW = Math.max(1, Math.floor(styles.axisLine.size * pixelRatio))
+
+        ctx.beginPath()
+        for (const tick of ticks) {
+          const x = Math.round(tick.coord * pixelRatio)
+          ctx.rect(
+            (x - tickOffset) / pixelRatio,
+            axisLineW / pixelRatio,
+            tickWidth / pixelRatio,
+            tickLen / pixelRatio
+          )
+        }
+        ctx.fill()
+      }
+
+      if (styles.tickText.show) {
+        const texts = this.createTickTexts(ticks, bounding, styles)
+        this.createFigure({
+          name: 'text',
+          attrs: texts,
+          styles: styles.tickText
+        })?.draw(ctx)
+      }
+    }
   }
 }

@@ -9,6 +9,8 @@ import {
     Nullable,
 } from '../index';
 
+import type { IndicatorEntry } from './widget/indicator-modal';
+
 export type { SymbolInfo, Period, KLineData };
 
 export interface DatafeedSubscribeCallback {
@@ -44,6 +46,7 @@ export interface ChartProOptions {
     timezone?: string;
     mainIndicators?: string[];
     subIndicators?: string[];
+    customIndicators?: IndicatorEntry[];
     datafeed: Datafeed;
     yScrolling?: boolean;
 }

@@ -32,6 +32,11 @@ const priceLine: OverlayTemplate = {
       })
     }
     const { value = 0 } = (overlay.points)[0]
+    const textStr = chart.getDecimalFold().format(chart.getThousandsSeparator().format(value.toFixed(precision)))
+    const displayText = typeof overlay.extendData === 'string' && overlay.extendData.length > 0
+      ? `${overlay.extendData} (${textStr})`
+      : textStr
+
     return [
       {
         type: 'line',
@@ -43,7 +48,7 @@ const priceLine: OverlayTemplate = {
         attrs: {
           x: coordinates[0].x,
           y: coordinates[0].y,
-          text: chart.getDecimalFold().format(chart.getThousandsSeparator().format(value.toFixed(precision))),
+          text: displayText,
           baseline: 'bottom'
         }
       }
